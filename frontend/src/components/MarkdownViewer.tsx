@@ -14,6 +14,7 @@ import mermaid from "mermaid";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 import { getMermaidSettings, useMermaidSettingsRevision, type MermaidSettings } from "../hooks/useMermaidSettings";
 import { RawToggle } from "./RawToggle";
+import { SlidesToggle } from "./SlidesToggle";
 import { TocToggle } from "./TocToggle";
 import { CopyButton } from "./CopyButton";
 import { PdfExportButton } from "./PdfExportButton";
@@ -1724,6 +1725,52 @@ function RawView({ content }: { content: string }) {
   );
 }
 
+function splitMarkdownSlides(markdown: string): string[] {
+  const lines = markdown.replace(/\r\n/g, "\n").split("\n");
+  const slides: string[] = [];
+  let current: string[] = [];
+  let inFence = false;
+  let fenceChar: "`" | "~" | "" = "";
+  let fenceLen = 0;
+
+  const flush = () => {
+    const text = current.join("\n").trim();
+    if (text.length > 0) slides.push(text);
+    current = [];
+  };
+
+  for (const line of lines) {
+    const fence = line.match(/^\s*(`{3,}|~{3,})/);
+    if (fence) {
+      const marker = fence[1] ?? "";
+      if (!inFence) {
+        inFence = true;
+        fenceChar = (marker[0] as "`" | "~") ?? "";
+        fenceLen = marker.length;
+      } else {
+        const expected = fenceChar.repeat(fenceLen);
+        if (line.trimStart().startsWith(expected)) {
+          inFence = false;
+          fenceChar = "";
+          fenceLen = 0;
+        }
+      }
+      current.push(line);
+      continue;
+    }
+
+    if (!inFence && /^\s*---\s*$/.test(line)) {
+      flush();
+      continue;
+    }
+
+    current.push(line);
+  }
+
+  flush();
+  return slides.length > 0 ? slides : [markdown.trim()].filter((s) => s.length > 0);
+}
+
 interface CollapsibleHeadingProps extends React.HTMLAttributes<HTMLHeadingElement> {
   as: "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
   collapsed: boolean;
@@ -1782,9 +1829,16 @@ export function MarkdownViewer({
   const [content, setContent] = useState("");
   const [loading, setLoading] = useState(true);
   const [isRawView, setIsRawView] = useState(false);
+  const [isSlidesView, setIsSlidesView] = useState(false);
+  const [isSlidesFullscreen, setIsSlidesFullscreen] = useState(false);
+  const [isSlidesOverlayVisible, setIsSlidesOverlayVisible] = useState(true);
+  const [isSlidesOverlayPinned, setIsSlidesOverlayPinned] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
   const [collapsedHeadingIds, setCollapsedHeadingIds] = useState<Set<string>>(() => new Set());
   const [linkOpenError, setLinkOpenError] = useState<string | null>(null);
   const articleRef = useRef<HTMLElement>(null);
+  const slideShellRef = useRef<HTMLDivElement>(null);
+  const slidesOverlayTimerRef = useRef<number | null>(null);
   const [prevFetchKey, setPrevFetchKey] = useState({ fileId, revision });
 
   if (fileId !== prevFetchKey.fileId || revision !== prevFetchKey.revision) {
@@ -1853,145 +1907,107 @@ export function MarkdownViewer({
   );
 
   const components: Components = useMemo(
-    () => ({
-      pre: ({ children }) => <>{children}</>,
-      h1: ({ node: _node, children, id, className, ...props }) => (
-        <CollapsibleHeading
-          as="h1"
-          id={id}
-          className={className}
-          collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-          onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
-          {...props}
-        >
-          {children}
-        </CollapsibleHeading>
-      ),
-      h2: ({ node: _node, children, id, className, ...props }) => (
-        <CollapsibleHeading
-          as="h2"
-          id={id}
-          className={className}
-          collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-          onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
-          {...props}
-        >
-          {children}
-        </CollapsibleHeading>
-      ),
-      h3: ({ node: _node, children, id, className, ...props }) => (
-        <CollapsibleHeading
-          as="h3"
-          id={id}
-          className={className}
-          collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-          onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
-          {...props}
-        >
-          {children}
-        </CollapsibleHeading>
-      ),
-      h4: ({ node: _node, children, id, className, ...props }) => (
-        <CollapsibleHeading
-          as="h4"
-          id={id}
-          className={className}
-          collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-          onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
-          {...props}
-        >
-          {children}
-        </CollapsibleHeading>
-      ),
-      h5: ({ node: _node, children, id, className, ...props }) => (
-        <CollapsibleHeading
-          as="h5"
-          id={id}
-          className={className}
-          collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-          onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
-          {...props}
-        >
-          {children}
-        </CollapsibleHeading>
-      ),
-      h6: ({ node: _node, children, id, className, ...props }) => (
-        <CollapsibleHeading
-          as="h6"
-          id={id}
-          className={className}
-          collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-          onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
-          {...props}
-        >
-          {children}
-        </CollapsibleHeading>
-      ),
-      code: ({ className, children, ...props }) => {
-        const language = extractLanguage(className);
-        const code = String(children).replace(/\n$/, "");
-        const isBlock = String(children).endsWith("\n");
-        if (language) {
-          if (language === "mermaid") {
-            return <MermaidBlock code={code} />;
+    () => {
+      const headingRenderer =
+        (as: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
+          ({ node: _node, children, id, className, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { node?: unknown }) => {
+            if (isSlidesView) {
+              const Tag = as;
+              return (
+                <Tag id={id} className={className} {...props}>
+                  {children}
+                </Tag>
+              );
+            }
+
+            return (
+              <CollapsibleHeading
+                as={as}
+                id={id}
+                className={className}
+                collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
+                onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
+                {...props}
+              >
+                {children}
+              </CollapsibleHeading>
+            );
+          };
+
+      return {
+        pre: ({ children }) => <>{children}</>,
+        h1: headingRenderer("h1"),
+        h2: headingRenderer("h2"),
+        h3: headingRenderer("h3"),
+        h4: headingRenderer("h4"),
+        h5: headingRenderer("h5"),
+        h6: headingRenderer("h6"),
+        code: ({ className, children, ...props }) => {
+          const language = extractLanguage(className);
+          const code = String(children).replace(/\n$/, "");
+          const isBlock = String(children).endsWith("\n");
+          if (language) {
+            if (language === "mermaid") {
+              return <MermaidBlock code={code} />;
+            }
+            if (language === "svgbob" || language === "bob") {
+              return <SvgBobBlock code={code} />;
+            }
+            if (language === "plantuml" || language === "puml") {
+              return <PlantUmlBlock code={code} />;
+            }
+            return <CodeBlock language={language} code={code} />;
           }
-          if (language === "svgbob" || language === "bob") {
-            return <SvgBobBlock code={code} />;
+          if (isBlock) {
+            return <CodeBlock language="text" code={code} />;
           }
-          if (language === "plantuml" || language === "puml") {
-            return <PlantUmlBlock code={code} />;
+          return (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+        img: ({ src, alt, ...props }) => {
+          return <img src={resolveImageSrc(src, fileId)} alt={alt} {...props} />;
+        },
+        a: ({ href, children, ...props }) => {
+          const resolved = resolveLink(href, fileId);
+          switch (resolved.type) {
+            case "external":
+              return (
+                <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                  {children}
+                </a>
+              );
+            case "hash":
+              return (
+                <a href={href} {...props}>
+                  {children}
+                </a>
+              );
+            case "markdown":
+              return (
+                <a href={href} onClick={(e) => handleLinkClick(e, resolved.hrefPath, resolved.anchor)} {...props}>
+                  {children}
+                </a>
+              );
+            case "file":
+              return (
+                <a href={resolved.rawUrl} {...props}>
+                  {children}
+                </a>
+              );
+            case "passthrough":
+              return (
+                <a href={href} {...props}>
+                  {children}
+                </a>
+              );
           }
-          return <CodeBlock language={language} code={code} />;
-        }
-        if (isBlock) {
-          return <CodeBlock language="text" code={code} />;
-        }
-        return (
-          <code className={className} {...props}>
-            {children}
-          </code>
-        );
-      },
-      img: ({ src, alt, ...props }) => {
-        return <img src={resolveImageSrc(src, fileId)} alt={alt} {...props} />;
-      },
-      a: ({ href, children, ...props }) => {
-        const resolved = resolveLink(href, fileId);
-        switch (resolved.type) {
-          case "external":
-            return (
-              <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                {children}
-              </a>
-            );
-          case "hash":
-            return (
-              <a href={href} {...props}>
-                {children}
-              </a>
-            );
-          case "markdown":
-            return (
-              <a href={href} onClick={(e) => handleLinkClick(e, resolved.hrefPath, resolved.anchor)} {...props}>
-                {children}
-              </a>
-            );
-          case "file":
-            return (
-              <a href={resolved.rawUrl} {...props}>
-                {children}
-              </a>
-            );
-          case "passthrough":
-            return (
-              <a href={href} {...props}>
-                {children}
-              </a>
-            );
-        }
-      },
-    }),
-    [collapsedHeadingIds, fileId, handleLinkClick, toggleHeadingCollapse],
+        },
+      };
+    },
+    [collapsedHeadingIds, fileId, handleLinkClick, isSlidesView, toggleHeadingCollapse],
   );
 
   const parsed = useMemo(
@@ -1999,13 +2015,172 @@ export function MarkdownViewer({
     [content, isRawView],
   );
 
+  const transformedMarkdown = useMemo(() => {
+    if (isRawView) return "";
+    const base = parsed ? parsed.content : content;
+    const normalized = fileName.endsWith(".mdx") ? stripMdxSyntax(base) : base;
+    return transformMarkdownForMo(normalized);
+  }, [content, fileName, isRawView, parsed]);
+
+  const slides = useMemo(
+    () => (isRawView ? [] : splitMarkdownSlides(transformedMarkdown)),
+    [isRawView, transformedMarkdown],
+  );
+
+  useEffect(() => {
+    setSlideIndex((current) => {
+      if (slides.length === 0) return 0;
+      return Math.min(current, slides.length - 1);
+    });
+  }, [slides.length]);
+
+  const goPrevSlide = useCallback(() => {
+    setSlideIndex((current) => Math.max(0, current - 1));
+  }, []);
+
+  const goNextSlide = useCallback(() => {
+    setSlideIndex((current) => Math.min(Math.max(0, slides.length - 1), current + 1));
+  }, [slides.length]);
+
+  const goFirstSlide = useCallback(() => {
+    setSlideIndex(0);
+  }, []);
+
+  const goLastSlide = useCallback(() => {
+    setSlideIndex(Math.max(0, slides.length - 1));
+  }, [slides.length]);
+
+  const handleSlidePageClick = useCallback(
+    (event: React.MouseEvent<HTMLElement>) => {
+      const target = event.target as HTMLElement | null;
+      if (!target) return;
+      if (target.closest("a,button,input,textarea,select,label,summary,[role='button']")) {
+        return;
+      }
+      goNextSlide();
+    },
+    [goNextSlide],
+  );
+
+  const toggleSlidesFullscreen = useCallback(async () => {
+    const shell = slideShellRef.current;
+    if (!shell) return;
+
+    try {
+      if (document.fullscreenElement === shell) {
+        await document.exitFullscreen?.();
+        return;
+      }
+      await shell.requestFullscreen?.();
+    } catch {
+      // Fullscreen may be blocked by browser policies
+    }
+  }, []);
+
+  const clearSlidesOverlayTimer = useCallback(() => {
+    if (slidesOverlayTimerRef.current !== null) {
+      window.clearTimeout(slidesOverlayTimerRef.current);
+      slidesOverlayTimerRef.current = null;
+    }
+  }, []);
+
+  const scheduleSlidesOverlayHide = useCallback(() => {
+    clearSlidesOverlayTimer();
+    if (!isSlidesView || !isSlidesFullscreen || isSlidesOverlayPinned) return;
+
+    slidesOverlayTimerRef.current = window.setTimeout(() => {
+      setIsSlidesOverlayVisible(false);
+    }, 2200);
+  }, [clearSlidesOverlayTimer, isSlidesFullscreen, isSlidesOverlayPinned, isSlidesView]);
+
+  const revealSlidesOverlay = useCallback(() => {
+    if (!isSlidesView || !isSlidesFullscreen) return;
+    setIsSlidesOverlayVisible(true);
+    scheduleSlidesOverlayHide();
+  }, [isSlidesFullscreen, isSlidesView, scheduleSlidesOverlayHide]);
+
+  useEffect(() => {
+    const onFullscreenChange = () => {
+      setIsSlidesFullscreen(document.fullscreenElement === slideShellRef.current);
+    };
+
+    document.addEventListener("fullscreenchange", onFullscreenChange);
+    return () => {
+      document.removeEventListener("fullscreenchange", onFullscreenChange);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (isSlidesView) return;
+    const shell = slideShellRef.current;
+    if (!shell || document.fullscreenElement !== shell) return;
+    void document.exitFullscreen?.();
+  }, [isSlidesView]);
+
+  useEffect(() => {
+    if (!isSlidesView || !isSlidesFullscreen) {
+      setIsSlidesOverlayVisible(true);
+      setIsSlidesOverlayPinned(false);
+      clearSlidesOverlayTimer();
+      return;
+    }
+
+    setIsSlidesOverlayVisible(true);
+    scheduleSlidesOverlayHide();
+
+    return () => {
+      clearSlidesOverlayTimer();
+    };
+  }, [clearSlidesOverlayTimer, isSlidesFullscreen, isSlidesView, scheduleSlidesOverlayHide]);
+
+  const handleSlidesOverlayActivity = useCallback(() => {
+    revealSlidesOverlay();
+  }, [revealSlidesOverlay]);
+
   const renderedContent = useMemo(() => {
     if (isRawView) {
       return <RawView content={content} />;
     }
-    const base = parsed ? parsed.content : content;
-    const normalized = fileName.endsWith(".mdx") ? stripMdxSyntax(base) : base;
-    const md = transformMarkdownForMo(normalized);
+
+    if (isSlidesView) {
+      const currentSlide = slides[slideIndex] ?? "";
+      return (
+        <div
+          ref={slideShellRef}
+          className={`markdown-slide-shell${isSlidesFullscreen ? " markdown-slide-shell--fullscreen" : ""}${isSlidesFullscreen && !isSlidesOverlayVisible ? " markdown-slide-shell--overlay-hidden" : ""}`}
+          data-testid="markdown-slide-shell"
+          onMouseMove={handleSlidesOverlayActivity}
+          onTouchStart={handleSlidesOverlayActivity}
+        >
+          <button
+            type="button"
+            className="markdown-slide-fullscreen-btn"
+            onClick={() => void toggleSlidesFullscreen()}
+            title={isSlidesFullscreen ? "退出全屏（F / Esc）" : "全屏展示（F）"}
+            aria-label={isSlidesFullscreen ? "退出全屏" : "全屏展示"}
+          >
+            {isSlidesFullscreen ? "退出全屏" : "全屏展示"}
+          </button>
+          <section
+            className="markdown-slide-page"
+            onClick={handleSlidePageClick}
+            title="点击空白区域可进入下一页"
+          >
+            <Markdown
+              remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkGemoji]}
+              rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
+              components={components}
+            >
+              {currentSlide}
+            </Markdown>
+          </section>
+          <div className="markdown-slide-help-badge" aria-hidden="true">
+            ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 · {isSlidesOverlayPinned ? "H 取消固定" : "H 固定控件"}
+          </div>
+        </div>
+      );
+    }
+
     return (
       <>
         {parsed && <FrontmatterBlock yaml={parsed.yaml} />}
@@ -2014,15 +2189,30 @@ export function MarkdownViewer({
           rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
           components={components}
         >
-          {md}
+          {transformedMarkdown}
         </Markdown>
       </>
     );
-  }, [content, isRawView, parsed, components, fileName]);
+  }, [
+    components,
+    content,
+    isRawView,
+    isSlidesFullscreen,
+    isSlidesOverlayPinned,
+    isSlidesOverlayVisible,
+    isSlidesView,
+    handleSlidesOverlayActivity,
+    handleSlidePageClick,
+    parsed,
+    slideIndex,
+    slides,
+    toggleSlidesFullscreen,
+    transformedMarkdown,
+  ]);
 
   useEffect(() => {
     const article = articleRef.current;
-    if (!article || loading || isRawView) return;
+    if (!article || loading || isRawView || isSlidesView) return;
 
     const resetHidden = () => {
       const hiddenEls = article.querySelectorAll<HTMLElement>("[data-heading-collapsed-hidden='1']");
@@ -2058,7 +2248,7 @@ export function MarkdownViewer({
     return () => {
       resetHidden();
     };
-  }, [collapsedHeadingIds, isRawView, loading, renderedContent]);
+  }, [collapsedHeadingIds, isRawView, isSlidesView, loading, renderedContent]);
 
   const prevHeadingsKey = useRef("");
   useEffect(() => {
@@ -2096,10 +2286,11 @@ export function MarkdownViewer({
   useEffect(() => {
     if (!searchJumpRequest) return;
     setIsRawView(false);
+    setIsSlidesView(false);
   }, [searchJumpRequest]);
 
   useEffect(() => {
-    if (!searchJumpRequest || loading || isRawView) return;
+    if (!searchJumpRequest || loading || isRawView || isSlidesView) return;
 
     let cancelled = false;
     let raf1 = 0;
@@ -2136,7 +2327,116 @@ export function MarkdownViewer({
       cancelAnimationFrame(raf1);
       cancelAnimationFrame(raf2);
     };
-  }, [isRawView, loading, onSearchJumpHandled, renderedContent, searchJumpRequest]);
+  }, [isRawView, isSlidesView, loading, onSearchJumpHandled, renderedContent, searchJumpRequest]);
+
+  useEffect(() => {
+    if (!isSlidesView || loading) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement | null;
+      if (
+        target &&
+        (target.tagName === "INPUT" ||
+          target.tagName === "TEXTAREA" ||
+          target.tagName === "SELECT" ||
+          target.isContentEditable)
+      ) {
+        return;
+      }
+
+      if (isSlidesFullscreen) {
+        revealSlidesOverlay();
+      }
+
+      if (["ArrowRight", "PageDown", " ", "Enter"].includes(event.key)) {
+        event.preventDefault();
+        goNextSlide();
+        return;
+      }
+      if (["ArrowLeft", "PageUp"].includes(event.key)) {
+        event.preventDefault();
+        goPrevSlide();
+        return;
+      }
+      if (event.key === "Home") {
+        event.preventDefault();
+        goFirstSlide();
+        return;
+      }
+      if (event.key === "End") {
+        event.preventDefault();
+        goLastSlide();
+        return;
+      }
+      if (event.key === "Escape") {
+        event.preventDefault();
+        if (document.fullscreenElement === slideShellRef.current) {
+          void document.exitFullscreen?.();
+          return;
+        }
+        setIsSlidesView(false);
+        return;
+      }
+      if (event.key === "f" || event.key === "F") {
+        event.preventDefault();
+        void toggleSlidesFullscreen();
+        return;
+      }
+      if (event.key === "h" || event.key === "H") {
+        event.preventDefault();
+        setIsSlidesOverlayPinned((current) => {
+          const next = !current;
+          if (next) {
+            clearSlidesOverlayTimer();
+            setIsSlidesOverlayVisible(true);
+          } else {
+            scheduleSlidesOverlayHide();
+          }
+          return next;
+        });
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => {
+      window.removeEventListener("keydown", onKeyDown);
+    };
+  }, [
+    clearSlidesOverlayTimer,
+    goFirstSlide,
+    goLastSlide,
+    goNextSlide,
+    goPrevSlide,
+    isSlidesFullscreen,
+    isSlidesView,
+    loading,
+    revealSlidesOverlay,
+    scheduleSlidesOverlayHide,
+    toggleSlidesFullscreen,
+  ]);
+
+  const handleRawToggle = useCallback(() => {
+    setIsRawView((current) => {
+      const next = !current;
+      if (next) setIsSlidesView(false);
+      return next;
+    });
+  }, []);
+
+  const handleSlidesToggle = useCallback(() => {
+    setIsSlidesView((current) => {
+      const next = !current;
+      if (next) {
+        setIsRawView(false);
+        setSlideIndex(0);
+      }
+      return next;
+    });
+  }, []);
+
+  const currentSlideLabel = slides.length > 0 ? Math.min(slideIndex + 1, slides.length) : 1;
+  const canPrevSlide = slideIndex > 0;
+  const canNextSlide = slideIndex < slides.length - 1;
 
   if (loading) {
     return (
@@ -2151,7 +2451,7 @@ export function MarkdownViewer({
       <article
         ref={articleRef}
         data-file-id={fileId}
-        className={`markdown-body min-w-0 flex-1${isWide ? " markdown-body--wide" : ""}`}
+        className={`markdown-body min-w-0 flex-1${isWide ? " markdown-body--wide" : ""}${isSlidesView ? " markdown-body--slides" : ""}`}
       >
         {linkOpenError && (
           <div
@@ -2161,12 +2461,40 @@ export function MarkdownViewer({
             {linkOpenError}
           </div>
         )}
+        {isSlidesView && (
+          <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-gh-border bg-gh-bg-secondary px-3 py-2 text-xs text-gh-text-secondary">
+            <span>
+              PPT 模式 · 第 {currentSlideLabel}/{Math.max(slides.length, 1)} 页 · 快捷键 F 全屏
+            </span>
+            <div className="flex items-center gap-1">
+              <button
+                type="button"
+                className="rounded-md border border-gh-border bg-transparent px-2 py-1 hover:bg-gh-bg-hover disabled:opacity-50"
+                onClick={goPrevSlide}
+                disabled={!canPrevSlide}
+                title="上一页（← / PageUp）"
+              >
+                上一页
+              </button>
+              <button
+                type="button"
+                className="rounded-md border border-gh-border bg-transparent px-2 py-1 hover:bg-gh-bg-hover disabled:opacity-50"
+                onClick={goNextSlide}
+                disabled={!canNextSlide}
+                title="下一页（→ / Space / Enter / PageDown）"
+              >
+                下一页
+              </button>
+            </div>
+          </div>
+        )}
         {renderedContent}
-        <BacklinksPanel fileId={fileId} />
+        {!isSlidesView && <BacklinksPanel fileId={fileId} />}
       </article>
       <div className="shrink-0 sticky top-0 self-start flex flex-col gap-2 -mr-4 -mt-4">
         <TocToggle isTocOpen={isTocOpen} onToggle={onTocToggle} />
-        <RawToggle isRaw={isRawView} onToggle={() => setIsRawView((v) => !v)} />
+        <SlidesToggle isSlidesOpen={isSlidesView} onToggle={handleSlidesToggle} />
+        <RawToggle isRaw={isRawView} onToggle={handleRawToggle} />
         <CopyButton content={content} />
         <PdfExportButton articleRef={articleRef} fileName={fileName} />
         <RemoveButton onRemove={onRemoveFile} />

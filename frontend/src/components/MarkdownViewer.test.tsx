@@ -16,6 +16,10 @@ vi.mock("./RawToggle", () => ({
     RawToggle: () => null,
 }));
 
+vi.mock("./SlidesToggle", () => ({
+    SlidesToggle: () => null,
+}));
+
 vi.mock("./CopyButton", () => ({
     CopyButton: () => null,
 }));
