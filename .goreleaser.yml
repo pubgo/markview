@@ -50,7 +50,7 @@ archives:
           - zip
     files:
       - LICENSE
-      - CREDITS
+      - docs/CREDITS
       - README.md
       - CHANGELOG.md
 checksum:

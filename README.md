@@ -287,6 +287,22 @@ $ markview --status --json
 $ make build
 ```
 
+CI 中也提供独立构建产物流程：`build-artifacts`（GitHub Actions）。
+该流程会使用 GoReleaser `snapshot` 模式构建多平台产物，并上传 `dist` 目录作为 workflow artifact，便于预发布验证。
+
+## 发布
+
+项目发布使用 GoReleaser，支持两种方式：
+
+- 自动发版：`tagpr` 在 `main` 生成新版本 tag，随后触发 `release` workflow 发布 GitHub Release。
+- 手动发版：直接推送 `v*` tag（例如 `v0.13.0`），触发 `release` workflow。
+
+本地可先做一次发布前验证（不真正发布）：
+
+```console
+$ goreleaser release --snapshot --clean --skip=publish
+```
+
 ## 可选：Markdown PPT 导出（Marp）
 
 如果你需要导出离线讲稿（PDF/PPTX），仓库提供了 `docs/slides/` 的 Marp 模板与主题，可通过 Makefile 预览和导出：
