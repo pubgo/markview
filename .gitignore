@@ -3,3 +3,4 @@ frontend/CREDITS_FRONTEND
 coverage.out
 markview
 .pnpm-store/
+/.idea
