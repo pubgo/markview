@@ -201,10 +201,12 @@ body,
 .markdown-body .mermaid-block .mermaid-render {
   width: 100%;
   max-width: 100%;
+  display: flex;
+  justify-content: safe center;
 }
 
 .markdown-body .mermaid-block .mermaid-canvas {
-  display: inline-block;
+  display: block;
   width: 100%;
   max-width: 100%;
   transform-origin: center center;

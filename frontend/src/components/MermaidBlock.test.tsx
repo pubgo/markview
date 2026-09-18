@@ -167,7 +167,7 @@ describe("MermaidBlock", () => {
       expect(height).toBeGreaterThan(0);
       expect(height).toBeLessThanOrEqual(960);
       expect(svg?.getAttribute("viewBox")).toBe("0 0 240 200");
-      expect(svg?.getAttribute("preserveAspectRatio")).toBe("xMinYMin meet");
+      expect(svg?.getAttribute("preserveAspectRatio")).toBe("xMidYMin meet");
       expect(svg?.getAttribute("style") || "").toContain("max-width:100%");
     });
   });
