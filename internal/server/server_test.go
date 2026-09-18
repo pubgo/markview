@@ -496,6 +496,39 @@ func TestAddPattern_InitialExpansion(t *testing.T) {
 	}
 }
 
+func TestAddPattern_RespectsGitignore(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n"), 0o600) //nolint:errcheck
+	os.WriteFile(filepath.Join(dir, "readme.md"), []byte("# r"), 0o600)               //nolint:errcheck
+	os.MkdirAll(filepath.Join(dir, "node_modules"), 0o700)                            //nolint:errcheck
+	os.WriteFile(filepath.Join(dir, "node_modules", "x.md"), []byte("# x"), 0o600)    //nolint:errcheck
+
+	s := newTestState(t)
+	entries, err := s.AddPattern(filepath.Join(dir, "**", "*.md"), DefaultGroup)
+	if err != nil {
+		t.Fatalf("AddPattern returned error: %v", err)
+	}
+	if len(entries) != 1 {
+		t.Fatalf("matched=%d, want 1 (gitignore should drop node_modules)", len(entries))
+	}
+	if entries[0].Name != "readme.md" {
+		t.Fatalf("got %s, want readme.md", entries[0].Name)
+	}
+}
+
+func TestAddFile_IgnoresGitignore(t *testing.T) {
+	dir := t.TempDir()
+	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("secret.md\n"), 0o600) //nolint:errcheck
+	path := filepath.Join(dir, "secret.md")
+	os.WriteFile(path, []byte("# s"), 0o600) //nolint:errcheck
+
+	s := newTestState(t)
+	entry := s.AddFile(path, DefaultGroup)
+	if entry == nil || entry.Name != "secret.md" {
+		t.Fatal("explicit AddFile must still add ignored paths")
+	}
+}
+
 func TestAddPattern_Duplicate(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, "a.md"), []byte("# A"), 0o600) //nolint:errcheck

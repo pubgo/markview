@@ -19,6 +19,7 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/fsnotify/fsnotify"
 	"github.com/k1LoW/donegroup"
+	"github.com/kooksee/markview/internal/ignore"
 	"github.com/kooksee/markview/internal/static"
 	"github.com/kooksee/markview/version"
 )
@@ -59,11 +60,19 @@ type GlobPattern struct {
 	PatternSlash string // Pre-converted to forward slashes for doublestar matching
 	BaseDir      string // Base directory extracted via SplitPattern
 	Group        string // Target group for matched files
+	IgnoreRoot   string // Root for project .gitignore matching (from ignore.Root)
 }
 
 // IsRecursive returns true if the pattern contains ** for recursive matching.
 func (gp *GlobPattern) IsRecursive() bool {
 	return strings.Contains(gp.Pattern, "**")
+}
+
+func (gp *GlobPattern) ignoreRoot() string {
+	if gp.IgnoreRoot != "" {
+		return gp.IgnoreRoot
+	}
+	return ignore.Root(gp.BaseDir)
 }
 
 type State struct {
@@ -421,7 +430,7 @@ func (s *State) ShutdownCh() <-chan struct{} {
 func (s *State) AddPattern(absPattern, groupName string) ([]*FileEntry, error) {
 	// Use forward slashes for doublestar
 	dsPattern := filepath.ToSlash(absPattern)
-	base, relPat := doublestar.SplitPattern(dsPattern)
+	base, _ := doublestar.SplitPattern(dsPattern)
 	base = filepath.FromSlash(base)
 
 	info, err := os.Stat(base)
@@ -431,6 +440,8 @@ func (s *State) AddPattern(absPattern, groupName string) ([]*FileEntry, error) {
 	if !info.IsDir() {
 		return nil, fmt.Errorf("base path %q is not a directory", base)
 	}
+
+	ignoreRoot := ignore.Root(base)
 
 	gp, added := func() (*GlobPattern, bool) {
 		s.mu.Lock()
@@ -445,6 +456,7 @@ func (s *State) AddPattern(absPattern, groupName string) ([]*FileEntry, error) {
 			PatternSlash: dsPattern,
 			BaseDir:      base,
 			Group:        groupName,
+			IgnoreRoot:   ignoreRoot,
 		}
 		s.patterns = append(s.patterns, gp)
 		// Ensure the group exists even if no files match yet.
@@ -457,16 +469,20 @@ func (s *State) AddPattern(absPattern, groupName string) ([]*FileEntry, error) {
 		return nil, nil
 	}
 
-	// Initial expansion
-	matches, err := doublestar.Glob(os.DirFS(base), relPat, doublestar.WithFilesOnly())
-	if err != nil {
-		return nil, fmt.Errorf("glob expansion failed: %w", err)
-	}
-
+	// Initial expansion with .gitignore pruning
 	var entries []*FileEntry
-	for _, m := range matches {
-		abs := filepath.Join(base, m)
+	if err := ignore.Walk(base, func(abs string, d fs.DirEntry) error {
+		if d.IsDir() {
+			return nil
+		}
+		matched, matchErr := doublestar.Match(gp.PatternSlash, filepath.ToSlash(abs))
+		if matchErr != nil || !matched {
+			return nil
+		}
 		entries = append(entries, s.AddFile(abs, groupName))
+		return nil
+	}); err != nil {
+		return nil, fmt.Errorf("glob expansion failed: %w", err)
 	}
 
 	s.watchDirsForPattern(gp)
@@ -679,12 +695,8 @@ func (s *State) walkDirsForPattern(gp *GlobPattern, fn func(string)) {
 		return
 	}
 
-	if err := filepath.WalkDir(gp.BaseDir, func(path string, d os.DirEntry, err error) error {
-		if err != nil {
-			// Best-effort: still process this path so unwatch can decrement refcounts.
-			fn(path)
-			return fs.SkipDir
-		}
+	fn(gp.BaseDir)
+	if err := ignore.Walk(gp.BaseDir, func(path string, d fs.DirEntry) error {
 		if d.IsDir() {
 			fn(path)
 		}
@@ -875,11 +887,14 @@ func (s *State) handleCreateForGlobs(path string) {
 			if !strings.HasPrefix(path, gp.BaseDir) {
 				continue
 			}
+			if ignore.Ignored(gp.ignoreRoot(), path, true) {
+				continue
+			}
 			if !watched {
 				s.addDirWatch(path)
-				// Scan directory contents for matching files
-				filepath.WalkDir(path, func(p string, d os.DirEntry, err error) error { //nolint:errcheck
-					if err != nil || d.IsDir() {
+				// Scan directory contents for matching files (gitignore-pruned)
+				_ = ignore.Walk(path, func(p string, d fs.DirEntry) error {
+					if d.IsDir() {
 						return nil
 					}
 					s.matchAndAddFile(p, patterns)
@@ -897,6 +912,9 @@ func (s *State) handleCreateForGlobs(path string) {
 func (s *State) matchAndAddFile(path string, patterns []*GlobPattern) {
 	dsPath := filepath.ToSlash(path)
 	for _, gp := range patterns {
+		if ignore.Ignored(gp.ignoreRoot(), path, false) {
+			continue
+		}
 		matched, err := doublestar.Match(gp.PatternSlash, dsPath)
 		if err != nil {
 			continue
