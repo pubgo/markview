@@ -35,8 +35,37 @@ export interface PdfArticleSnapshot {
     imageHeightPx: number;
     articleWidthPx: number;
     articleHeightPx: number;
+    backgroundColor: string;
     links: CapturedLinkRect[];
     headings: CapturedHeading[];
+}
+
+/** Match capture canvas / PDF page to the active app theme. */
+export function resolvePdfCaptureBackgroundColor(doc: Document = document): string {
+    try {
+        const fromCss = doc.defaultView
+            ?.getComputedStyle(doc.documentElement)
+            .getPropertyValue("--color-gh-bg")
+            .trim();
+        if (fromCss) return fromCss;
+    } catch {
+        // jsdom / missing stylesheets
+    }
+    return doc.documentElement.getAttribute("data-theme") === "dark" ? "#0d1117" : "#ffffff";
+}
+
+function hexToRgb(hex: string): { r: number; g: number; b: number } | null {
+    const normalized = hex.trim().replace(/^#/, "");
+    if (!/^[0-9a-fA-F]{6}$/.test(normalized)) return null;
+    const n = Number.parseInt(normalized, 16);
+    return { r: (n >> 16) & 255, g: (n >> 8) & 255, b: n & 255 };
+}
+
+function fillPdfPageBackground(pdf: jsPDF, backgroundColor: string, pageHeightMm: number): void {
+    const rgb = hexToRgb(backgroundColor);
+    if (!rgb) return;
+    pdf.setFillColor(rgb.r, rgb.g, rgb.b);
+    pdf.rect(0, 0, PDF_PAGE_WIDTH_MM, pageHeightMm, "F");
 }
 
 function toAbsoluteUrl(href: string): string {
@@ -395,10 +424,11 @@ async function captureArticleSnapshot(
     const sourceGroup = options.sourceGroup ?? parseGroupFromPath(window.location.pathname);
     const sourceFilePath = options.sourceFilePath;
 
+    const backgroundColor = resolvePdfCaptureBackgroundColor();
     const imageDataUrl = await toJpeg(article, {
         quality: 0.92,
         pixelRatio: 2,
-        backgroundColor: "#ffffff",
+        backgroundColor,
         style: {
             width: `${fixedWidthPx}px`,
             minWidth: `${fixedWidthPx}px`,
@@ -423,6 +453,7 @@ async function captureArticleSnapshot(
         imageHeightPx: img.height,
         articleWidthPx: articleRect.width,
         articleHeightPx: articleRect.height,
+        backgroundColor,
         links: await buildSnapshotLinks(article, articleRect, sourceFileId, sourceGroup, sourceFilePath),
         headings: buildSnapshotHeadings(article, articleRect),
     };
@@ -456,8 +487,9 @@ function drawSnapshotOnCurrentPage(
     snapshot: PdfArticleSnapshot,
     pageBySourcePath: Map<string, number>,
 ): { scaleX: number; scaleY: number } {
-    const { contentWidthMm, contentHeightMm, scaleX, scaleY } = getPageMetrics(snapshot);
+    const { contentWidthMm, contentHeightMm, pageHeightMm, scaleX, scaleY } = getPageMetrics(snapshot);
 
+    fillPdfPageBackground(pdf, snapshot.backgroundColor, pageHeightMm);
     pdf.addImage(snapshot.imageDataUrl, "JPEG", PDF_MARGIN_MM, PDF_MARGIN_MM, contentWidthMm, contentHeightMm);
 
     for (const link of snapshot.links) {
@@ -656,7 +688,12 @@ function openPrintFallback(article: HTMLElement, filename: string): void {
     ${printableStyles}
     <style>
       @page { size: A4; margin: 15mm; }
-      html, body { margin: 0; padding: 0; }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--color-gh-bg, ${currentTheme === "dark" ? "#0d1117" : "#ffffff"});
+        color: var(--color-gh-text, ${currentTheme === "dark" ? "#e6edf3" : "#1f2328"});
+      }
       .markdown-body { max-width: none !important; margin: 0 !important; }
     </style>
   </head>
