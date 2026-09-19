@@ -172,6 +172,39 @@ describe("MermaidBlock", () => {
     });
   });
 
+  it("uses presentation layout sizing for slides view", async () => {
+    vi.mocked(mermaid.render).mockResolvedValue({
+      svg: '<svg width="400" height="220"><g><text>diagram</text></g></svg>',
+      bindFunctions: undefined,
+      diagramType: "flowchart",
+    });
+
+    const slide = document.createElement("div");
+    slide.className = "markdown-slide-page";
+    Object.defineProperty(slide, "clientWidth", { configurable: true, value: 960 });
+    Object.defineProperty(slide, "clientHeight", { configurable: true, value: 700 });
+    document.body.appendChild(slide);
+
+    const host = document.createElement("div");
+    slide.appendChild(host);
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" presentation />, {
+      container: host,
+    });
+
+    await waitFor(() => {
+      const block = container.querySelector(".mermaid-block");
+      expect(block?.className).toContain("mermaid-block--fit-width");
+      expect(block?.className).toContain("mermaid-block--constrain-height");
+      const svg = container.querySelector("svg");
+      expect(svg).toBeTruthy();
+      const width = parseFloat(svg?.getAttribute("width") || "0");
+      expect(width).toBeGreaterThanOrEqual(400);
+    });
+
+    slide.remove();
+  });
+
   it("does not show image copy button when rendering fails", async () => {
     vi.mocked(mermaid.render).mockRejectedValue(new Error("parse error"));
 

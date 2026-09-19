@@ -1325,6 +1325,66 @@ func TestFileID(t *testing.T) {
 	}
 }
 
+func TestFileRawParentAsset(t *testing.T) {
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, ".git"), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	docs := filepath.Join(root, "docs")
+	images := filepath.Join(root, "images")
+	if err := os.MkdirAll(docs, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(images, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	mdPath := filepath.Join(docs, "slides.md")
+	assetPath := filepath.Join(images, "logo.svg")
+	if err := os.WriteFile(mdPath, []byte("# slides\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(assetPath, []byte("<svg></svg>"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	s := newTestState(t)
+	entry := s.AddFile(mdPath, DefaultGroup)
+	if entry == nil {
+		t.Fatal("AddFile returned nil")
+	}
+
+	handler := NewHandler(s)
+
+	t.Run("serves encoded parent-relative asset under git root", func(t *testing.T) {
+		req := httptest.NewRequest(
+			"GET",
+			fmt.Sprintf("/_/api/files/%s/raw/%%2E%%2E/images/logo.svg", entry.ID),
+			nil,
+		)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusOK {
+			t.Fatalf("got status %d, want %d body=%q", rec.Code, http.StatusOK, rec.Body.String())
+		}
+		if got := rec.Body.String(); got != "<svg></svg>" {
+			t.Fatalf("got body %q, want logo svg", got)
+		}
+	})
+
+	t.Run("rejects escape outside git root", func(t *testing.T) {
+		req := httptest.NewRequest(
+			"GET",
+			fmt.Sprintf("/_/api/files/%s/raw/%%2E%%2E/%%2E%%2E/etc/passwd", entry.ID),
+			nil,
+		)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code != http.StatusForbidden {
+			t.Fatalf("got status %d, want %d", rec.Code, http.StatusForbidden)
+		}
+	})
+}
+
 func TestDirMove(t *testing.T) {
 	ctx, cancel := donegroup.WithCancel(context.Background())
 	defer cancel()

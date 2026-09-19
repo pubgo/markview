@@ -40,7 +40,19 @@ export function resolveImageSrc(src: string | undefined, fileId: string): string
       const dataUri = getStaticRawAssetUrl(fileId, src);
       if (dataUri) return dataUri;
     }
-    return `/_/api/files/${fileId}/raw/${src}`;
+    // Encode each segment. Escape "." only for "." / ".." so parent-relative
+    // paths are not collapsed by the browser or HTTP mux, while file extensions
+    // stay readable.
+    const encoded = src
+      .split("/")
+      .map((segment) => {
+        if (segment === ".." || segment === ".") {
+          return segment.replace(/\./g, "%2E");
+        }
+        return encodeURIComponent(segment);
+      })
+      .join("/");
+    return `/_/api/files/${fileId}/raw/${encoded}`;
   }
   return src;
 }

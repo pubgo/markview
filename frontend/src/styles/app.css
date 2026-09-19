@@ -221,9 +221,9 @@ body,
 /* Images: centered and capped to the slide frame */
 .markdown-body--slides .markdown-slide-page img {
   display: block;
-  max-width: min(100%, 920px);
-  max-height: min(48vh, 460px);
-  max-height: min(48dvh, 460px);
+  max-width: min(100%, 980px);
+  max-height: min(62vh, 620px);
+  max-height: min(62dvh, 620px);
   width: auto;
   height: auto;
   margin: 0.85em auto;
@@ -237,15 +237,25 @@ body,
 .markdown-body--slides .markdown-slide-page .mermaid-block,
 .markdown-body--slides .markdown-slide-page .plantuml-block,
 .markdown-body--slides .markdown-slide-page .svgbob-block {
-  margin: 0.75em auto 1em;
+  margin: 0.5em auto 0.75em;
   max-width: 100%;
 }
 
 .markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--constrain-height .mermaid-render,
 .markdown-body--slides .markdown-slide-page .plantuml-render,
 .markdown-body--slides .markdown-slide-page .svgbob-render {
-  max-height: min(50vh, 480px);
-  max-height: min(50dvh, 480px);
+  max-height: min(78vh, 820px);
+  max-height: min(78dvh, 820px);
+}
+
+.markdown-body--slides .markdown-slide-page .mermaid-block .mermaid-canvas,
+.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--fit-width .mermaid-canvas {
+  width: 100%;
+}
+
+.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--fit-width .mermaid-render svg {
+  width: 100%;
+  height: auto;
 }
 
 .markdown-body--slides .markdown-slide-page pre {

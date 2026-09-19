@@ -129,6 +129,12 @@ describe("resolveImageSrc", () => {
     expect(resolveImageSrc("assets/photo.jpg", "e")).toBe("/_/api/files/e/raw/assets/photo.jpg");
   });
 
+  it("encodes parent-relative segments for the raw API", () => {
+    expect(resolveImageSrc("../images/logo.svg", "f")).toBe(
+      "/_/api/files/f/raw/%2E%2E/images/logo.svg",
+    );
+  });
+
   it("passes through http:// URLs", () => {
     expect(resolveImageSrc("http://example.com/img.png", "a")).toBe("http://example.com/img.png");
   });

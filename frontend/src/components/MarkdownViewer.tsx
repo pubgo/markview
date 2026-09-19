@@ -279,8 +279,15 @@ interface MermaidLayout {
   constrainHeight: boolean;
 }
 
-function getInlineMermaidMaxHeightPx(): number {
+function getInlineMermaidMaxHeightPx(presentation = false): number {
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 1080;
+  if (presentation) {
+    const slide = typeof document !== "undefined"
+      ? (document.querySelector(".markdown-slide-page") as HTMLElement | null)
+      : null;
+    const slideHeight = slide?.clientHeight ?? Math.round(viewportHeight * 0.78);
+    return Math.max(520, Math.min(980, Math.round(slideHeight * 0.9)));
+  }
   const cap = Math.round(viewportHeight * 0.78);
   return Math.min(960, Math.max(320, cap));
 }
@@ -325,9 +332,14 @@ function resolveMermaidLayout(
   isFullscreen: boolean,
   dimensions: MermaidDimensions | null,
   renderWidth: number,
+  presentation = false,
 ): MermaidLayout {
   if (isFullscreen) {
     return { fitToWidth: true, preserveScale: false, constrainHeight: false };
+  }
+
+  if (presentation) {
+    return { fitToWidth: true, preserveScale: false, constrainHeight: true };
   }
 
   const defaultFit = shouldFitMermaidToWidth(complexity, false);
@@ -522,7 +534,7 @@ function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): str
   });
 }
 
-function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: number): string {
+function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: number, presentation = false): string {
   try {
     const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
     const svgEl = doc.documentElement;
@@ -570,7 +582,7 @@ function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: 
     svgEl.setAttribute("preserveAspectRatio", "xMidYMin meet");
     if (layout.constrainHeight && intrinsicWidth && intrinsicHeight) {
       const maxWidthPx = Math.max(280, Math.round(renderWidthPx));
-      const maxHeightPx = getInlineMermaidMaxHeightPx();
+      const maxHeightPx = getInlineMermaidMaxHeightPx(presentation);
 
       const scaleToWidth = maxWidthPx / intrinsicWidth;
       const scaleToHeight = maxHeightPx / intrinsicHeight;
@@ -581,6 +593,11 @@ function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: 
 
       if (!Number.isFinite(scale) || scale <= 0) {
         scale = 1;
+      }
+
+      // In slides, prefer filling width unless the diagram is extremely tall.
+      if (presentation && layout.fitToWidth && scaleToWidth <= scaleToHeight * 1.35) {
+        scale = scaleToWidth;
       }
 
       const targetWidth = Math.max(1, Math.round(intrinsicWidth * scale));
@@ -639,7 +656,7 @@ async function renderMermaid(code: string, width?: number): Promise<string> {
   return result;
 }
 
-export function MermaidBlock({ code }: { code: string }) {
+export function MermaidBlock({ code, presentation = false }: { code: string; presentation?: boolean }) {
   const settingsRevision = useMermaidSettingsRevision();
   const [svg, setSvg] = useState("");
   const [renderStatus, setRenderStatus] = useState<"pending" | "rendered" | "failed">("pending");
@@ -654,7 +671,7 @@ export function MermaidBlock({ code }: { code: string }) {
     [mermaidComplexity],
   );
   const [layout, setLayout] = useState<MermaidLayout>(() => ({
-    fitToWidth: shouldFitMermaidToWidth(mermaidComplexity, false),
+    fitToWidth: shouldFitMermaidToWidth(mermaidComplexity, false) || presentation,
     preserveScale: false,
     constrainHeight: false,
   }));
@@ -751,8 +768,10 @@ export function MermaidBlock({ code }: { code: string }) {
   const resolveRenderWidth = useCallback(() => {
     const container = containerRef.current;
     const markdownBody = container?.closest(".markdown-body") as HTMLElement | null;
+    const slidePage = container?.closest(".markdown-slide-page") as HTMLElement | null;
 
     const widthCandidates = [
+      presentation ? slidePage?.clientWidth : undefined,
       container?.clientWidth,
       container?.offsetWidth,
       container?.parentElement?.clientWidth,
@@ -772,9 +791,13 @@ export function MermaidBlock({ code }: { code: string }) {
       return Math.max(baseWidth, Math.min(scaledWidth, maxWidth));
     }
 
+    if (presentation) {
+      return Math.max(baseWidth, Math.round(baseWidth * 1.02));
+    }
+
     // Inline mode: avoid complexity-based downscaling to prevent tiny wide diagrams.
     return baseWidth;
-  }, [isFullscreen, mermaidComplexity]);
+  }, [isFullscreen, mermaidComplexity, presentation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -822,11 +845,17 @@ export function MermaidBlock({ code }: { code: string }) {
         }
 
         let dimensions = parseMermaidSvgDimensions(renderedSvg);
-        let nextLayout = resolveMermaidLayout(mermaidComplexity, isFullscreen, dimensions, width);
+        let nextLayout = resolveMermaidLayout(
+          mermaidComplexity,
+          isFullscreen,
+          dimensions,
+          width,
+          presentation,
+        );
 
         if (!cancelled) {
           setLayout(nextLayout);
-          setSvg(normalizeMermaidSvg(renderedSvg, nextLayout, width));
+          setSvg(normalizeMermaidSvg(renderedSvg, nextLayout, width, presentation));
           setRenderStatus("rendered");
         }
       } catch (err) {
@@ -860,7 +889,7 @@ export function MermaidBlock({ code }: { code: string }) {
       observer.disconnect();
       resizeObserver?.disconnect();
     };
-  }, [isFullscreen, mermaidComplexity, normalizedCode, resolveRenderWidth, settingsRevision]);
+  }, [isFullscreen, mermaidComplexity, normalizedCode, presentation, resolveRenderWidth, settingsRevision]);
 
   if (svg) {
     const canvasStyle = isFullscreen
@@ -1950,7 +1979,7 @@ export function MarkdownViewer({
           const isBlock = String(children).endsWith("\n");
           if (language) {
             if (language === "mermaid") {
-              return <MermaidBlock code={code} />;
+              return <MermaidBlock code={code} presentation={isSlidesView} />;
             }
             if (language === "svgbob" || language === "bob") {
               return <SvgBobBlock code={code} />;
