@@ -274,23 +274,45 @@ body,
 .markdown-slide-shell:fullscreen {
   width: 100%;
   height: 100%;
-  padding: min(2.4vw, 20px);
+  padding: min(1.2vw, 14px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top, #1f2937 0%, #0b1020 62%);
+  /* Light theme: soft neutral stage (not harsh black) */
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, #cbd5e1 0%, transparent 55%),
+    linear-gradient(165deg, #e2e8f0 0%, #94a3b8 55%, #64748b 100%);
+}
+
+[data-theme="dark"] .markdown-slide-shell:fullscreen {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% -10%, #1e293b 0%, transparent 50%),
+    linear-gradient(165deg, #0f172a 0%, #111827 55%, #0b1020 100%);
 }
 
 .markdown-slide-shell:fullscreen .markdown-slide-page {
-  width: min(96vw, 1600px);
-  height: min(96vh, 920px);
+  width: min(98vw, 1680px);
+  height: min(96vh, 980px);
   max-height: none;
-  border-radius: 14px;
+  border-radius: 8px;
+  border-color: color-mix(in oklab, var(--color-gh-border) 70%, transparent);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+  background: var(--color-gh-bg);
+}
+
+[data-theme="dark"] .markdown-slide-shell:fullscreen .markdown-slide-page {
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
+  border-color: color-mix(in oklab, var(--color-gh-border) 80%, transparent);
 }
 
 .markdown-slide-shell:fullscreen .markdown-slide-help-badge {
-  bottom: min(2.4vh, 20px);
-  right: min(2.4vw, 24px);
+  bottom: min(2vh, 16px);
+  right: min(2vw, 18px);
+  opacity: 0.85;
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-fullscreen-btn {
+  opacity: 0.9;
 }
 
 .markdown-slide-shell--overlay-hidden:fullscreen .markdown-slide-fullscreen-btn,
@@ -303,7 +325,33 @@ body,
 }
 
 .markdown-slide-shell:fullscreen::backdrop {
+  background: #64748b;
+}
+
+[data-theme="dark"] .markdown-slide-shell:fullscreen::backdrop {
   background: #0b1020;
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page--cover h1,
+.markdown-slide-shell:fullscreen .markdown-slide-page--cover h2 {
+  font-size: clamp(2.6rem, 5vw, 4rem);
+  letter-spacing: -0.025em;
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page blockquote {
+  border-left-width: 5px;
+  border-left-color: color-mix(in oklab, var(--color-gh-text) 35%, var(--color-gh-border));
+  background: color-mix(in oklab, var(--color-gh-bg-secondary) 88%, var(--color-gh-text) 4%);
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page th {
+  background: color-mix(in oklab, var(--color-gh-bg-secondary) 80%, var(--color-gh-text) 6%);
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page img {
+  max-height: min(70vh, 720px);
+  max-height: min(70dvh, 720px);
+  border-radius: 8px;
 }
 
 .markdown-body .mermaid-block .mermaid-render svg {
