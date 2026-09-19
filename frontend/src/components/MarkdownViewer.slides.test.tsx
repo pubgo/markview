@@ -107,6 +107,84 @@ describe("MarkdownViewer slides mode", () => {
         });
     });
 
+    it("marks short title slides as covers and list slides as content", async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchFileContent).mockResolvedValue({
+            content: `# 封面\n\n副标题\n\n---\n\n# 要点\n\n- 第一条\n- 第二条\n`,
+            baseDir: "/tmp",
+        });
+
+        render(
+            <MarkdownViewer
+                fileId="file-1"
+                fileName="talk.md"
+                revision={0}
+                onFileOpened={() => { }}
+                onHeadingsChange={() => { }}
+                isTocOpen={false}
+                onTocToggle={() => { }}
+                onRemoveFile={() => { }}
+                isWide={false}
+            />,
+        );
+
+        await screen.findByText("副标题");
+        await user.click(screen.getByRole("button", { name: "Slides" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page).toHaveAttribute("data-slide-cover", "true");
+            expect(page.className).toContain("markdown-slide-page--cover");
+        });
+
+        await user.click(screen.getByRole("button", { name: "下一页" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page).toHaveAttribute("data-slide-cover", "false");
+            expect(page.className).not.toContain("markdown-slide-page--cover");
+            expect(screen.getByText("第一条")).toBeInTheDocument();
+        });
+    });
+
+    it("renders tables and mermaid blocks inside slides pages", async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchFileContent).mockResolvedValue({
+            content: `# 表\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n---\n\n# 图\n\n\`\`\`mermaid\ngraph TD; A-->B\n\`\`\`\n`,
+            baseDir: "/tmp",
+        });
+
+        render(
+            <MarkdownViewer
+                fileId="file-1"
+                fileName="media.md"
+                revision={0}
+                onFileOpened={() => { }}
+                onHeadingsChange={() => { }}
+                isTocOpen={false}
+                onTocToggle={() => { }}
+                onRemoveFile={() => { }}
+                isWide={false}
+            />,
+        );
+
+        await screen.findByText("表");
+        await user.click(screen.getByRole("button", { name: "Slides" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page.querySelector("table")).toBeTruthy();
+            expect(screen.getByText("1")).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole("button", { name: "下一页" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page.querySelector(".mermaid-block, [data-mermaid-render-status]")).toBeTruthy();
+        });
+    });
+
     it("supports keyboard navigation in slides mode", async () => {
         const user = userEvent.setup();
 
@@ -160,6 +238,12 @@ describe("MarkdownViewer slides mode", () => {
 
         await user.click(screen.getByRole("button", { name: "全屏展示" }));
         expect(requestFullscreenMock).toHaveBeenCalledOnce();
+
+        document.dispatchEvent(new Event("fullscreenchange"));
+        await waitFor(() => {
+            const shell = screen.getByTestId("markdown-slide-shell");
+            expect(shell.className).toContain("markdown-slide-shell--fullscreen");
+        });
     });
 
     it("goes to next slide when clicking slide body", async () => {

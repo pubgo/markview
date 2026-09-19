@@ -1195,17 +1195,43 @@ func handleFileRaw(state *State) http.HandlerFunc {
 		}
 
 		relPath := r.PathValue("path")
-		absPath := filepath.Join(filepath.Dir(entry.Path), relPath)
-		absPath = filepath.Clean(absPath)
+		fileDir := filepath.Dir(entry.Path)
+		absPath := filepath.Clean(filepath.Join(fileDir, relPath))
 
-		// Prevent directory traversal outside the base directory
-		baseDir := filepath.Dir(entry.Path)
-		if !strings.HasPrefix(absPath, baseDir) {
+		// Allow assets under the project/git root (so ../images/... works),
+		// but never escape that root.
+		root := ignore.Root(fileDir)
+		relToRoot, err := filepath.Rel(root, absPath)
+		if err != nil || relToRoot == ".." || strings.HasPrefix(relToRoot, ".."+string(os.PathSeparator)) {
 			http.Error(w, "access denied", http.StatusForbidden)
 			return
 		}
 
-		http.ServeFile(w, r, absPath)
+		// ServeContent instead of ServeFile: ServeFile rejects any request whose
+		// URL path contains ".." (including encoded %2E%2E), even when the
+		// resolved filesystem path is already validated above.
+		f, err := os.Open(absPath)
+		if err != nil {
+			if os.IsNotExist(err) {
+				http.NotFound(w, r)
+				return
+			}
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer f.Close()
+
+		stat, err := f.Stat()
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		if stat.IsDir() {
+			http.Error(w, "is a directory", http.StatusNotFound)
+			return
+		}
+
+		http.ServeContent(w, r, filepath.Base(absPath), stat.ModTime(), f)
 	}
 }
 

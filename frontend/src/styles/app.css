@@ -99,25 +99,174 @@ body,
   border-radius: 12px;
   background: var(--color-gh-bg);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  padding: clamp(20px, 3vw, 42px);
+  padding: clamp(28px, 4vw, 56px) clamp(32px, 5vw, 64px);
+}
+
+.markdown-slide-page--cover {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  text-align: center;
+}
+
+.markdown-slide-page--cover h1,
+.markdown-slide-page--cover h2 {
+  margin-top: 0;
+}
+
+.markdown-slide-page--cover p {
+  margin-inline: auto;
+  max-width: 36em;
+  color: var(--color-gh-text-secondary);
 }
 
 .markdown-body--slides .markdown-slide-page h1 {
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: clamp(2.25rem, 4.4vw, 3.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.45em;
 }
 
 .markdown-body--slides .markdown-slide-page h2 {
-  font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+  font-size: clamp(1.65rem, 3vw, 2.55rem);
+  line-height: 1.2;
+  margin: 0.9em 0 0.4em;
 }
 
 .markdown-body--slides .markdown-slide-page h3 {
-  font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+  font-size: clamp(1.3rem, 2.3vw, 1.9rem);
+  line-height: 1.25;
+  margin: 0.8em 0 0.35em;
 }
 
 .markdown-body--slides .markdown-slide-page p,
 .markdown-body--slides .markdown-slide-page li {
-  font-size: clamp(1rem, 1.35vw, 1.25rem);
-  line-height: 1.6;
+  font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+  line-height: 1.55;
+}
+
+.markdown-body--slides .markdown-slide-page p {
+  margin: 0 0 0.75em;
+}
+
+.markdown-body--slides .markdown-slide-page ul,
+.markdown-body--slides .markdown-slide-page ol {
+  margin: 0.35em 0 0.9em;
+  padding-left: 1.35em;
+}
+
+.markdown-body--slides .markdown-slide-page li {
+  margin: 0.35em 0;
+}
+
+.markdown-body--slides .markdown-slide-page li::marker {
+  color: var(--color-gh-text-secondary);
+}
+
+.markdown-body--slides .markdown-slide-page strong {
+  color: var(--color-gh-text);
+  font-weight: 650;
+}
+
+.markdown-body--slides .markdown-slide-page blockquote {
+  margin: 0.9em 0;
+  padding: 0.7em 1em;
+  border-left: 4px solid var(--color-gh-border);
+  background: var(--color-gh-bg-secondary);
+  border-radius: 0 8px 8px 0;
+  color: var(--color-gh-text-secondary);
+}
+
+.markdown-body--slides .markdown-slide-page blockquote p {
+  margin-bottom: 0.35em;
+}
+
+.markdown-body--slides .markdown-slide-page blockquote p:last-child {
+  margin-bottom: 0;
+}
+
+/* Tables: readable deck tables, scroll if needed */
+.markdown-body--slides .markdown-slide-page table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+  line-height: 1.4;
+  margin: 0.85em 0 1.1em;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.markdown-body--slides .markdown-slide-page thead {
+  background: var(--color-gh-bg-secondary);
+}
+
+.markdown-body--slides .markdown-slide-page th,
+.markdown-body--slides .markdown-slide-page td {
+  border: 1px solid var(--color-gh-border);
+  padding: 0.55em 0.8em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body--slides .markdown-slide-page th {
+  font-weight: 650;
+  color: var(--color-gh-text);
+}
+
+.markdown-body--slides .markdown-slide-page tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--color-gh-bg-secondary) 55%, transparent);
+}
+
+/* Images: centered and capped to the slide frame */
+.markdown-body--slides .markdown-slide-page img {
+  display: block;
+  max-width: min(100%, 980px);
+  max-height: min(62vh, 620px);
+  max-height: min(62dvh, 620px);
+  width: auto;
+  height: auto;
+  margin: 0.85em auto;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--color-gh-border);
+  background: var(--color-gh-bg-secondary);
+}
+
+/* Diagrams & code: fit the slide, stay centered */
+.markdown-body--slides .markdown-slide-page .mermaid-block,
+.markdown-body--slides .markdown-slide-page .plantuml-block,
+.markdown-body--slides .markdown-slide-page .svgbob-block {
+  margin: 0.5em auto 0.75em;
+  max-width: 100%;
+}
+
+.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--constrain-height .mermaid-render,
+.markdown-body--slides .markdown-slide-page .plantuml-render,
+.markdown-body--slides .markdown-slide-page .svgbob-render {
+  max-height: min(78vh, 820px);
+  max-height: min(78dvh, 820px);
+}
+
+.markdown-body--slides .markdown-slide-page .mermaid-block .mermaid-canvas,
+.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--fit-width .mermaid-canvas {
+  width: 100%;
+}
+
+/* Do not force width/height here — normalizeMermaidSvg sets intrinsic sizing.
+   Overriding only one axis mis-scales SVG text relative to shapes. */
+.markdown-body--slides .markdown-slide-page .mermaid-block .mermaid-render svg {
+  max-width: 100%;
+  height: auto;
+}
+
+.markdown-body--slides .markdown-slide-page pre {
+  font-size: clamp(0.85rem, 1.15vw, 1.05rem);
+  line-height: 1.45;
+  max-height: min(46vh, 440px);
+  max-height: min(46dvh, 440px);
+  overflow: auto;
+  margin: 0.75em 0 1em;
 }
 
 [data-theme="dark"] .markdown-slide-page {
@@ -127,23 +276,45 @@ body,
 .markdown-slide-shell:fullscreen {
   width: 100%;
   height: 100%;
-  padding: min(2.4vw, 20px);
+  padding: min(1.2vw, 14px);
   display: flex;
   align-items: center;
   justify-content: center;
-  background: radial-gradient(circle at top, #1f2937 0%, #0b1020 62%);
+  /* Light theme: soft neutral stage (not harsh black) */
+  background:
+    radial-gradient(ellipse 90% 70% at 50% 0%, #cbd5e1 0%, transparent 55%),
+    linear-gradient(165deg, #e2e8f0 0%, #94a3b8 55%, #64748b 100%);
+}
+
+[data-theme="dark"] .markdown-slide-shell:fullscreen {
+  background:
+    radial-gradient(ellipse 90% 70% at 50% -10%, #1e293b 0%, transparent 50%),
+    linear-gradient(165deg, #0f172a 0%, #111827 55%, #0b1020 100%);
 }
 
 .markdown-slide-shell:fullscreen .markdown-slide-page {
-  width: min(96vw, 1600px);
-  height: min(96vh, 920px);
+  width: min(98vw, 1680px);
+  height: min(96vh, 980px);
   max-height: none;
-  border-radius: 14px;
+  border-radius: 8px;
+  border-color: color-mix(in oklab, var(--color-gh-border) 70%, transparent);
+  box-shadow: 0 8px 28px rgba(15, 23, 42, 0.12);
+  background: var(--color-gh-bg);
+}
+
+[data-theme="dark"] .markdown-slide-shell:fullscreen .markdown-slide-page {
+  box-shadow: 0 10px 36px rgba(0, 0, 0, 0.45);
+  border-color: color-mix(in oklab, var(--color-gh-border) 80%, transparent);
 }
 
 .markdown-slide-shell:fullscreen .markdown-slide-help-badge {
-  bottom: min(2.4vh, 20px);
-  right: min(2.4vw, 24px);
+  bottom: min(2vh, 16px);
+  right: min(2vw, 18px);
+  opacity: 0.85;
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-fullscreen-btn {
+  opacity: 0.9;
 }
 
 .markdown-slide-shell--overlay-hidden:fullscreen .markdown-slide-fullscreen-btn,
@@ -156,7 +327,33 @@ body,
 }
 
 .markdown-slide-shell:fullscreen::backdrop {
+  background: #64748b;
+}
+
+[data-theme="dark"] .markdown-slide-shell:fullscreen::backdrop {
   background: #0b1020;
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page--cover h1,
+.markdown-slide-shell:fullscreen .markdown-slide-page--cover h2 {
+  font-size: clamp(2.6rem, 5vw, 4rem);
+  letter-spacing: -0.025em;
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page blockquote {
+  border-left-width: 5px;
+  border-left-color: color-mix(in oklab, var(--color-gh-text) 35%, var(--color-gh-border));
+  background: color-mix(in oklab, var(--color-gh-bg-secondary) 88%, var(--color-gh-text) 4%);
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page th {
+  background: color-mix(in oklab, var(--color-gh-bg-secondary) 80%, var(--color-gh-text) 6%);
+}
+
+.markdown-slide-shell:fullscreen .markdown-slide-page img {
+  max-height: min(70vh, 720px);
+  max-height: min(70dvh, 720px);
+  border-radius: 8px;
 }
 
 .markdown-body .mermaid-block .mermaid-render svg {
@@ -164,6 +361,22 @@ body,
   max-width: 100%;
   height: auto;
   margin-inline: auto;
+}
+
+/* Isolate diagram labels from markdown / slides typography so htmlLabels
+   (foreignObject) and SVG text keep the metrics Mermaid laid out. */
+.markdown-body .mermaid-block .mermaid-render,
+.markdown-body .mermaid-block .mermaid-render .nodeLabel,
+.markdown-body .mermaid-block .mermaid-render .edgeLabel,
+.markdown-body .mermaid-block .mermaid-render .label,
+.markdown-body--slides .markdown-slide-page .mermaid-block p,
+.markdown-body--slides .markdown-slide-page .mermaid-block li,
+.markdown-body--slides .markdown-slide-page .mermaid-block strong {
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: inherit;
 }
 
 .markdown-body .mermaid-block .mermaid-render .nodeLabel,
@@ -174,9 +387,15 @@ body,
 
 .markdown-body .mermaid-block .mermaid-render .nodeLabel p,
 .markdown-body .mermaid-block .mermaid-render .edgeLabel p,
-.markdown-body .mermaid-block .mermaid-render .label p {
+.markdown-body .mermaid-block .mermaid-render .label p,
+.markdown-body--slides .markdown-slide-page .mermaid-block .nodeLabel p,
+.markdown-body--slides .markdown-slide-page .mermaid-block .edgeLabel p,
+.markdown-body--slides .markdown-slide-page .mermaid-block .label p {
   margin: 0 !important;
   padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
 .markdown-body .mermaid-block.mermaid-block--fit-width .mermaid-render svg {

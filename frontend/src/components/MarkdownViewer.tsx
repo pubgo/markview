@@ -15,6 +15,7 @@ import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 import { getMermaidSettings, useMermaidSettingsRevision, type MermaidSettings } from "../hooks/useMermaidSettings";
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
+import { isSlideCover } from "../utils/slideCover";
 import { TocToggle } from "./TocToggle";
 import { CopyButton } from "./CopyButton";
 import { PdfExportButton } from "./PdfExportButton";
@@ -73,6 +74,19 @@ function injectPlantUmlThemePreset(code: string, isDark: boolean): string {
       "skinparam RectangleBackgroundColor #161b22",
       "skinparam RectangleBorderColor #30363d",
       "skinparam RectangleFontColor #e6edf3",
+      // Sequence: defaults keep white participant boxes; without these,
+      // defaultFontColor (#e6edf3) becomes invisible on white fills.
+      "skinparam sequence {",
+      "  ArrowColor #58a6ff",
+      "  LifeLineBorderColor #6e7681",
+      "  LifeLineBackgroundColor transparent",
+      "  ParticipantBorderColor #8b949e",
+      "  ParticipantBackgroundColor #161b22",
+      "  ParticipantFontColor #e6edf3",
+      "  ActorBorderColor #8b949e",
+      "  ActorBackgroundColor #21262d",
+      "  ActorFontColor #e6edf3",
+      "}",
     ].join("\n")
     : [
       "skinparam shadowing false",
@@ -89,6 +103,17 @@ function injectPlantUmlThemePreset(code: string, isDark: boolean): string {
       "skinparam RectangleBackgroundColor #ffffff",
       "skinparam RectangleBorderColor #d0d7de",
       "skinparam RectangleFontColor #1f2328",
+      "skinparam sequence {",
+      "  ArrowColor #0969da",
+      "  LifeLineBorderColor #57606a",
+      "  LifeLineBackgroundColor transparent",
+      "  ParticipantBorderColor #57606a",
+      "  ParticipantBackgroundColor #ffffff",
+      "  ParticipantFontColor #1f2328",
+      "  ActorBorderColor #57606a",
+      "  ActorBackgroundColor #ffffff",
+      "  ActorFontColor #1f2328",
+      "}",
     ].join("\n");
 
   const startRe = /(\s*@start(?:uml|mindmap|wbs|gantt|salt)\b[^\n]*\n?)/i;
@@ -278,8 +303,15 @@ interface MermaidLayout {
   constrainHeight: boolean;
 }
 
-function getInlineMermaidMaxHeightPx(): number {
+function getInlineMermaidMaxHeightPx(presentation = false): number {
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 1080;
+  if (presentation) {
+    const slide = typeof document !== "undefined"
+      ? (document.querySelector(".markdown-slide-page") as HTMLElement | null)
+      : null;
+    const slideHeight = slide?.clientHeight ?? Math.round(viewportHeight * 0.78);
+    return Math.max(520, Math.min(980, Math.round(slideHeight * 0.9)));
+  }
   const cap = Math.round(viewportHeight * 0.78);
   return Math.min(960, Math.max(320, cap));
 }
@@ -324,9 +356,14 @@ function resolveMermaidLayout(
   isFullscreen: boolean,
   dimensions: MermaidDimensions | null,
   renderWidth: number,
+  presentation = false,
 ): MermaidLayout {
   if (isFullscreen) {
     return { fitToWidth: true, preserveScale: false, constrainHeight: false };
+  }
+
+  if (presentation) {
+    return { fitToWidth: true, preserveScale: false, constrainHeight: true };
   }
 
   const defaultFit = shouldFitMermaidToWidth(complexity, false);
@@ -505,11 +542,18 @@ function resolveBeautifulMermaidPalette(settings: MermaidSettings): Record<strin
   }
 }
 
+function sanitizeBeautifulMermaidSvg(svg: string): string {
+  // beautiful-mermaid always injects a Google Fonts @import for `font`.
+  // A CSS font-stack (commas) produces a broken URL and can FOUC/reflow labels.
+  return svg.replace(/@import\s+url\([^)]+\);\s*/g, "");
+}
+
 function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): string {
   const settings = getMermaidSettings();
   const palette = resolveBeautifulMermaidPalette(settings);
 
-  return renderFn(code, {
+  // Pass a single family name — stacks break the library's Google Fonts @import.
+  const svg = renderFn(code, {
     ...palette,
     transparent: false,
     interactive: true,
@@ -517,11 +561,12 @@ function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): str
     layerSpacing: settings.layerSpacing,
     thoroughness: settings.thoroughness,
     padding: settings.padding,
-    font: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif",
+    font: "system-ui",
   });
+  return sanitizeBeautifulMermaidSvg(svg);
 }
 
-function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: number): string {
+function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: number, presentation = false): string {
   try {
     const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
     const svgEl = doc.documentElement;
@@ -569,7 +614,7 @@ function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: 
     svgEl.setAttribute("preserveAspectRatio", "xMidYMin meet");
     if (layout.constrainHeight && intrinsicWidth && intrinsicHeight) {
       const maxWidthPx = Math.max(280, Math.round(renderWidthPx));
-      const maxHeightPx = getInlineMermaidMaxHeightPx();
+      const maxHeightPx = getInlineMermaidMaxHeightPx(presentation);
 
       const scaleToWidth = maxWidthPx / intrinsicWidth;
       const scaleToHeight = maxHeightPx / intrinsicHeight;
@@ -580,6 +625,11 @@ function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: 
 
       if (!Number.isFinite(scale) || scale <= 0) {
         scale = 1;
+      }
+
+      // In slides, prefer filling width unless the diagram is extremely tall.
+      if (presentation && layout.fitToWidth && scaleToWidth <= scaleToHeight * 1.35) {
+        scale = scaleToWidth;
       }
 
       const targetWidth = Math.max(1, Math.round(intrinsicWidth * scale));
@@ -638,7 +688,7 @@ async function renderMermaid(code: string, width?: number): Promise<string> {
   return result;
 }
 
-export function MermaidBlock({ code }: { code: string }) {
+export function MermaidBlock({ code, presentation = false }: { code: string; presentation?: boolean }) {
   const settingsRevision = useMermaidSettingsRevision();
   const [svg, setSvg] = useState("");
   const [renderStatus, setRenderStatus] = useState<"pending" | "rendered" | "failed">("pending");
@@ -653,7 +703,7 @@ export function MermaidBlock({ code }: { code: string }) {
     [mermaidComplexity],
   );
   const [layout, setLayout] = useState<MermaidLayout>(() => ({
-    fitToWidth: shouldFitMermaidToWidth(mermaidComplexity, false),
+    fitToWidth: shouldFitMermaidToWidth(mermaidComplexity, false) || presentation,
     preserveScale: false,
     constrainHeight: false,
   }));
@@ -750,8 +800,10 @@ export function MermaidBlock({ code }: { code: string }) {
   const resolveRenderWidth = useCallback(() => {
     const container = containerRef.current;
     const markdownBody = container?.closest(".markdown-body") as HTMLElement | null;
+    const slidePage = container?.closest(".markdown-slide-page") as HTMLElement | null;
 
     const widthCandidates = [
+      presentation ? slidePage?.clientWidth : undefined,
       container?.clientWidth,
       container?.offsetWidth,
       container?.parentElement?.clientWidth,
@@ -771,9 +823,13 @@ export function MermaidBlock({ code }: { code: string }) {
       return Math.max(baseWidth, Math.min(scaledWidth, maxWidth));
     }
 
+    if (presentation) {
+      return Math.max(baseWidth, Math.round(baseWidth * 1.02));
+    }
+
     // Inline mode: avoid complexity-based downscaling to prevent tiny wide diagrams.
     return baseWidth;
-  }, [isFullscreen, mermaidComplexity]);
+  }, [isFullscreen, mermaidComplexity, presentation]);
 
   useEffect(() => {
     let cancelled = false;
@@ -821,11 +877,17 @@ export function MermaidBlock({ code }: { code: string }) {
         }
 
         let dimensions = parseMermaidSvgDimensions(renderedSvg);
-        let nextLayout = resolveMermaidLayout(mermaidComplexity, isFullscreen, dimensions, width);
+        let nextLayout = resolveMermaidLayout(
+          mermaidComplexity,
+          isFullscreen,
+          dimensions,
+          width,
+          presentation,
+        );
 
         if (!cancelled) {
           setLayout(nextLayout);
-          setSvg(normalizeMermaidSvg(renderedSvg, nextLayout, width));
+          setSvg(normalizeMermaidSvg(renderedSvg, nextLayout, width, presentation));
           setRenderStatus("rendered");
         }
       } catch (err) {
@@ -859,7 +921,7 @@ export function MermaidBlock({ code }: { code: string }) {
       observer.disconnect();
       resizeObserver?.disconnect();
     };
-  }, [isFullscreen, mermaidComplexity, normalizedCode, resolveRenderWidth, settingsRevision]);
+  }, [isFullscreen, mermaidComplexity, normalizedCode, presentation, resolveRenderWidth, settingsRevision]);
 
   if (svg) {
     const canvasStyle = isFullscreen
@@ -1949,7 +2011,7 @@ export function MarkdownViewer({
           const isBlock = String(children).endsWith("\n");
           if (language) {
             if (language === "mermaid") {
-              return <MermaidBlock code={code} />;
+              return <MermaidBlock code={code} presentation={isSlidesView} />;
             }
             if (language === "svgbob" || language === "bob") {
               return <SvgBobBlock code={code} />;
@@ -2145,6 +2207,7 @@ export function MarkdownViewer({
 
     if (isSlidesView) {
       const currentSlide = slides[slideIndex] ?? "";
+      const cover = isSlideCover(currentSlide);
       return (
         <div
           ref={slideShellRef}
@@ -2163,7 +2226,9 @@ export function MarkdownViewer({
             {isSlidesFullscreen ? "退出全屏" : "全屏展示"}
           </button>
           <section
-            className="markdown-slide-page"
+            className={`markdown-slide-page${cover ? " markdown-slide-page--cover" : ""}`}
+            data-testid="markdown-slide-page"
+            data-slide-cover={cover ? "true" : "false"}
             onClick={handleSlidePageClick}
             title="点击空白区域可进入下一页"
           >

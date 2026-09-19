@@ -53,6 +53,31 @@ describe("MermaidBlock", () => {
     }
   });
 
+  it("passes a single system font and strips google font imports from beautiful-mermaid svg", async () => {
+    renderMermaidSVGMock.mockImplementation((_code: string, opts?: Record<string, unknown>) => {
+      expect(opts?.font).toBe("system-ui");
+      return [
+        '<svg width="200" height="100" style="--bg:#fff;--fg:#111">',
+        "<style>",
+        "@import url('https://fonts.googleapis.com/css2?family=system-ui:wght@400');",
+        "text { font-family: system-ui; }",
+        "</style>",
+        "<text>label</text>",
+        "</svg>",
+      ].join("");
+    });
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" />);
+
+    await waitFor(() => {
+      expect(container.querySelector("svg")).toBeTruthy();
+    });
+
+    expect(renderMermaidSVGMock).toHaveBeenCalled();
+    expect(container.innerHTML).not.toContain("@import");
+    expect(container.innerHTML).toContain("label");
+  });
+
   it("falls back to mermaid renderer when beautiful-mermaid fails", async () => {
     renderMermaidSVGMock.mockImplementation(() => {
       throw new Error("beautiful render failed");
@@ -170,6 +195,39 @@ describe("MermaidBlock", () => {
       expect(svg?.getAttribute("preserveAspectRatio")).toBe("xMidYMin meet");
       expect(svg?.getAttribute("style") || "").toContain("max-width:100%");
     });
+  });
+
+  it("uses presentation layout sizing for slides view", async () => {
+    vi.mocked(mermaid.render).mockResolvedValue({
+      svg: '<svg width="400" height="220"><g><text>diagram</text></g></svg>',
+      bindFunctions: undefined,
+      diagramType: "flowchart",
+    });
+
+    const slide = document.createElement("div");
+    slide.className = "markdown-slide-page";
+    Object.defineProperty(slide, "clientWidth", { configurable: true, value: 960 });
+    Object.defineProperty(slide, "clientHeight", { configurable: true, value: 700 });
+    document.body.appendChild(slide);
+
+    const host = document.createElement("div");
+    slide.appendChild(host);
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" presentation />, {
+      container: host,
+    });
+
+    await waitFor(() => {
+      const block = container.querySelector(".mermaid-block");
+      expect(block?.className).toContain("mermaid-block--fit-width");
+      expect(block?.className).toContain("mermaid-block--constrain-height");
+      const svg = container.querySelector("svg");
+      expect(svg).toBeTruthy();
+      const width = parseFloat(svg?.getAttribute("width") || "0");
+      expect(width).toBeGreaterThanOrEqual(400);
+    });
+
+    slide.remove();
   });
 
   it("does not show image copy button when rendering fails", async () => {
