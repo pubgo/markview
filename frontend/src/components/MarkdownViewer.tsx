@@ -74,6 +74,19 @@ function injectPlantUmlThemePreset(code: string, isDark: boolean): string {
       "skinparam RectangleBackgroundColor #161b22",
       "skinparam RectangleBorderColor #30363d",
       "skinparam RectangleFontColor #e6edf3",
+      // Sequence: defaults keep white participant boxes; without these,
+      // defaultFontColor (#e6edf3) becomes invisible on white fills.
+      "skinparam sequence {",
+      "  ArrowColor #58a6ff",
+      "  LifeLineBorderColor #6e7681",
+      "  LifeLineBackgroundColor transparent",
+      "  ParticipantBorderColor #8b949e",
+      "  ParticipantBackgroundColor #161b22",
+      "  ParticipantFontColor #e6edf3",
+      "  ActorBorderColor #8b949e",
+      "  ActorBackgroundColor #21262d",
+      "  ActorFontColor #e6edf3",
+      "}",
     ].join("\n")
     : [
       "skinparam shadowing false",
@@ -90,6 +103,17 @@ function injectPlantUmlThemePreset(code: string, isDark: boolean): string {
       "skinparam RectangleBackgroundColor #ffffff",
       "skinparam RectangleBorderColor #d0d7de",
       "skinparam RectangleFontColor #1f2328",
+      "skinparam sequence {",
+      "  ArrowColor #0969da",
+      "  LifeLineBorderColor #57606a",
+      "  LifeLineBackgroundColor transparent",
+      "  ParticipantBorderColor #57606a",
+      "  ParticipantBackgroundColor #ffffff",
+      "  ParticipantFontColor #1f2328",
+      "  ActorBorderColor #57606a",
+      "  ActorBackgroundColor #ffffff",
+      "  ActorFontColor #1f2328",
+      "}",
     ].join("\n");
 
   const startRe = /(\s*@start(?:uml|mindmap|wbs|gantt|salt)\b[^\n]*\n?)/i;

@@ -154,6 +154,33 @@ describe("PlantUmlBlock", () => {
         const body = String(fetchMock.mock.calls[0]?.[1]?.body ?? "");
         expect(body).toContain("skinparam shadowing false");
         expect(body).toContain("skinparam defaultFontName");
+        expect(body).toContain("skinparam sequence {");
+        expect(body).toContain("ParticipantFontColor");
+        expect(body).toContain("LifeLineBorderColor");
+    });
+
+    it("injects dark sequence participant colors that contrast with box fills", async () => {
+        document.documentElement.setAttribute("data-theme", "dark");
+        const fetchMock = vi.fn().mockResolvedValue({
+            ok: true,
+            status: 200,
+            text: vi.fn().mockResolvedValue('<svg viewBox="0 0 100 60"><text>ok</text></svg>'),
+        });
+        vi.stubGlobal("fetch", fetchMock);
+
+        render(<PlantUmlBlock code={"@startuml\nactor User\nparticipant markview\nUser -> markview: hi\n@enduml"} />);
+
+        await waitFor(() => {
+            expect(screen.getByRole("img", { name: "PlantUML diagram" })).toBeInTheDocument();
+        });
+
+        const body = String(fetchMock.mock.calls[0]?.[1]?.body ?? "");
+        expect(body).toContain("ParticipantBackgroundColor #161b22");
+        expect(body).toContain("ParticipantFontColor #e6edf3");
+        expect(body).toContain("LifeLineBorderColor #6e7681");
+        expect(body).toContain("ActorFontColor #e6edf3");
+
+        document.documentElement.removeAttribute("data-theme");
     });
 
     it("keeps user custom skinparam without injecting preset", async () => {
