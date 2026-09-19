@@ -147,6 +147,44 @@ describe("MarkdownViewer slides mode", () => {
         });
     });
 
+    it("renders tables and mermaid blocks inside slides pages", async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchFileContent).mockResolvedValue({
+            content: `# 表\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n---\n\n# 图\n\n\`\`\`mermaid\ngraph TD; A-->B\n\`\`\`\n`,
+            baseDir: "/tmp",
+        });
+
+        render(
+            <MarkdownViewer
+                fileId="file-1"
+                fileName="media.md"
+                revision={0}
+                onFileOpened={() => { }}
+                onHeadingsChange={() => { }}
+                isTocOpen={false}
+                onTocToggle={() => { }}
+                onRemoveFile={() => { }}
+                isWide={false}
+            />,
+        );
+
+        await screen.findByText("表");
+        await user.click(screen.getByRole("button", { name: "Slides" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page.querySelector("table")).toBeTruthy();
+            expect(screen.getByText("1")).toBeInTheDocument();
+        });
+
+        await user.click(screen.getByRole("button", { name: "下一页" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page.querySelector(".mermaid-block, [data-mermaid-render-status]")).toBeTruthy();
+        });
+    });
+
     it("supports keyboard navigation in slides mode", async () => {
         const user = userEvent.setup();
 

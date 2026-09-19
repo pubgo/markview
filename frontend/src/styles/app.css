@@ -100,12 +100,11 @@ body,
   background: var(--color-gh-bg);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
   padding: clamp(28px, 4vw, 56px) clamp(32px, 5vw, 64px);
-  display: flex;
-  flex-direction: column;
-  justify-content: flex-start;
 }
 
 .markdown-slide-page--cover {
+  display: flex;
+  flex-direction: column;
   justify-content: center;
   text-align: center;
 }
@@ -184,6 +183,78 @@ body,
 
 .markdown-body--slides .markdown-slide-page blockquote p:last-child {
   margin-bottom: 0;
+}
+
+/* Tables: readable deck tables, scroll if needed */
+.markdown-body--slides .markdown-slide-page table {
+  width: 100%;
+  max-width: 100%;
+  border-collapse: collapse;
+  font-size: clamp(0.95rem, 1.35vw, 1.2rem);
+  line-height: 1.4;
+  margin: 0.85em 0 1.1em;
+  overflow: hidden;
+  border-radius: 8px;
+}
+
+.markdown-body--slides .markdown-slide-page thead {
+  background: var(--color-gh-bg-secondary);
+}
+
+.markdown-body--slides .markdown-slide-page th,
+.markdown-body--slides .markdown-slide-page td {
+  border: 1px solid var(--color-gh-border);
+  padding: 0.55em 0.8em;
+  text-align: left;
+  vertical-align: top;
+}
+
+.markdown-body--slides .markdown-slide-page th {
+  font-weight: 650;
+  color: var(--color-gh-text);
+}
+
+.markdown-body--slides .markdown-slide-page tbody tr:nth-child(even) {
+  background: color-mix(in oklab, var(--color-gh-bg-secondary) 55%, transparent);
+}
+
+/* Images: centered and capped to the slide frame */
+.markdown-body--slides .markdown-slide-page img {
+  display: block;
+  max-width: min(100%, 920px);
+  max-height: min(48vh, 460px);
+  max-height: min(48dvh, 460px);
+  width: auto;
+  height: auto;
+  margin: 0.85em auto;
+  object-fit: contain;
+  border-radius: 10px;
+  border: 1px solid var(--color-gh-border);
+  background: var(--color-gh-bg-secondary);
+}
+
+/* Diagrams & code: fit the slide, stay centered */
+.markdown-body--slides .markdown-slide-page .mermaid-block,
+.markdown-body--slides .markdown-slide-page .plantuml-block,
+.markdown-body--slides .markdown-slide-page .svgbob-block {
+  margin: 0.75em auto 1em;
+  max-width: 100%;
+}
+
+.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--constrain-height .mermaid-render,
+.markdown-body--slides .markdown-slide-page .plantuml-render,
+.markdown-body--slides .markdown-slide-page .svgbob-render {
+  max-height: min(50vh, 480px);
+  max-height: min(50dvh, 480px);
+}
+
+.markdown-body--slides .markdown-slide-page pre {
+  font-size: clamp(0.85rem, 1.15vw, 1.05rem);
+  line-height: 1.45;
+  max-height: min(46vh, 440px);
+  max-height: min(46dvh, 440px);
+  overflow: auto;
+  margin: 0.75em 0 1em;
 }
 
 [data-theme="dark"] .markdown-slide-page {
