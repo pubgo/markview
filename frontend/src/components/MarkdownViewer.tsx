@@ -566,7 +566,7 @@ function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: 
         ? "height:auto;max-width:none;"
         : "height:auto;max-width:100%;";
 
-    svgEl.setAttribute("preserveAspectRatio", "xMinYMin meet");
+    svgEl.setAttribute("preserveAspectRatio", "xMidYMin meet");
     if (layout.constrainHeight && intrinsicWidth && intrinsicHeight) {
       const maxWidthPx = Math.max(280, Math.round(renderWidthPx));
       const maxHeightPx = getInlineMermaidMaxHeightPx();
@@ -868,9 +868,10 @@ export function MermaidBlock({ code }: { code: string }) {
         transformOrigin: "center center",
       }
       : {
-        width: layout.fitToWidth ? "100%" : "auto",
+        width: layout.fitToWidth ? "100%" : "fit-content",
         maxWidth: layout.preserveScale ? "none" : "100%",
-        transformOrigin: "top left",
+        marginInline: "auto",
+        transformOrigin: "center center",
       };
 
     const blockClassName = [
