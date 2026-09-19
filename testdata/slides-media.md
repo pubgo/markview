@@ -49,9 +49,9 @@ flowchart TB
   Raw -->|"图片 URL"| SPA
   DIAG --> MermaidUI
 
-  classDef client fill:#e8f4ff,stroke:#3b82f6,stroke-width:1.5px,color:#0f172a
-  classDef server fill:#ecfdf5,stroke:#10b981,stroke-width:1.5px,color:#064e3b
-  classDef docs fill:#fff7ed,stroke:#f59e0b,stroke-width:1.5px,color:#7c2d12
+  classDef client stroke:#3b82f6,stroke-width:2px
+  classDef server stroke:#10b981,stroke-width:2px
+  classDef docs stroke:#f59e0b,stroke-width:2px
 
   class SPA,Slides,MermaidUI client
   class CLI,Ignore,API,Raw server

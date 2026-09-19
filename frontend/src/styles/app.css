@@ -253,8 +253,10 @@ body,
   width: 100%;
 }
 
-.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--fit-width .mermaid-render svg {
-  width: 100%;
+/* Do not force width/height here — normalizeMermaidSvg sets intrinsic sizing.
+   Overriding only one axis mis-scales SVG text relative to shapes. */
+.markdown-body--slides .markdown-slide-page .mermaid-block .mermaid-render svg {
+  max-width: 100%;
   height: auto;
 }
 
@@ -361,6 +363,22 @@ body,
   margin-inline: auto;
 }
 
+/* Isolate diagram labels from markdown / slides typography so htmlLabels
+   (foreignObject) and SVG text keep the metrics Mermaid laid out. */
+.markdown-body .mermaid-block .mermaid-render,
+.markdown-body .mermaid-block .mermaid-render .nodeLabel,
+.markdown-body .mermaid-block .mermaid-render .edgeLabel,
+.markdown-body .mermaid-block .mermaid-render .label,
+.markdown-body--slides .markdown-slide-page .mermaid-block p,
+.markdown-body--slides .markdown-slide-page .mermaid-block li,
+.markdown-body--slides .markdown-slide-page .mermaid-block strong {
+  font-size: 16px;
+  line-height: 1.2;
+  font-weight: 400;
+  letter-spacing: normal;
+  color: inherit;
+}
+
 .markdown-body .mermaid-block .mermaid-render .nodeLabel,
 .markdown-body .mermaid-block .mermaid-render .edgeLabel,
 .markdown-body .mermaid-block .mermaid-render .label {
@@ -369,9 +387,15 @@ body,
 
 .markdown-body .mermaid-block .mermaid-render .nodeLabel p,
 .markdown-body .mermaid-block .mermaid-render .edgeLabel p,
-.markdown-body .mermaid-block .mermaid-render .label p {
+.markdown-body .mermaid-block .mermaid-render .label p,
+.markdown-body--slides .markdown-slide-page .mermaid-block .nodeLabel p,
+.markdown-body--slides .markdown-slide-page .mermaid-block .edgeLabel p,
+.markdown-body--slides .markdown-slide-page .mermaid-block .label p {
   margin: 0 !important;
   padding: 0;
+  font-size: inherit;
+  line-height: inherit;
+  color: inherit;
 }
 
 .markdown-body .mermaid-block.mermaid-block--fit-width .mermaid-render svg {

@@ -518,11 +518,18 @@ function resolveBeautifulMermaidPalette(settings: MermaidSettings): Record<strin
   }
 }
 
+function sanitizeBeautifulMermaidSvg(svg: string): string {
+  // beautiful-mermaid always injects a Google Fonts @import for `font`.
+  // A CSS font-stack (commas) produces a broken URL and can FOUC/reflow labels.
+  return svg.replace(/@import\s+url\([^)]+\);\s*/g, "");
+}
+
 function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): string {
   const settings = getMermaidSettings();
   const palette = resolveBeautifulMermaidPalette(settings);
 
-  return renderFn(code, {
+  // Pass a single family name — stacks break the library's Google Fonts @import.
+  const svg = renderFn(code, {
     ...palette,
     transparent: false,
     interactive: true,
@@ -530,8 +537,9 @@ function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): str
     layerSpacing: settings.layerSpacing,
     thoroughness: settings.thoroughness,
     padding: settings.padding,
-    font: "-apple-system, BlinkMacSystemFont, 'Segoe UI', 'Noto Sans', Helvetica, Arial, sans-serif",
+    font: "system-ui",
   });
+  return sanitizeBeautifulMermaidSvg(svg);
 }
 
 function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: number, presentation = false): string {

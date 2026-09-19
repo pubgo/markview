@@ -53,6 +53,31 @@ describe("MermaidBlock", () => {
     }
   });
 
+  it("passes a single system font and strips google font imports from beautiful-mermaid svg", async () => {
+    renderMermaidSVGMock.mockImplementation((_code: string, opts?: Record<string, unknown>) => {
+      expect(opts?.font).toBe("system-ui");
+      return [
+        '<svg width="200" height="100" style="--bg:#fff;--fg:#111">',
+        "<style>",
+        "@import url('https://fonts.googleapis.com/css2?family=system-ui:wght@400');",
+        "text { font-family: system-ui; }",
+        "</style>",
+        "<text>label</text>",
+        "</svg>",
+      ].join("");
+    });
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" />);
+
+    await waitFor(() => {
+      expect(container.querySelector("svg")).toBeTruthy();
+    });
+
+    expect(renderMermaidSVGMock).toHaveBeenCalled();
+    expect(container.innerHTML).not.toContain("@import");
+    expect(container.innerHTML).toContain("label");
+  });
+
   it("falls back to mermaid renderer when beautiful-mermaid fails", async () => {
     renderMermaidSVGMock.mockImplementation(() => {
       throw new Error("beautiful render failed");
