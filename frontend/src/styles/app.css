@@ -160,8 +160,10 @@ body,
 }
 
 .markdown-body .mermaid-block .mermaid-render svg {
+  display: block;
   max-width: 100%;
   height: auto;
+  margin-inline: auto;
 }
 
 .markdown-body .mermaid-block .mermaid-render .nodeLabel,
@@ -206,10 +208,16 @@ body,
 }
 
 .markdown-body .mermaid-block .mermaid-canvas {
-  display: block;
-  width: 100%;
+  display: flex;
+  justify-content: center;
+  width: fit-content;
   max-width: 100%;
+  margin-inline: auto;
   transform-origin: center center;
+}
+
+.markdown-body .mermaid-block.mermaid-block--fit-width .mermaid-canvas {
+  width: 100%;
 }
 
 .markdown-body .mermaid-block:fullscreen {
@@ -243,10 +251,16 @@ body,
   border-radius: 6px;
   padding: 12px;
   background: var(--color-gh-bg-secondary);
+  display: flex;
+  justify-content: safe center;
 }
 
 .markdown-body .svgbob-block .svgbob-canvas {
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   transform-origin: center center;
 }
 
@@ -297,10 +311,16 @@ body,
   border-radius: 6px;
   padding: 12px;
   background: var(--color-gh-bg-secondary);
+  display: flex;
+  justify-content: safe center;
 }
 
 .markdown-body .plantuml-block .plantuml-canvas {
-  display: inline-block;
+  display: flex;
+  justify-content: center;
+  width: fit-content;
+  max-width: 100%;
+  margin-inline: auto;
   transform-origin: center center;
 }
 

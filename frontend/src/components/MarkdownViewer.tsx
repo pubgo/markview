@@ -868,9 +868,10 @@ export function MermaidBlock({ code }: { code: string }) {
         transformOrigin: "center center",
       }
       : {
-        width: layout.fitToWidth ? "100%" : "auto",
+        width: layout.fitToWidth ? "100%" : "fit-content",
         maxWidth: layout.preserveScale ? "none" : "100%",
-        transformOrigin: "top left",
+        marginInline: "auto",
+        transformOrigin: "center center",
       };
 
     const blockClassName = [
