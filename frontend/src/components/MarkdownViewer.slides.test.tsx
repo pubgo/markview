@@ -238,6 +238,12 @@ describe("MarkdownViewer slides mode", () => {
 
         await user.click(screen.getByRole("button", { name: "全屏展示" }));
         expect(requestFullscreenMock).toHaveBeenCalledOnce();
+
+        document.dispatchEvent(new Event("fullscreenchange"));
+        await waitFor(() => {
+            const shell = screen.getByTestId("markdown-slide-shell");
+            expect(shell.className).toContain("markdown-slide-shell--fullscreen");
+        });
     });
 
     it("goes to next slide when clicking slide body", async () => {
