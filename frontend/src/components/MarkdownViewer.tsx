@@ -15,6 +15,7 @@ import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 import { getMermaidSettings, useMermaidSettingsRevision, type MermaidSettings } from "../hooks/useMermaidSettings";
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
+import { isSlideCover } from "../utils/slideCover";
 import { TocToggle } from "./TocToggle";
 import { CopyButton } from "./CopyButton";
 import { PdfExportButton } from "./PdfExportButton";
@@ -2145,6 +2146,7 @@ export function MarkdownViewer({
 
     if (isSlidesView) {
       const currentSlide = slides[slideIndex] ?? "";
+      const cover = isSlideCover(currentSlide);
       return (
         <div
           ref={slideShellRef}
@@ -2163,7 +2165,9 @@ export function MarkdownViewer({
             {isSlidesFullscreen ? "退出全屏" : "全屏展示"}
           </button>
           <section
-            className="markdown-slide-page"
+            className={`markdown-slide-page${cover ? " markdown-slide-page--cover" : ""}`}
+            data-testid="markdown-slide-page"
+            data-slide-cover={cover ? "true" : "false"}
             onClick={handleSlidePageClick}
             title="点击空白区域可进入下一页"
           >

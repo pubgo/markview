@@ -107,6 +107,46 @@ describe("MarkdownViewer slides mode", () => {
         });
     });
 
+    it("marks short title slides as covers and list slides as content", async () => {
+        const user = userEvent.setup();
+        vi.mocked(fetchFileContent).mockResolvedValue({
+            content: `# 封面\n\n副标题\n\n---\n\n# 要点\n\n- 第一条\n- 第二条\n`,
+            baseDir: "/tmp",
+        });
+
+        render(
+            <MarkdownViewer
+                fileId="file-1"
+                fileName="talk.md"
+                revision={0}
+                onFileOpened={() => { }}
+                onHeadingsChange={() => { }}
+                isTocOpen={false}
+                onTocToggle={() => { }}
+                onRemoveFile={() => { }}
+                isWide={false}
+            />,
+        );
+
+        await screen.findByText("副标题");
+        await user.click(screen.getByRole("button", { name: "Slides" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page).toHaveAttribute("data-slide-cover", "true");
+            expect(page.className).toContain("markdown-slide-page--cover");
+        });
+
+        await user.click(screen.getByRole("button", { name: "下一页" }));
+
+        await waitFor(() => {
+            const page = screen.getByTestId("markdown-slide-page");
+            expect(page).toHaveAttribute("data-slide-cover", "false");
+            expect(page.className).not.toContain("markdown-slide-page--cover");
+            expect(screen.getByText("第一条")).toBeInTheDocument();
+        });
+    });
+
     it("supports keyboard navigation in slides mode", async () => {
         const user = userEvent.setup();
 

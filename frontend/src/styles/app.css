@@ -99,25 +99,91 @@ body,
   border-radius: 12px;
   background: var(--color-gh-bg);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
-  padding: clamp(20px, 3vw, 42px);
+  padding: clamp(28px, 4vw, 56px) clamp(32px, 5vw, 64px);
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+}
+
+.markdown-slide-page--cover {
+  justify-content: center;
+  text-align: center;
+}
+
+.markdown-slide-page--cover h1,
+.markdown-slide-page--cover h2 {
+  margin-top: 0;
+}
+
+.markdown-slide-page--cover p {
+  margin-inline: auto;
+  max-width: 36em;
+  color: var(--color-gh-text-secondary);
 }
 
 .markdown-body--slides .markdown-slide-page h1 {
-  font-size: clamp(2rem, 4vw, 3.2rem);
+  font-size: clamp(2.25rem, 4.4vw, 3.5rem);
+  line-height: 1.15;
+  letter-spacing: -0.02em;
+  margin: 0 0 0.45em;
 }
 
 .markdown-body--slides .markdown-slide-page h2 {
-  font-size: clamp(1.5rem, 2.8vw, 2.4rem);
+  font-size: clamp(1.65rem, 3vw, 2.55rem);
+  line-height: 1.2;
+  margin: 0.9em 0 0.4em;
 }
 
 .markdown-body--slides .markdown-slide-page h3 {
-  font-size: clamp(1.2rem, 2.2vw, 1.8rem);
+  font-size: clamp(1.3rem, 2.3vw, 1.9rem);
+  line-height: 1.25;
+  margin: 0.8em 0 0.35em;
 }
 
 .markdown-body--slides .markdown-slide-page p,
 .markdown-body--slides .markdown-slide-page li {
-  font-size: clamp(1rem, 1.35vw, 1.25rem);
-  line-height: 1.6;
+  font-size: clamp(1.05rem, 1.5vw, 1.35rem);
+  line-height: 1.55;
+}
+
+.markdown-body--slides .markdown-slide-page p {
+  margin: 0 0 0.75em;
+}
+
+.markdown-body--slides .markdown-slide-page ul,
+.markdown-body--slides .markdown-slide-page ol {
+  margin: 0.35em 0 0.9em;
+  padding-left: 1.35em;
+}
+
+.markdown-body--slides .markdown-slide-page li {
+  margin: 0.35em 0;
+}
+
+.markdown-body--slides .markdown-slide-page li::marker {
+  color: var(--color-gh-text-secondary);
+}
+
+.markdown-body--slides .markdown-slide-page strong {
+  color: var(--color-gh-text);
+  font-weight: 650;
+}
+
+.markdown-body--slides .markdown-slide-page blockquote {
+  margin: 0.9em 0;
+  padding: 0.7em 1em;
+  border-left: 4px solid var(--color-gh-border);
+  background: var(--color-gh-bg-secondary);
+  border-radius: 0 8px 8px 0;
+  color: var(--color-gh-text-secondary);
+}
+
+.markdown-body--slides .markdown-slide-page blockquote p {
+  margin-bottom: 0.35em;
+}
+
+.markdown-body--slides .markdown-slide-page blockquote p:last-child {
+  margin-bottom: 0;
 }
 
 [data-theme="dark"] .markdown-slide-page {
