@@ -97,6 +97,8 @@ $ markview notes.md --target notes      # 打开到 http://localhost:6275/notes
 
 使用 `--watch`（`-w`）注册通配模式。匹配到的文件会自动打开，匹配目录也会被持续监听以发现新文件。
 
+展开与自动发现会遵守项目内的 `.gitignore`（含嵌套规则），并始终跳过 `.git/`；通过命令行显式指定的文件不受此过滤。
+
 ```console
 $ markview --watch '**/*.md'                          # 递归监听并打开所有 .md
 $ markview --watch 'docs/**/*.md' --target docs       # 监听 docs 目录并放入 docs 分组
