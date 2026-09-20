@@ -30,6 +30,7 @@ flowchart LR
 | 模块            | 路径                                         | 职责                                       |
 | --------------- | -------------------------------------------- | ------------------------------------------ |
 | 命令行入口      | `cmd/root.go`                                | 参数解析、单实例探测、前后台启动、状态命令 |
+| 静态站点构建    | `cmd/build.go`、`internal/build/`            | `markview build` 扫描 Markdown 并输出自包含 SPA |
 | 服务状态与路由  | `internal/server/server.go`                  | HTTP 接口、事件流、文件监听、状态管理      |
 | 链接/大纲图构建 | `internal/server/graph.go`                   | 从 Markdown 内容提取关系并输出图数据       |
 | 分组名规范      | `internal/server/group.go`                   | 分组名归一化与安全校验                     |

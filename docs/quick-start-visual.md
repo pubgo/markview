@@ -54,12 +54,32 @@ $ markview -p 16275 -b localhost --no-open testdata/basic.md testdata/mermaid-fl
 - `重力视图`
 - `缩进树`
 
-### 3.1 思维导图视图
+### 3.1 结构视图说明
 
-- 点击导图节点可在右侧打开对应文档
-- 适合做“文件关系总览”
+顶部图谱相关模式包括链接关系图、标题结构图、重力视图、缩进树等，用于文件/标题关系总览；点击节点可在右侧打开对应文档。
 
-## 4) 常见问题（看不到效果时）
+（历史上独立的「思维导图」开关已并入上述大纲/结构视图，不再单独提供 Mindmap 产品入口。）
+
+## 4) 导出与静态站（可选）
+
+- 右侧工具列 **PDF**：导出当前文档；顶栏可合并导出当前分组。
+- 命令行静态站：
+
+```console
+$ markview build testdata -o /tmp/markview-static-demo
+```
+
+详见 [export-and-static.md](export-and-static.md)。
+
+也可以打开 `testdata/slides-media.md` 专门体验表格 / 图片 / Mermaid 的 Slides 排版。
+
+## 5) 下一步阅读
+
+- [STRATEGY.md](../STRATEGY.md) · [strategy-status.md](strategy-status.md)
+- [markdown-capabilities.md](markdown-capabilities.md)
+- [design.md](design.md) · [architecture.md](architecture.md)
+
+## 6) 常见问题（看不到效果时）
 
 ### Q1：页面里看不到图谱相关按钮
 
@@ -87,12 +107,3 @@ $ markview --shutdown -p 16275
 - `markview 0.18.1 (HEAD)`
 
 如果显示的 revision 与当前仓库 `git rev-parse --short HEAD` 不一致，说明你正在访问的不是这次构建出的服务实例。
-
-## 5) 下一步建议
-
-体验完成后，建议再看两份文档：
-
-- `docs/markdown-capabilities.md`（功能清单）
-- `docs/design.md`（设计意图与演进思路）
-
-这样能更快理解“功能有什么”与“为什么这样设计”。

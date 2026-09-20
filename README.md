@@ -22,23 +22,28 @@
 
 - 支持 GitHub 风格 Markdown（表格、任务列表、脚注等）
 - 代码高亮（[Shiki](https://shiki.style/)）
-- [Mermaid](https://mermaid.js.org/) 图表渲染
+- [Mermaid](https://mermaid.js.org/) / [PlantUML](https://plantuml.com/)（经 [Kroki](https://kroki.io/)）/ SvgBob 图表渲染
 - LaTeX 数学公式（[KaTeX](https://katex.org/)）
 - <img src="images/icons/theme-light.svg" width="16" height="16" alt="浅色主题"> 深色 / <img src="images/icons/theme-dark.svg" width="16" height="16" alt="深色主题"> 浅色主题切换
 - <img src="images/icons/group.svg" width="16" height="16" alt="分组"> 文件分组管理
 - <img src="images/icons/toc.svg" width="16" height="16" alt="目录"> 文档目录面板
 - <img src="images/icons/view-flat.svg" width="16" height="16" alt="平铺"> 平铺 / <img src="images/icons/view-tree.svg" width="16" height="16" alt="树形"> 树形侧边栏（支持拖拽排序与文件搜索）
-- 思维导图与图谱视图：支持文档结构可视化与联动阅读定位
+- 全局全文搜索（`⌘/Ctrl+Shift+F`）
+- 文档链接图谱与大纲视图（链接图 / 结构图 / 重力视图 / 缩进树）
 - YAML 前置元数据展示（可折叠元数据区域）
 - MDX 支持（渲染 Markdown，去除 `import`/`export`，转义 JSX 标签）
 - <img src="images/icons/width-expand.svg" width="16" height="16" alt="宽布局"> 宽版 / <img src="images/icons/width-compress.svg" width="16" height="16" alt="窄布局"> 窄版阅读宽度切换
 - <img src="images/icons/raw.svg" width="16" height="16" alt="原文"> 原始 Markdown 视图
-- 内置 Slides 演示模式（`---` 分页、键盘翻页、全屏演示）
+- 内置 Slides 演示模式（`---` 分页、封面居中、全屏舞台、键盘翻页）
+- 应用内 PDF 导出（单文档 / 分组合并；跟随明暗主题）
+- `markview build`：将 Markdown 打包为可托管的静态站点
 - <img src="images/icons/copy.svg" width="16" height="16" alt="复制"> 内容复制（Markdown / 文本 / HTML）
 - <img src="images/icons/restart.svg" width="16" height="16" alt="重启"> 服务重启并保留会话
 - 自动会话备份与恢复
 - 支持从操作系统文件管理器拖拽添加文件（内容以内存形式加载，拖拽文件不支持实时刷新）
 - 对通过命令行打开的文件支持保存后实时刷新
+
+> 产品目标与投资方向见 [STRATEGY.md](STRATEGY.md)；落地现状见 [docs/strategy-status.md](docs/strategy-status.md)。
 
 ## 安装
 
@@ -164,6 +169,30 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 
 > [!TIP]
 > 全屏状态下，演示控件会在短暂无操作后自动隐藏；移动鼠标、触控或按键会再次显示。
+
+试用媒体页示例：`testdata/slides-media.md`。
+
+### 导出 PDF
+
+- **单文档**：右侧工具列 PDF 按钮，导出当前渲染结果（一页、不截断）。
+- **分组合并**：将当前分组内文档按顺序合并为一个 PDF。
+- 导出背景跟随当前明暗主题；图表需已渲染成功（PlantUML 需能访问 Kroki）。
+
+详细说明与边界见 [docs/export-and-static.md](docs/export-and-static.md)。
+
+### 静态站点（`markview build`）
+
+把目录或文件列表打成自包含静态站（无需再跑预览服务）：
+
+```console
+$ markview build docs/                 # 默认输出 docs-static/
+$ markview build docs/ -o dist/        # 指定输出目录
+$ markview build README.md docs/a.md   # 仅打包列出的文件
+```
+
+产物可用任意静态服务器打开，也可上传到 GitHub Pages 等托管（需自行配置 Actions；仓库未内置官方 Pages workflow）。
+
+与在线会话的差异、Pages 注意点见 [docs/export-and-static.md](docs/export-and-static.md)。
 
 ### 启动与停止
 
@@ -309,7 +338,7 @@ $ goreleaser release --snapshot --clean --skip=publish
 
 ## 可选：Markdown PPT 导出（Marp）
 
-如果你需要导出离线讲稿（PDF/PPTX），仓库提供了 `docs/slides/` 的 Marp 模板与主题，可通过 Makefile 预览和导出：
+应用内 **Slides** 适合现场演示；若需要离线讲稿（PDF/PPTX），仓库另提供 `docs/slides/` 的 Marp 模板与主题（与内置演示是两条路径）：
 
 ```console
 $ make slides-preview
@@ -328,20 +357,23 @@ $ make slides-pptx
 $ make slides-pdf SLIDES_FILE=docs/slides/my-talk.md
 ```
 
-更多模板说明见：`docs/slides/README.md`
+更多模板说明见：`docs/slides/README.md`。应用内 PDF / `markview build` 见 [docs/export-and-static.md](docs/export-and-static.md)。
 
 ## 中文文档
 
 为了便于本地阅读和二次开发，仓库提供了以下中文文档：
 
+- [产品策略](STRATEGY.md) · [策略落地现状](docs/strategy-status.md)
 - [可视化快速上手](docs/quick-start-visual.md)
 - [设计文档](docs/design.md)
 - [架构文档](docs/architecture.md)
 - [Markdown 能力清单](docs/markdown-capabilities.md)
+- [导出与静态发布](docs/export-and-static.md)（PDF / `build` / Pages）
 - [全局搜索功能说明](docs/global-search.md)
 
 ### 中文速览
 
+- 定位：本地优先的 Markdown **只读展出面**（阅读、演示、导出）；编辑交给外部工具 / agent
 - 架构形态：Go 后端 + React 前端，最终以单二进制分发
 - 运行机制：命令行单实例复用 + HTTP 接口 + 服务端事件流实时刷新
 - 状态策略：服务端状态中心（groups/files/patterns）+ XDG 会话备份恢复
