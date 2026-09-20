@@ -57,3 +57,8 @@ _Why it serves the approach:_ Agent-written docs are diagram-heavy; display qual
 
 - In-app Markdown editing (writing stays with agents / external editors)
 - Cloud collaborative editing as a core product bet
+
+## Related docs
+
+- [落地现状审计](docs/strategy-status.md)
+- [导出与静态发布](docs/export-and-static.md)
