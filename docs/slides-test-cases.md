@@ -23,12 +23,14 @@ $ pnpm test -- --run src/utils/slideNotes.test.ts src/components/MarkdownViewer.
 
 | 文件 | 用途 |
 | ---- | ---- |
+| `testdata/slides-complete.md` | **完整示例**（封面 / 备注 / 双栏 / 表 / Mermaid / 图 / 快捷键） |
 | `testdata/slides-media.md` | 表格 / Mermaid / 图片 + 首页备注样例 |
-| `testdata/slides-notes.md` | 演讲者备注边界场景（多注释、空注释、无备注页、封面） |
+| `testdata/slides-notes.md` | 演讲者备注边界场景（多注释、空注释、无备注页、封面、双栏） |
 
 启动示例：
 
 ```console
+$ markview testdata/slides-complete.md
 $ markview testdata/slides-notes.md testdata/slides-media.md
 ```
 

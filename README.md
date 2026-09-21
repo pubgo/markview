@@ -198,7 +198,18 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 > [!TIP]
 > 全屏状态下，演示控件会在短暂无操作后自动隐藏；移动鼠标、触控或按键会再次显示。
 
-试用媒体页示例：`testdata/slides-media.md`。演讲者备注边界夹具：`testdata/slides-notes.md`。验收清单见 [docs/slides-test-cases.md](docs/slides-test-cases.md)。
+**完整演示稿（推荐先看）：** [`testdata/slides-complete.md`](testdata/slides-complete.md)  
+覆盖封面、备注、`|||` 双栏/三栏、表格、Mermaid、图片、代码块内分隔符，以及快捷键说明页。
+
+专项夹具：
+
+| 文件 | 内容 |
+| ---- | ---- |
+| [`testdata/slides-complete.md`](testdata/slides-complete.md) | 内置 Slides 能力总览 |
+| [`testdata/slides-media.md`](testdata/slides-media.md) | 表格 / Mermaid / 图片 |
+| [`testdata/slides-notes.md`](testdata/slides-notes.md) | 备注边界 + 双栏 |
+
+验收清单：[docs/slides-test-cases.md](docs/slides-test-cases.md)。离线 Marp 导出模板见 [docs/slides/](docs/slides/)。
 
 ### 导出 PDF
 

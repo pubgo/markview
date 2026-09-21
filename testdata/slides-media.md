@@ -1,6 +1,7 @@
 # Slides 媒体页示例
 
-用右侧 **Slides** 按钮查看表格、图片与 Mermaid。
+用右侧 **Slides** 查看表格、图片与 Mermaid。  
+能力总览见 [`slides-complete.md`](slides-complete.md)。
 
 <!-- 开场：点右侧 Slides，按 F 全屏；N 可开关本备注 -->
 

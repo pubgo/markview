@@ -1,6 +1,7 @@
 # Slides 演讲者备注 — 手工验收夹具
 
-配合 [docs/slides-test-cases.md](../docs/slides-test-cases.md) 第 3 节使用。右侧点 **Slides** 进入演示。
+配合 [docs/slides-test-cases.md](../docs/slides-test-cases.md) 第 3 节使用。右侧点 **Slides** 进入演示。  
+完整能力演示见 [`slides-complete.md`](slides-complete.md)。
 
 ---
 
