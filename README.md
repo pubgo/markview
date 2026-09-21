@@ -182,7 +182,7 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 > [!TIP]
 > 全屏状态下，演示控件会在短暂无操作后自动隐藏；移动鼠标、触控或按键会再次显示。
 
-试用媒体页示例：`testdata/slides-media.md`。
+试用媒体页示例：`testdata/slides-media.md`。演讲者备注边界夹具：`testdata/slides-notes.md`。验收清单见 [docs/slides-test-cases.md](docs/slides-test-cases.md)。
 
 ### 导出 PDF
 

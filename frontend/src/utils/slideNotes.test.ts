@@ -10,9 +10,7 @@ describe("extractSlideNotes", () => {
   });
 
   it("extracts a single HTML comment as notes", () => {
-    expect(
-      extractSlideNotes("# 封面\n\n<!-- 强调本地优先，不要展开编辑器对比 -->\n"),
-    ).toEqual({
+    expect(extractSlideNotes("# 封面\n\n<!-- 强调本地优先，不要展开编辑器对比 -->\n")).toEqual({
       body: "# 封面",
       notes: "强调本地优先，不要展开编辑器对比",
     });
