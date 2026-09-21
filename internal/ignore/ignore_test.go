@@ -91,3 +91,20 @@ func TestRoot_FindsGitDir(t *testing.T) {
 		t.Fatalf("Root=%q, want %q", got, dir)
 	}
 }
+
+func TestRoot_FallsBackToGitignore(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "node_modules", "pkg"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	got := ignore.Root(filepath.Join(dir, "node_modules", "pkg"))
+	if got != dir {
+		t.Fatalf("Root=%q, want %q", got, dir)
+	}
+	if !ignore.Ignored(got, filepath.Join(dir, "node_modules", "pkg", "x.md"), false) {
+		t.Fatal("expected node_modules file to be ignored via fallback root")
+	}
+}

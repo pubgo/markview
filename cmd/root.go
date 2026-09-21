@@ -21,6 +21,7 @@ import (
 
 	"github.com/k1LoW/donegroup"
 	"github.com/kooksee/markview/internal/backup"
+	"github.com/kooksee/markview/internal/ignore"
 	"github.com/kooksee/markview/internal/logfile"
 	"github.com/kooksee/markview/internal/server"
 	"github.com/kooksee/markview/version"
@@ -52,6 +53,7 @@ var (
 	clearBackup                  bool
 	jsonOutput                   bool
 	dangerouslyAllowRemoteAccess bool
+	noIgnore                     bool
 )
 
 var rootCmd = &cobra.Command{
@@ -138,7 +140,10 @@ Glob Patterns:
 	$ markview --unwatch '**/*.md'            Stop watching a pattern
 
   Expansion respects project .gitignore (and always skips .git/). Concrete
-  file arguments (no glob chars) still open those files directly.
+  file arguments are also filtered by .gitignore by default (use --no-ignore
+  to open ignored paths). Prefer quoting globs so markview can watch the tree:
+  markview '**/*.md'. Unquoted markview **/*.md is expanded by the shell first;
+  ignored paths among those files are still skipped.
 
 WARNING: --bind with a non-loopback address:
 	Binding to a non-loopback address (e.g. 0.0.0.0) exposes markview to the
@@ -172,6 +177,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&statusServer, "status", false, "Show status of all running markview servers")
 	rootCmd.Flags().StringArrayVarP(&watchPatterns, "watch", "w", nil, "Glob pattern to watch for matching files (repeatable)")
 	rootCmd.Flags().StringArrayVar(&unwatchPatterns, "unwatch", nil, "Remove a watched glob pattern (repeatable)")
+	rootCmd.Flags().BoolVar(&noIgnore, "no-ignore", false, "Do not skip paths matched by project .gitignore when opening file arguments")
 	rootCmd.Flags().BoolVar(&clearBackup, "clear", false, "Clear saved session for the specified port")
 	rootCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output structured data as JSON to stdout")
 	rootCmd.Flags().BoolVar(&dangerouslyAllowRemoteAccess, "dangerously-allow-remote-access", false, "Allow remote access without authentication. Recommended only for trusted networks.")
@@ -287,6 +293,13 @@ func run(cmd *cobra.Command, args []string) error {
 	files, err := resolveFiles(fileArgs)
 	if err != nil {
 		return err
+	}
+	if !noIgnore {
+		kept, skipped := filterGitignoredFiles(files)
+		if skipped > 0 {
+			fmt.Fprintf(os.Stderr, "markview: skipped %d path(s) matched by .gitignore (use --no-ignore to keep them)\n", skipped)
+		}
+		files = kept
 	}
 
 	// When no files or patterns are specified and a server is already
@@ -473,6 +486,20 @@ func resolveFiles(args []string) ([]string, error) {
 		files = append(files, absPath)
 	}
 	return files, nil
+}
+
+// filterGitignoredFiles drops paths ignored by the nearest project .gitignore.
+// Used so shell-expanded globs like markview **/*.md still respect ignore rules.
+func filterGitignoredFiles(files []string) (kept []string, skipped int) {
+	for _, absPath := range files {
+		root := ignore.Root(filepath.Dir(absPath))
+		if ignore.Ignored(root, absPath, false) {
+			skipped++
+			continue
+		}
+		kept = append(kept, absPath)
+	}
+	return kept, skipped
 }
 
 func tryAddToExisting(addr string, files []string, patterns []string) bool {

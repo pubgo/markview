@@ -102,10 +102,13 @@ $ markview notes.md --target notes      # 打开到 http://localhost:6275/notes
 
 位置参数里若仍含通配符（`*` `?` `[`），会**自动当作 watch 模式**（与 `--watch` / `-w` 相同）。请加引号，避免 shell 先展开。
 
-匹配到的文件会自动打开，匹配目录也会被持续监听以发现新文件。展开与自动发现会遵守项目内的 `.gitignore`（含嵌套规则），并始终跳过 `.git/`；不含通配符的显式文件参数不受此过滤。
+匹配到的文件会自动打开，匹配目录也会被持续监听以发现新文件。展开与自动发现会遵守项目内的 `.gitignore`（含嵌套规则），并始终跳过 `.git/`。
+
+命令行里的普通文件参数（含 shell 展开后的路径）**默认也会跳过** `.gitignore` 命中项；若要强行打开被忽略的文件，加 `--no-ignore`。
 
 ```console
-$ markview '**/*.md'                                      # 推荐：通配即 watch
+$ markview '**/*.md'                                      # 推荐：通配即 watch（ignore 生效）
+$ markview **/*.md                                        # 无引号时由 shell 展开；被 ignore 的路径仍会跳过
 $ markview --watch '**/*.md'                              # 等价写法
 $ markview 'docs/**/*.md' --target docs                   # 监听 docs 并放入 docs 分组
 $ markview '*.md' 'docs/**/*.md'                          # 多个模式
@@ -114,7 +117,7 @@ $ markview '*.md' 'docs/**/*.md'                          # 多个模式
 通配模式不能与普通文件参数混用。`**` 表示递归目录匹配。
 
 > [!TIP]
-> 写成 `markview **/*.md`（无引号）时，shell 会先展开成大量路径并当作显式文件打开，**不会**走 `.gitignore`。请使用 `markview '**/*.md'`。
+> 仍建议写 `markview '**/*.md'`：由 markview 自己扫目录并持续监听。无引号写法也能避开 `node_modules`，但不会注册 watch，新文件不会自动加入。
 
 #### 移除监听模式
 
@@ -307,6 +310,7 @@ $ markview --status --json
 | `--no-open`    |      |           | 不自动打开浏览器           |
 | `--status`     |      |           | 查看运行中的 markview 服务 |
 | `--watch`      | `-w` |           | 监听通配模式（可重复；位置参数含通配符时也会自动走此路径） |
+| `--no-ignore`  |      |           | 打开文件参数时不过滤 `.gitignore` |
 | `--unwatch`    |      |           | 移除已监听的模式（可重复） |
 | `--shutdown`   |      |           | 关闭运行中的 markview 服务 |
 | `--restart`    |      |           | 重启运行中的 markview 服务 |

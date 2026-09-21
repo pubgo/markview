@@ -75,6 +75,32 @@ func TestPartitionCLIArgs(t *testing.T) {
 	}
 }
 
+func TestFilterGitignoredFiles(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(filepath.Join(dir, "node_modules", "pkg"), 0o700); err != nil {
+		t.Fatal(err)
+	}
+	keptPath := filepath.Join(dir, "readme.md")
+	skipPath := filepath.Join(dir, "node_modules", "pkg", "x.md")
+	if err := os.WriteFile(keptPath, []byte("# ok"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(skipPath, []byte("# skip"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	kept, skipped := filterGitignoredFiles([]string{keptPath, skipPath})
+	if skipped != 1 {
+		t.Fatalf("skipped=%d, want 1", skipped)
+	}
+	if len(kept) != 1 || kept[0] != keptPath {
+		t.Fatalf("kept=%v, want [%s]", kept, keptPath)
+	}
+}
+
 func TestRun_WatchWithArgs(t *testing.T) {
 	t.Run("with glob pattern", func(t *testing.T) {
 		watchPatterns = []string{"**/*.md"}
