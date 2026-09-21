@@ -335,4 +335,37 @@ describe("MarkdownViewer slides mode", () => {
         });
     });
 
+    it("shows slide progress that updates when navigating", async () => {
+        const user = userEvent.setup();
+
+        render(
+            <MarkdownViewer
+                fileId="file-1"
+                fileName="README.md"
+                revision={0}
+                onFileOpened={() => { }}
+                onHeadingsChange={() => { }}
+                isTocOpen={false}
+                onTocToggle={() => { }}
+                onRemoveFile={() => { }}
+                isWide={false}
+            />,
+        );
+
+        await screen.findByText("第一页内容");
+        await user.click(screen.getByRole("button", { name: "Slides" }));
+
+        const progress = await screen.findByTestId("markdown-slide-progress");
+        expect(progress).toHaveAttribute("aria-valuenow", "1");
+        expect(progress).toHaveAttribute("aria-valuemax", "2");
+        const fill = progress.querySelector(".markdown-slide-progress__fill") as HTMLElement;
+        expect(fill.style.width).toBe("50%");
+
+        await user.click(screen.getByRole("button", { name: "下一页" }));
+        await waitFor(() => {
+            expect(progress).toHaveAttribute("aria-valuenow", "2");
+            expect(fill.style.width).toBe("100%");
+        });
+    });
+
 });
