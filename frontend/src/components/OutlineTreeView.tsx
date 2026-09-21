@@ -77,20 +77,20 @@ function buildFileOutline(
             const targetColorIdx = targetFile
               ? outline.files.indexOf(targetFile) % COLORS.length
               : 0;
-            const hasTargetContent = !!(targetFile?.headings.length);
+            const hasTargetContent = !!targetFile?.headings.length;
             const targetOutline =
               hasTargetContent && !collapsedIds.has(linkId)
                 ? buildFileOutline(
-                  targetFile,
-                  outline,
-                  fileIds,
-                  fileById,
-                  targetColorIdx,
-                  new Set(visited),
-                  depth + 1,
-                  linkId,
-                  collapsedIds,
-                )
+                    targetFile,
+                    outline,
+                    fileIds,
+                    fileById,
+                    targetColorIdx,
+                    new Set(visited),
+                    depth + 1,
+                    linkId,
+                    collapsedIds,
+                  )
                 : [];
 
             linkChildren.push({
@@ -185,7 +185,11 @@ function collectDefaultCollapsedIds(outline: Outline): Set<string> {
             const targetFile = outline.files.find((f) => f.id === tid);
             if (targetFile?.headings.length) {
               ids.add(`${prefix}link_${safe(file.id)}_${j}_${safe(tid)}`);
-              collectFromFile(targetFile, `${prefix}link_${safe(file.id)}_${j}_${safe(tid)}`, visited);
+              collectFromFile(
+                targetFile,
+                `${prefix}link_${safe(file.id)}_${j}_${safe(tid)}`,
+                visited,
+              );
             }
           }
         }
@@ -409,8 +413,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
         getWidth: (node: { id: string; data?: { value?: string }; value?: string }) =>
           getNodeWidth((node.value ?? node.data?.value ?? "") as string, node.id === rootId),
         getVGap: () => 24,
-        getHGap: () =>
-          (outline?.files.length ?? 0) > MANY_FILES_THRESHOLD ? 24 : 48,
+        getHGap: () => ((outline?.files.length ?? 0) > MANY_FILES_THRESHOLD ? 24 : 48),
         animation: false,
       },
       node: {
@@ -440,9 +443,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
               ? `${collapsed ? "▶ " : "▼ "}${displayText}`
               : displayText;
           const baseSize = getNodeSize(d, isRoot);
-          const size: [number, number] = canCollapse
-            ? [baseSize[0] + 20, baseSize[1]]
-            : baseSize;
+          const size: [number, number] = canCollapse ? [baseSize[0] + 20, baseSize[1]] : baseSize;
           return {
             size,
             fill: isRoot ? rootFill : fillColor,
@@ -458,7 +459,11 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
             labelMaxWidth: 220,
             labelTextOverflow: "ellipsis",
             labelBackground: true,
-            labelBackgroundFill: canCollapse ? (isDark ? "rgba(255,255,255,0.06)" : "rgba(0,0,0,0.03)") : "transparent",
+            labelBackgroundFill: canCollapse
+              ? isDark
+                ? "rgba(255,255,255,0.06)"
+                : "rgba(0,0,0,0.03)"
+              : "transparent",
             labelPadding: direction === "left" ? [2, 0, 10, 40] : [2, 40, 10, 0],
             visibility: "visible" as const,
             cursor: canCollapse ? "pointer" : undefined,
@@ -520,7 +525,10 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
 
     const resizeObserver = new ResizeObserver(() => {
       if (containerRef.current && graphRef.current && !graphRef.current.destroyed) {
-        graphRef.current.setSize(containerRef.current.offsetWidth, containerRef.current.offsetHeight);
+        graphRef.current.setSize(
+          containerRef.current.offsetWidth,
+          containerRef.current.offsetHeight,
+        );
       }
     });
     resizeObserver.observe(containerRef.current);
@@ -610,12 +618,17 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
           type="button"
           className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
           onClick={toggleLayoutDirection}
-          title={layoutDirection === "H" ? "横向布局（文件多时较宽），点击切换为纵向" : "纵向布局（文件上下排列），点击切换为横向"}
+          title={
+            layoutDirection === "H"
+              ? "横向布局（文件多时较宽），点击切换为纵向"
+              : "纵向布局（文件上下排列），点击切换为横向"
+          }
         >
           {layoutDirection === "H" ? "横向" : "纵向"}
         </button>
         <span className="text-sm text-gh-text-secondary">
-          思维导图：以文件为根；孤节点独立成图；链接可多级展开；按文档着色；可折叠节点点击切换{embedded ? "；点击节点在右侧联动打开" : "，Ctrl/Cmd+点击打开"}
+          思维导图：以文件为根；孤节点独立成图；链接可多级展开；按文档着色；可折叠节点点击切换
+          {embedded ? "；点击节点在右侧联动打开" : "，Ctrl/Cmd+点击打开"}
         </span>
       </div>
       <div ref={containerRef} className="min-h-0 flex-1" style={{ minHeight: 300 }} />

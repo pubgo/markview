@@ -53,18 +53,15 @@ export function ZoomPanView({
     [pan.x, pan.y],
   );
 
-  const handleMouseMove = useCallback(
-    (e: React.MouseEvent) => {
-      if (panStart.current === null) return;
-      const dx = e.clientX - panStart.current.x;
-      const dy = e.clientY - panStart.current.y;
-      if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
-        justPanned.current = true;
-        setPan({ x: panStart.current.panX + dx, y: panStart.current.panY + dy });
-      }
-    },
-    [],
-  );
+  const handleMouseMove = useCallback((e: React.MouseEvent) => {
+    if (panStart.current === null) return;
+    const dx = e.clientX - panStart.current.x;
+    const dy = e.clientY - panStart.current.y;
+    if (Math.abs(dx) > 2 || Math.abs(dy) > 2) {
+      justPanned.current = true;
+      setPan({ x: panStart.current.panX + dx, y: panStart.current.panY + dy });
+    }
+  }, []);
 
   const handleMouseUp = useCallback(() => {
     panStart.current = null;

@@ -66,10 +66,11 @@ function FileItem({
   return (
     <div className="relative group/file">
       <button
-        className={`flex items-center gap-2 w-full px-3 py-2 border-none cursor-pointer text-left text-sm transition-colors duration-150 ${isActive
-          ? "bg-gh-bg-active text-gh-text font-semibold"
-          : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
-          }`}
+        className={`flex items-center gap-2 w-full px-3 py-2 border-none cursor-pointer text-left text-sm transition-colors duration-150 ${
+          isActive
+            ? "bg-gh-bg-active text-gh-text font-semibold"
+            : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
+        }`}
         onClick={() => onFileSelect(file.id)}
         title={file.uploaded ? file.name : file.path}
       >

@@ -14,15 +14,26 @@ import (
 )
 
 // Root finds the git working tree root by walking up from start for a .git
-// directory. If none is found, it returns the cleaned start path.
+// entry. If none is found, it returns the nearest ancestor that has a
+// .gitignore (or the cleaned start path if neither exists).
 func Root(start string) string {
 	cur := filepath.Clean(start)
+	fallback := ""
 	for {
-		if fi, err := os.Stat(filepath.Join(cur, ".git")); err == nil && fi.IsDir() {
+		gitPath := filepath.Join(cur, ".git")
+		if fi, err := os.Stat(gitPath); err == nil && (fi.IsDir() || fi.Mode().IsRegular()) {
 			return cur
+		}
+		if fallback == "" {
+			if _, err := os.Stat(filepath.Join(cur, ".gitignore")); err == nil {
+				fallback = cur
+			}
 		}
 		parent := filepath.Dir(cur)
 		if parent == cur {
+			if fallback != "" {
+				return fallback
+			}
 			return filepath.Clean(start)
 		}
 		cur = parent

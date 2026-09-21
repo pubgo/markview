@@ -293,7 +293,10 @@ body,
   max-width: 100%;
 }
 
-.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--constrain-height .mermaid-render,
+.markdown-body--slides
+  .markdown-slide-page
+  .mermaid-block.mermaid-block--constrain-height
+  .mermaid-render,
 .markdown-body--slides .markdown-slide-page .plantuml-render,
 .markdown-body--slides .markdown-slide-page .svgbob-render {
   max-height: min(78vh, 820px);
@@ -301,7 +304,10 @@ body,
 }
 
 .markdown-body--slides .markdown-slide-page .mermaid-block .mermaid-canvas,
-.markdown-body--slides .markdown-slide-page .mermaid-block.mermaid-block--fit-width .mermaid-canvas {
+.markdown-body--slides
+  .markdown-slide-page
+  .mermaid-block.mermaid-block--fit-width
+  .mermaid-canvas {
   width: 100%;
 }
 
@@ -710,11 +716,11 @@ body,
   border-left: 4px solid var(--borderColor-default);
 }
 
-.markdown-body .markdown-alert> :first-child {
+.markdown-body .markdown-alert > :first-child {
   margin-top: 0;
 }
 
-.markdown-body .markdown-alert> :last-child {
+.markdown-body .markdown-alert > :last-child {
   margin-bottom: 0;
 }
 
@@ -726,7 +732,7 @@ body,
   margin-bottom: 4px;
 }
 
-.markdown-body .markdown-alert-title>svg {
+.markdown-body .markdown-alert-title > svg {
   fill: currentColor;
 }
 

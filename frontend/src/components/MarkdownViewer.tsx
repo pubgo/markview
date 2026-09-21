@@ -12,7 +12,11 @@ import "katex/dist/katex.min.css";
 import { codeToHtml } from "shiki";
 import mermaid from "mermaid";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
-import { getMermaidSettings, useMermaidSettingsRevision, type MermaidSettings } from "../hooks/useMermaidSettings";
+import {
+  getMermaidSettings,
+  useMermaidSettingsRevision,
+  type MermaidSettings,
+} from "../hooks/useMermaidSettings";
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
@@ -30,7 +34,10 @@ import type { TocHeading } from "./TocPanel";
 import type { Components } from "react-markdown";
 import "github-markdown-css/github-markdown.css";
 
-let svgbobModulePromise: Promise<{ loadWASM: () => Promise<void>; render: (ascii: string) => string }> | null = null;
+let svgbobModulePromise: Promise<{
+  loadWASM: () => Promise<void>;
+  render: (ascii: string) => string;
+}> | null = null;
 
 async function renderPlantUml(code: string): Promise<string> {
   const response = await fetch("https://kroki.io/plantuml/svg", {
@@ -60,61 +67,61 @@ function injectPlantUmlThemePreset(code: string, isDark: boolean): string {
 
   const preset = isDark
     ? [
-      "skinparam shadowing false",
-      "skinparam backgroundColor transparent",
-      "skinparam defaultFontName -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial",
-      "skinparam defaultFontColor #e6edf3",
-      "skinparam ArrowColor #58a6ff",
-      "skinparam BorderColor #8b949e",
-      "skinparam NoteBackgroundColor #161b22",
-      "skinparam NoteBorderColor #30363d",
-      "skinparam NoteFontColor #c9d1d9",
-      "skinparam packageStyle rectangle",
-      "skinparam componentStyle rectangle",
-      "skinparam RectangleBackgroundColor #161b22",
-      "skinparam RectangleBorderColor #30363d",
-      "skinparam RectangleFontColor #e6edf3",
-      // Sequence: defaults keep white participant boxes; without these,
-      // defaultFontColor (#e6edf3) becomes invisible on white fills.
-      "skinparam sequence {",
-      "  ArrowColor #58a6ff",
-      "  LifeLineBorderColor #6e7681",
-      "  LifeLineBackgroundColor transparent",
-      "  ParticipantBorderColor #8b949e",
-      "  ParticipantBackgroundColor #161b22",
-      "  ParticipantFontColor #e6edf3",
-      "  ActorBorderColor #8b949e",
-      "  ActorBackgroundColor #21262d",
-      "  ActorFontColor #e6edf3",
-      "}",
-    ].join("\n")
+        "skinparam shadowing false",
+        "skinparam backgroundColor transparent",
+        "skinparam defaultFontName -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial",
+        "skinparam defaultFontColor #e6edf3",
+        "skinparam ArrowColor #58a6ff",
+        "skinparam BorderColor #8b949e",
+        "skinparam NoteBackgroundColor #161b22",
+        "skinparam NoteBorderColor #30363d",
+        "skinparam NoteFontColor #c9d1d9",
+        "skinparam packageStyle rectangle",
+        "skinparam componentStyle rectangle",
+        "skinparam RectangleBackgroundColor #161b22",
+        "skinparam RectangleBorderColor #30363d",
+        "skinparam RectangleFontColor #e6edf3",
+        // Sequence: defaults keep white participant boxes; without these,
+        // defaultFontColor (#e6edf3) becomes invisible on white fills.
+        "skinparam sequence {",
+        "  ArrowColor #58a6ff",
+        "  LifeLineBorderColor #6e7681",
+        "  LifeLineBackgroundColor transparent",
+        "  ParticipantBorderColor #8b949e",
+        "  ParticipantBackgroundColor #161b22",
+        "  ParticipantFontColor #e6edf3",
+        "  ActorBorderColor #8b949e",
+        "  ActorBackgroundColor #21262d",
+        "  ActorFontColor #e6edf3",
+        "}",
+      ].join("\n")
     : [
-      "skinparam shadowing false",
-      "skinparam backgroundColor transparent",
-      "skinparam defaultFontName -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial",
-      "skinparam defaultFontColor #1f2328",
-      "skinparam ArrowColor #0969da",
-      "skinparam BorderColor #57606a",
-      "skinparam NoteBackgroundColor #f6f8fa",
-      "skinparam NoteBorderColor #d0d7de",
-      "skinparam NoteFontColor #24292f",
-      "skinparam packageStyle rectangle",
-      "skinparam componentStyle rectangle",
-      "skinparam RectangleBackgroundColor #ffffff",
-      "skinparam RectangleBorderColor #d0d7de",
-      "skinparam RectangleFontColor #1f2328",
-      "skinparam sequence {",
-      "  ArrowColor #0969da",
-      "  LifeLineBorderColor #57606a",
-      "  LifeLineBackgroundColor transparent",
-      "  ParticipantBorderColor #57606a",
-      "  ParticipantBackgroundColor #ffffff",
-      "  ParticipantFontColor #1f2328",
-      "  ActorBorderColor #57606a",
-      "  ActorBackgroundColor #ffffff",
-      "  ActorFontColor #1f2328",
-      "}",
-    ].join("\n");
+        "skinparam shadowing false",
+        "skinparam backgroundColor transparent",
+        "skinparam defaultFontName -apple-system,BlinkMacSystemFont,Segoe UI,Helvetica,Arial",
+        "skinparam defaultFontColor #1f2328",
+        "skinparam ArrowColor #0969da",
+        "skinparam BorderColor #57606a",
+        "skinparam NoteBackgroundColor #f6f8fa",
+        "skinparam NoteBorderColor #d0d7de",
+        "skinparam NoteFontColor #24292f",
+        "skinparam packageStyle rectangle",
+        "skinparam componentStyle rectangle",
+        "skinparam RectangleBackgroundColor #ffffff",
+        "skinparam RectangleBorderColor #d0d7de",
+        "skinparam RectangleFontColor #1f2328",
+        "skinparam sequence {",
+        "  ArrowColor #0969da",
+        "  LifeLineBorderColor #57606a",
+        "  LifeLineBackgroundColor transparent",
+        "  ParticipantBorderColor #57606a",
+        "  ParticipantBackgroundColor #ffffff",
+        "  ParticipantFontColor #1f2328",
+        "  ActorBorderColor #57606a",
+        "  ActorBackgroundColor #ffffff",
+        "  ActorFontColor #1f2328",
+        "}",
+      ].join("\n");
 
   const startRe = /(\s*@start(?:uml|mindmap|wbs|gantt|salt)\b[^\n]*\n?)/i;
   const match = code.match(startRe);
@@ -190,7 +197,10 @@ function normalizeDiagramErrorMessage(err: unknown, fallback: string): string {
   if (compact.length <= DIAGRAM_ERROR_MESSAGE_MAX_LEN) {
     return formatDiagramErrorMessageByType(compact, fallback);
   }
-  return formatDiagramErrorMessageByType(`${compact.slice(0, DIAGRAM_ERROR_MESSAGE_MAX_LEN)}…`, fallback);
+  return formatDiagramErrorMessageByType(
+    `${compact.slice(0, DIAGRAM_ERROR_MESSAGE_MAX_LEN)}…`,
+    fallback,
+  );
 }
 
 function formatDiagramErrorMessageByType(message: string, fallback: string): string {
@@ -201,17 +211,25 @@ function formatDiagramErrorMessageByType(message: string, fallback: string): str
     return `渲染超时，请稍后重试（${message}）`;
   }
 
-  const isNetwork = /(failed to fetch|network\s*error|econnrefused|enotfound|eai_again|connection\s*reset|cors)/.test(lower);
+  const isNetwork =
+    /(failed to fetch|network\s*error|econnrefused|enotfound|eai_again|connection\s*reset|cors)/.test(
+      lower,
+    );
   if (isNetwork) {
     return `网络请求失败，请检查网络或服务可用性（${message}）`;
   }
 
-  const isService = /(status\s*[45]\d\d|http\s*[45]\d\d|service unavailable|bad gateway|gateway timeout|internal server error)/.test(lower);
+  const isService =
+    /(status\s*[45]\d\d|http\s*[45]\d\d|service unavailable|bad gateway|gateway timeout|internal server error)/.test(
+      lower,
+    );
   if (isService) {
     return `渲染服务异常，请稍后重试（${message}）`;
   }
 
-  const isSyntax = /(parse|syntax|unexpected token|lex(ical)? error|invalid|unterminated)/.test(lower);
+  const isSyntax = /(parse|syntax|unexpected token|lex(ical)? error|invalid|unterminated)/.test(
+    lower,
+  );
   if (isSyntax) {
     return `语法可能有误，请检查图表代码（${message}）`;
   }
@@ -306,9 +324,10 @@ interface MermaidLayout {
 function getInlineMermaidMaxHeightPx(presentation = false): number {
   const viewportHeight = typeof window !== "undefined" ? window.innerHeight : 1080;
   if (presentation) {
-    const slide = typeof document !== "undefined"
-      ? (document.querySelector(".markdown-slide-page") as HTMLElement | null)
-      : null;
+    const slide =
+      typeof document !== "undefined"
+        ? (document.querySelector(".markdown-slide-page") as HTMLElement | null)
+        : null;
     const slideHeight = slide?.clientHeight ?? Math.round(viewportHeight * 0.78);
     return Math.max(520, Math.min(980, Math.round(slideHeight * 0.9)));
   }
@@ -530,15 +549,25 @@ function resolveBeautifulMermaidPalette(settings: MermaidSettings): Record<strin
     case "github-dark":
       return BEAUTIFUL_MERMAID_PALETTES["github-dark"];
     case "tokyo-night":
-      return isDark ? BEAUTIFUL_MERMAID_PALETTES["tokyo-night-dark"] : BEAUTIFUL_MERMAID_PALETTES["tokyo-night-light"];
+      return isDark
+        ? BEAUTIFUL_MERMAID_PALETTES["tokyo-night-dark"]
+        : BEAUTIFUL_MERMAID_PALETTES["tokyo-night-light"];
     case "nord":
-      return isDark ? BEAUTIFUL_MERMAID_PALETTES["nord-dark"] : BEAUTIFUL_MERMAID_PALETTES["nord-light"];
+      return isDark
+        ? BEAUTIFUL_MERMAID_PALETTES["nord-dark"]
+        : BEAUTIFUL_MERMAID_PALETTES["nord-light"];
     case "high-contrast":
-      return isDark ? BEAUTIFUL_MERMAID_PALETTES["high-contrast-dark"] : BEAUTIFUL_MERMAID_PALETTES["high-contrast-light"];
+      return isDark
+        ? BEAUTIFUL_MERMAID_PALETTES["high-contrast-dark"]
+        : BEAUTIFUL_MERMAID_PALETTES["high-contrast-light"];
     case "auto":
-      return isDark ? BEAUTIFUL_MERMAID_PALETTES["github-dark"] : BEAUTIFUL_MERMAID_PALETTES["github-light"];
+      return isDark
+        ? BEAUTIFUL_MERMAID_PALETTES["github-dark"]
+        : BEAUTIFUL_MERMAID_PALETTES["github-light"];
     default: // "custom"
-      return isDark ? BEAUTIFUL_MERMAID_PALETTES["custom-dark"] : BEAUTIFUL_MERMAID_PALETTES["custom-light"];
+      return isDark
+        ? BEAUTIFUL_MERMAID_PALETTES["custom-dark"]
+        : BEAUTIFUL_MERMAID_PALETTES["custom-light"];
   }
 }
 
@@ -566,7 +595,12 @@ function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): str
   return sanitizeBeautifulMermaidSvg(svg);
 }
 
-function normalizeMermaidSvg(svg: string, layout: MermaidLayout, renderWidthPx: number, presentation = false): string {
+function normalizeMermaidSvg(
+  svg: string,
+  layout: MermaidLayout,
+  renderWidthPx: number,
+  presentation = false,
+): string {
   try {
     const doc = new DOMParser().parseFromString(svg, "image/svg+xml");
     const svgEl = doc.documentElement;
@@ -688,7 +722,13 @@ async function renderMermaid(code: string, width?: number): Promise<string> {
   return result;
 }
 
-export function MermaidBlock({ code, presentation = false }: { code: string; presentation?: boolean }) {
+export function MermaidBlock({
+  code,
+  presentation = false,
+}: {
+  code: string;
+  presentation?: boolean;
+}) {
   const settingsRevision = useMermaidSettingsRevision();
   const [svg, setSvg] = useState("");
   const [renderStatus, setRenderStatus] = useState<"pending" | "rendered" | "failed">("pending");
@@ -909,9 +949,7 @@ export function MermaidBlock({ code, presentation = false }: { code: string; pre
     });
 
     const resizeObserver =
-      typeof ResizeObserver !== "undefined"
-        ? new ResizeObserver(() => doRender())
-        : null;
+      typeof ResizeObserver !== "undefined" ? new ResizeObserver(() => doRender()) : null;
     if (resizeObserver && containerRef.current) {
       resizeObserver.observe(containerRef.current);
     }
@@ -921,20 +959,27 @@ export function MermaidBlock({ code, presentation = false }: { code: string; pre
       observer.disconnect();
       resizeObserver?.disconnect();
     };
-  }, [isFullscreen, mermaidComplexity, normalizedCode, presentation, resolveRenderWidth, settingsRevision]);
+  }, [
+    isFullscreen,
+    mermaidComplexity,
+    normalizedCode,
+    presentation,
+    resolveRenderWidth,
+    settingsRevision,
+  ]);
 
   if (svg) {
     const canvasStyle = isFullscreen
       ? {
-        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-        transformOrigin: "center center",
-      }
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: "center center",
+        }
       : {
-        width: layout.fitToWidth ? "100%" : "fit-content",
-        maxWidth: layout.preserveScale ? "none" : "100%",
-        marginInline: "auto",
-        transformOrigin: "center center",
-      };
+          width: layout.fitToWidth ? "100%" : "fit-content",
+          maxWidth: layout.preserveScale ? "none" : "100%",
+          marginInline: "auto",
+          transformOrigin: "center center",
+        };
 
     const blockClassName = [
       "relative group mermaid-block",
@@ -946,11 +991,7 @@ export function MermaidBlock({ code, presentation = false }: { code: string; pre
       .join(" ");
 
     return (
-      <div
-        ref={blockRef}
-        data-mermaid-render-status={renderStatus}
-        className={blockClassName}
-      >
+      <div ref={blockRef} data-mermaid-render-status={renderStatus} className={blockClassName}>
         <div
           ref={containerRef}
           data-testid="mermaid-interaction-surface"
@@ -1110,7 +1151,9 @@ export function SvgBobBlock({ code }: { code: string }) {
       try {
         const renderedSvg = await renderSvgBob(code);
         const normalizedSvg = normalizeSvgBobSvg(renderedSvg, getMermaidTheme() === "dark");
-        const nextUrl = URL.createObjectURL(new Blob([normalizedSvg], { type: "image/svg+xml;charset=utf-8" }));
+        const nextUrl = URL.createObjectURL(
+          new Blob([normalizedSvg], { type: "image/svg+xml;charset=utf-8" }),
+        );
 
         if (!cancelled) {
           if (objectUrlRef.current) {
@@ -1148,15 +1191,19 @@ export function SvgBobBlock({ code }: { code: string }) {
   if (svgUrl) {
     const canvasStyle = isFullscreen
       ? {
-        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-        transformOrigin: "center center",
-      }
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: "center center",
+        }
       : {
-        transformOrigin: "top left",
-      };
+          transformOrigin: "top left",
+        };
 
     return (
-      <div ref={blockRef} className="relative group svgbob-block" data-svgbob-render-status={renderStatus}>
+      <div
+        ref={blockRef}
+        className="relative group svgbob-block"
+        data-svgbob-render-status={renderStatus}
+      >
         <div
           className={`svgbob-render ${isFullscreen ? "svgbob-render--interactive cursor-grab active:cursor-grabbing select-none" : ""}`}
           data-testid="svgbob-interaction-surface"
@@ -1167,12 +1214,7 @@ export function SvgBobBlock({ code }: { code: string }) {
           onMouseLeave={handleSurfaceMouseUp}
         >
           <div className="svgbob-canvas" data-testid="svgbob-pan-canvas" style={canvasStyle}>
-            <img
-              src={svgUrl}
-              alt="SVG Bob diagram"
-              className="svgbob-image"
-              loading="lazy"
-            />
+            <img src={svgUrl} alt="SVG Bob diagram" className="svgbob-image" loading="lazy" />
           </div>
         </div>
         {isFullscreen && (
@@ -1183,7 +1225,10 @@ export function SvgBobBlock({ code }: { code: string }) {
             onReset={resetView}
           />
         )}
-        <SvgBobFullscreenButton isFullscreen={isFullscreen} onToggle={() => void handleFullscreenToggle()} />
+        <SvgBobFullscreenButton
+          isFullscreen={isFullscreen}
+          onToggle={() => void handleFullscreenToggle()}
+        />
         <CodeBlockCopyButton code={code} themed />
       </div>
     );
@@ -1321,7 +1366,9 @@ export function PlantUmlBlock({ code }: { code: string }) {
       try {
         const nextCode = injectPlantUmlThemePreset(code, getMermaidTheme() === "dark");
         const svg = await renderPlantUml(nextCode);
-        const nextUrl = URL.createObjectURL(new Blob([svg], { type: "image/svg+xml;charset=utf-8" }));
+        const nextUrl = URL.createObjectURL(
+          new Blob([svg], { type: "image/svg+xml;charset=utf-8" }),
+        );
 
         if (!cancelled) {
           if (objectUrlRef.current) {
@@ -1360,15 +1407,19 @@ export function PlantUmlBlock({ code }: { code: string }) {
   if (svgUrl) {
     const canvasStyle = isFullscreen
       ? {
-        transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-        transformOrigin: "center center",
-      }
+          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+          transformOrigin: "center center",
+        }
       : {
-        transformOrigin: "top left",
-      };
+          transformOrigin: "top left",
+        };
 
     return (
-      <div ref={blockRef} className="relative group plantuml-block" data-plantuml-render-status={renderStatus}>
+      <div
+        ref={blockRef}
+        className="relative group plantuml-block"
+        data-plantuml-render-status={renderStatus}
+      >
         <div
           className={`plantuml-render ${isFullscreen ? "plantuml-render--interactive cursor-grab active:cursor-grabbing select-none" : ""}`}
           data-testid="plantuml-interaction-surface"
@@ -1390,7 +1441,10 @@ export function PlantUmlBlock({ code }: { code: string }) {
             onReset={resetView}
           />
         )}
-        <PlantUmlFullscreenButton isFullscreen={isFullscreen} onToggle={() => void handleFullscreenToggle()} />
+        <PlantUmlFullscreenButton
+          isFullscreen={isFullscreen}
+          onToggle={() => void handleFullscreenToggle()}
+        />
         <CodeBlockCopyButton code={code} themed />
       </div>
     );
@@ -1716,7 +1770,7 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
             .then((result) => {
               if (!cancelled) setHtml(result);
             })
-            .catch(() => { });
+            .catch(() => {});
         }
       });
     return () => {
@@ -1770,7 +1824,7 @@ function RawView({ content }: { content: string }) {
             .then((result) => {
               if (!cancelled) setHtml(result);
             })
-            .catch(() => { });
+            .catch(() => {});
         }
       });
     return () => {
@@ -1969,109 +2023,116 @@ export function MarkdownViewer({
     [fileId, onFileOpened],
   );
 
-  const components: Components = useMemo(
-    () => {
-      const headingRenderer =
-        (as: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
-          ({ node: _node, children, id, className, ...props }: React.HTMLAttributes<HTMLHeadingElement> & { node?: unknown }) => {
-            if (isSlidesView) {
-              const Tag = as;
-              return (
-                <Tag id={id} className={className} {...props}>
-                  {children}
-                </Tag>
-              );
-            }
+  const components: Components = useMemo(() => {
+    const headingRenderer =
+      (as: "h1" | "h2" | "h3" | "h4" | "h5" | "h6") =>
+      ({
+        node: _node,
+        children,
+        id,
+        className,
+        ...props
+      }: React.HTMLAttributes<HTMLHeadingElement> & { node?: unknown }) => {
+        if (isSlidesView) {
+          const Tag = as;
+          return (
+            <Tag id={id} className={className} {...props}>
+              {children}
+            </Tag>
+          );
+        }
 
+        return (
+          <CollapsibleHeading
+            as={as}
+            id={id}
+            className={className}
+            collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
+            onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
+            {...props}
+          >
+            {children}
+          </CollapsibleHeading>
+        );
+      };
+
+    return {
+      pre: ({ children }) => <>{children}</>,
+      h1: headingRenderer("h1"),
+      h2: headingRenderer("h2"),
+      h3: headingRenderer("h3"),
+      h4: headingRenderer("h4"),
+      h5: headingRenderer("h5"),
+      h6: headingRenderer("h6"),
+      code: ({ className, children, ...props }) => {
+        const language = extractLanguage(className);
+        const code = String(children).replace(/\n$/, "");
+        const isBlock = String(children).endsWith("\n");
+        if (language) {
+          if (language === "mermaid") {
+            return <MermaidBlock code={code} presentation={isSlidesView} />;
+          }
+          if (language === "svgbob" || language === "bob") {
+            return <SvgBobBlock code={code} />;
+          }
+          if (language === "plantuml" || language === "puml") {
+            return <PlantUmlBlock code={code} />;
+          }
+          return <CodeBlock language={language} code={code} />;
+        }
+        if (isBlock) {
+          return <CodeBlock language="text" code={code} />;
+        }
+        return (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        );
+      },
+      img: ({ src, alt, ...props }) => {
+        return <img src={resolveImageSrc(src, fileId)} alt={alt} {...props} />;
+      },
+      a: ({ href, children, ...props }) => {
+        const resolved = resolveLink(href, fileId);
+        switch (resolved.type) {
+          case "external":
             return (
-              <CollapsibleHeading
-                as={as}
-                id={id}
-                className={className}
-                collapsed={typeof id === "string" && collapsedHeadingIds.has(id)}
-                onToggleCollapse={typeof id === "string" ? () => toggleHeadingCollapse(id) : undefined}
+              <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
+                {children}
+              </a>
+            );
+          case "hash":
+            return (
+              <a href={href} {...props}>
+                {children}
+              </a>
+            );
+          case "markdown":
+            return (
+              <a
+                href={href}
+                onClick={(e) => handleLinkClick(e, resolved.hrefPath, resolved.anchor)}
                 {...props}
               >
                 {children}
-              </CollapsibleHeading>
+              </a>
             );
-          };
-
-      return {
-        pre: ({ children }) => <>{children}</>,
-        h1: headingRenderer("h1"),
-        h2: headingRenderer("h2"),
-        h3: headingRenderer("h3"),
-        h4: headingRenderer("h4"),
-        h5: headingRenderer("h5"),
-        h6: headingRenderer("h6"),
-        code: ({ className, children, ...props }) => {
-          const language = extractLanguage(className);
-          const code = String(children).replace(/\n$/, "");
-          const isBlock = String(children).endsWith("\n");
-          if (language) {
-            if (language === "mermaid") {
-              return <MermaidBlock code={code} presentation={isSlidesView} />;
-            }
-            if (language === "svgbob" || language === "bob") {
-              return <SvgBobBlock code={code} />;
-            }
-            if (language === "plantuml" || language === "puml") {
-              return <PlantUmlBlock code={code} />;
-            }
-            return <CodeBlock language={language} code={code} />;
-          }
-          if (isBlock) {
-            return <CodeBlock language="text" code={code} />;
-          }
-          return (
-            <code className={className} {...props}>
-              {children}
-            </code>
-          );
-        },
-        img: ({ src, alt, ...props }) => {
-          return <img src={resolveImageSrc(src, fileId)} alt={alt} {...props} />;
-        },
-        a: ({ href, children, ...props }) => {
-          const resolved = resolveLink(href, fileId);
-          switch (resolved.type) {
-            case "external":
-              return (
-                <a href={href} target="_blank" rel="noopener noreferrer" {...props}>
-                  {children}
-                </a>
-              );
-            case "hash":
-              return (
-                <a href={href} {...props}>
-                  {children}
-                </a>
-              );
-            case "markdown":
-              return (
-                <a href={href} onClick={(e) => handleLinkClick(e, resolved.hrefPath, resolved.anchor)} {...props}>
-                  {children}
-                </a>
-              );
-            case "file":
-              return (
-                <a href={resolved.rawUrl} {...props}>
-                  {children}
-                </a>
-              );
-            case "passthrough":
-              return (
-                <a href={href} {...props}>
-                  {children}
-                </a>
-              );
-          }
-        },
-      };
-    },
-    [collapsedHeadingIds, fileId, handleLinkClick, isSlidesView, toggleHeadingCollapse],
-  );
+          case "file":
+            return (
+              <a href={resolved.rawUrl} {...props}>
+                {children}
+              </a>
+            );
+          case "passthrough":
+            return (
+              <a href={href} {...props}>
+                {children}
+              </a>
+            );
+        }
+      },
+    };
+  }, [collapsedHeadingIds, fileId, handleLinkClick, isSlidesView, toggleHeadingCollapse]);
 
   const parsed = useMemo(
     () => (isRawView ? null : parseFrontmatter(content)),
@@ -2271,7 +2332,8 @@ export function MarkdownViewer({
             </span>
           </div>
           <div className="markdown-slide-help-badge" aria-hidden="true">
-            ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 · {isSlidesOverlayPinned ? "H 取消固定" : "H 固定控件"}
+            ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 ·{" "}
+            {isSlidesOverlayPinned ? "H 取消固定" : "H 固定控件"}
           </div>
         </div>
       );
@@ -2312,7 +2374,9 @@ export function MarkdownViewer({
     if (!article || loading || isRawView || isSlidesView) return;
 
     const resetHidden = () => {
-      const hiddenEls = article.querySelectorAll<HTMLElement>("[data-heading-collapsed-hidden='1']");
+      const hiddenEls = article.querySelectorAll<HTMLElement>(
+        "[data-heading-collapsed-hidden='1']",
+      );
       hiddenEls.forEach((el) => {
         el.style.removeProperty("display");
         el.removeAttribute("data-heading-collapsed-hidden");

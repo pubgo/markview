@@ -15,7 +15,9 @@ function escapeMermaidLabel(name: string): string {
 }
 
 /** Compute display label: if multiple nodes share the same name, add parent path to disambiguate. */
-function nodeDisplayLabels(nodes: { id: string; name: string; path?: string }[]): Map<string, string> {
+function nodeDisplayLabels(
+  nodes: { id: string; name: string; path?: string }[],
+): Map<string, string> {
   const nameCount = new Map<string, number>();
   for (const n of nodes) {
     nameCount.set(n.name, (nameCount.get(n.name) ?? 0) + 1);
@@ -34,7 +36,11 @@ function nodeDisplayLabels(nodes: { id: string; name: string; path?: string }[])
 }
 
 /** Build edge label: link text (label) first, then heading, then target name. */
-function edgeDisplayLabel(e: { label?: string; heading?: string }, targetName: string, maxLen = 32): string {
+function edgeDisplayLabel(
+  e: { label?: string; heading?: string },
+  targetName: string,
+  maxLen = 32,
+): string {
   const safe = (s: string) => s.replace(/["\[\]()|]/g, " ").trim();
   if (e.label && e.label.length > 0) {
     const lab = safe(e.label);
@@ -204,7 +210,10 @@ export function GraphView({ onClose }: GraphViewProps) {
         .catch(() => {})
         .finally(() => container.remove());
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => observer.disconnect();
   }, [graph, mermaidCode]);
 
@@ -292,7 +301,10 @@ export function GraphView({ onClose }: GraphViewProps) {
       )}
       <div className="flex-1 min-h-0">
         <ZoomPanView className="h-full w-full">
-          <div ref={svgContainerRef} className="inline-block p-4 min-w-full min-h-full [&_svg]:max-w-full [&_svg]:h-auto [&_svg]:cursor-default" />
+          <div
+            ref={svgContainerRef}
+            className="inline-block p-4 min-w-full min-h-full [&_svg]:max-w-full [&_svg]:h-auto [&_svg]:cursor-default"
+          />
         </ZoomPanView>
       </div>
     </div>

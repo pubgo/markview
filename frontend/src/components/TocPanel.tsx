@@ -31,7 +31,9 @@ function getInitialCollapsed(): Set<string> {
   try {
     const stored = localStorage.getItem(COLLAPSED_KEY);
     if (stored) return new Set(JSON.parse(stored));
-  } catch { /* ignore */ }
+  } catch {
+    /* ignore */
+  }
   return new Set();
 }
 
@@ -158,8 +160,9 @@ export function TocPanel({ headings, activeHeadingId, onHeadingClick }: TocPanel
                 {/* Collapse toggle */}
                 <button
                   type="button"
-                  className={`shrink-0 w-4 h-4 ml-0.5 flex items-center justify-center text-gh-text-secondary transition-colors ${expandable ? "cursor-pointer hover:text-gh-text" : "invisible"
-                    }`}
+                  className={`shrink-0 w-4 h-4 ml-0.5 flex items-center justify-center text-gh-text-secondary transition-colors ${
+                    expandable ? "cursor-pointer hover:text-gh-text" : "invisible"
+                  }`}
                   onClick={(e) => {
                     e.stopPropagation();
                     if (expandable) toggleCollapse(h.id);
@@ -179,14 +182,17 @@ export function TocPanel({ headings, activeHeadingId, onHeadingClick }: TocPanel
                 </button>
                 {/* Heading button */}
                 <button
-                  className={`flex items-center gap-1.5 flex-1 min-w-0 ${INDENT[h.level] ?? "pl-3"} pr-3 py-1.5 border-none cursor-pointer text-left text-sm transition-colors duration-150 ${h.id === activeHeadingId
-                    ? "bg-gh-bg-active text-gh-text font-semibold"
-                    : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
-                    }`}
+                  className={`flex items-center gap-1.5 flex-1 min-w-0 ${INDENT[h.level] ?? "pl-3"} pr-3 py-1.5 border-none cursor-pointer text-left text-sm transition-colors duration-150 ${
+                    h.id === activeHeadingId
+                      ? "bg-gh-bg-active text-gh-text font-semibold"
+                      : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
+                  }`}
                   onClick={() => onHeadingClick(h.id)}
                   title={`${LEVEL_BADGE[h.level] ?? "H?"} — ${h.text}`}
                 >
-                  <span className="shrink-0 text-[10px] leading-none opacity-50 font-mono">{LEVEL_BADGE[h.level]}</span>
+                  <span className="shrink-0 text-[10px] leading-none opacity-50 font-mono">
+                    {LEVEL_BADGE[h.level]}
+                  </span>
                   <span className="overflow-hidden text-ellipsis whitespace-nowrap">{h.text}</span>
                 </button>
               </div>

@@ -1,4 +1,11 @@
-import { isStaticMode, getStaticGroups, getStaticFileContent, getStaticGraph, getStaticOutline, getStaticVersion } from "../utils/staticData";
+import {
+  isStaticMode,
+  getStaticGroups,
+  getStaticFileContent,
+  getStaticGraph,
+  getStaticOutline,
+  getStaticVersion,
+} from "../utils/staticData";
 
 export interface FileEntry {
   name: string;

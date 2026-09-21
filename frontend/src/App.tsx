@@ -19,8 +19,21 @@ import { useFileDrop } from "./hooks/useFileDrop";
 import { useActiveHeading } from "./hooks/useActiveHeading";
 import { useScrollRestoration, SCROLL_SESSION_KEY } from "./hooks/useScrollRestoration";
 import type { Group, Status } from "./hooks/useApi";
-import { fetchGroups, fetchStatus, openRelativeFile, removeFile, removePattern, reorderFiles } from "./hooks/useApi";
-import { allFileIds, parseGroupFromPath, parseFileIdFromSearch, groupToPath, buildFileUrl } from "./utils/groups";
+import {
+  fetchGroups,
+  fetchStatus,
+  openRelativeFile,
+  removeFile,
+  removePattern,
+  reorderFiles,
+} from "./hooks/useApi";
+import {
+  allFileIds,
+  parseGroupFromPath,
+  parseFileIdFromSearch,
+  groupToPath,
+  buildFileUrl,
+} from "./utils/groups";
 import { buildTree, flattenTreeFiles, getAllFileIdsUnder, type TreeNode } from "./utils/buildTree";
 import { captureArticleForMergedPdf, exportMergedPdfFromSnapshots } from "./utils/pdfExport";
 import { OutlineGraphView } from "./components/OutlineGraphView";
@@ -84,7 +97,9 @@ export function App() {
     }
   });
   const [showGraph, setShowGraph] = useState(false);
-  const [graphViewMode, setGraphViewMode] = useState<"link" | "outline" | "gravity" | "tree">("link");
+  const [graphViewMode, setGraphViewMode] = useState<"link" | "outline" | "gravity" | "tree">(
+    "link",
+  );
   const [isExportingAllPdf, setIsExportingAllPdf] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const knownFileIds = useRef<Set<string>>(new Set());
@@ -106,9 +121,7 @@ export function App() {
   const [pendingPdfOpen, setPendingPdfOpen] = useState<PendingPdfOpenRequest | null>(() =>
     parsePendingPdfOpen(window.location.search),
   );
-  const [pendingSearchJump, setPendingSearchJump] = useState<PendingSearchJumpRequest | null>(
-    null,
-  );
+  const [pendingSearchJump, setPendingSearchJump] = useState<PendingSearchJumpRequest | null>(null);
   const [scrollContainer, setScrollContainer] = useState<HTMLDivElement | null>(null);
 
   // Track previous values for render-time state adjustment
@@ -190,7 +203,7 @@ export function App() {
         setGroups(data);
         setStatus(statusData);
       })
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   // Sync URL with active group (and ?file= when a file is selected, e.g. after opening from graph)
@@ -207,7 +220,12 @@ export function App() {
 
   // Clear search params after consuming initial file ID (don't clear when a file is selected, e.g. from graph)
   useEffect(() => {
-    if (pendingPdfOpen === null && initialFileId === null && window.location.search && !activeFileId) {
+    if (
+      pendingPdfOpen === null &&
+      initialFileId === null &&
+      window.location.search &&
+      !activeFileId
+    ) {
       window.history.replaceState(null, "", window.location.pathname);
     }
   }, [initialFileId, activeFileId, pendingPdfOpen]);
@@ -285,9 +303,8 @@ export function App() {
   const currentViewMode: ViewMode = viewModes[activeGroup] ?? defaultViewMode;
 
   const exportFiles = useMemo(() => {
-    const baseFiles = currentViewMode === "tree"
-      ? flattenTreeFiles(buildTree(activeGroupFiles))
-      : activeGroupFiles;
+    const baseFiles =
+      currentViewMode === "tree" ? flattenTreeFiles(buildTree(activeGroupFiles)) : activeGroupFiles;
 
     const readmeFiles = baseFiles.filter((file) => /^readme\.(md|mdx)$/i.test(file.name));
     if (readmeFiles.length === 0) {
@@ -533,17 +550,34 @@ export function App() {
             title={isExportingAllPdf ? "正在合并导出 PDF..." : "合并导出当前分组为单个 PDF"}
             disabled={isExportingAllPdf || exportFiles.length === 0}
           >
-            <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M8.25 6.75h9a2.25 2.25 0 0 1 2.25 2.25v9A2.25 2.25 0 0 1 17.25 20.25h-9A2.25 2.25 0 0 1 6 18V9a2.25 2.25 0 0 1 2.25-2.25Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 15.75H4.875A2.625 2.625 0 0 1 2.25 13.125v-8.25A2.625 2.625 0 0 1 4.875 2.25h8.25A2.625 2.625 0 0 1 15.75 4.875V6" />
+            <svg
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M8.25 6.75h9a2.25 2.25 0 0 1 2.25 2.25v9A2.25 2.25 0 0 1 17.25 20.25h-9A2.25 2.25 0 0 1 6 18V9a2.25 2.25 0 0 1 2.25-2.25Z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M6 15.75H4.875A2.625 2.625 0 0 1 2.25 13.125v-8.25A2.625 2.625 0 0 1 4.875 2.25h8.25A2.625 2.625 0 0 1 15.75 4.875V6"
+              />
               <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 11.25h4.5m-4.5 3h3" />
             </svg>
             <span className="text-sm leading-none whitespace-nowrap">合并 PDF</span>
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${showGraph && graphViewMode === "link" ? "bg-gh-bg-hover border-gh-border" : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
-              } text-gh-header-text`}
+            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
+              showGraph && graphViewMode === "link"
+                ? "bg-gh-bg-hover border-gh-border"
+                : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
+            } text-gh-header-text`}
             onClick={() => {
               setGraphViewMode("link");
               setShowGraph(true);
@@ -552,14 +586,27 @@ export function App() {
             aria-pressed={showGraph && graphViewMode === "link"}
             title="链接关系图"
           >
-            <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z" />
+            <svg
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 13.125C3 12.504 3.504 12 4.125 12h2.25c.621 0 1.125.504 1.125 1.125v6.75C7.5 20.496 6.996 21 6.375 21h-2.25A1.125 1.125 0 013 19.875v-6.75zM9.75 8.625c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125v11.25c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V8.625zM16.5 4.125c0-.621.504-1.125 1.125-1.125h2.25C20.496 3 21 3.504 21 4.125v15.75c0 .621-.504 1.125-1.125 1.125h-2.25a1.125 1.125 0 01-1.125-1.125V4.125z"
+              />
             </svg>
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${showGraph && graphViewMode === "outline" ? "bg-gh-bg-hover border-gh-border" : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
-              } text-gh-header-text`}
+            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
+              showGraph && graphViewMode === "outline"
+                ? "bg-gh-bg-hover border-gh-border"
+                : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
+            } text-gh-header-text`}
             onClick={() => {
               setGraphViewMode("outline");
               setShowGraph(true);
@@ -568,14 +615,27 @@ export function App() {
             aria-pressed={showGraph && graphViewMode === "outline"}
             title="标题结构图"
           >
-            <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3 7v10h6V7H3zm0-4h18M9 11h12M9 15h12M9 19h12" />
+            <svg
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3 7v10h6V7H3zm0-4h18M9 11h12M9 15h12M9 19h12"
+              />
             </svg>
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${showGraph && graphViewMode === "gravity" ? "bg-gh-bg-hover border-gh-border" : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
-              } text-gh-header-text`}
+            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
+              showGraph && graphViewMode === "gravity"
+                ? "bg-gh-bg-hover border-gh-border"
+                : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
+            } text-gh-header-text`}
             onClick={() => {
               setGraphViewMode("gravity");
               setShowGraph(true);
@@ -584,14 +644,27 @@ export function App() {
             aria-pressed={showGraph && graphViewMode === "gravity"}
             title="重力视图"
           >
-            <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.5-8.5l2.5 2.5m-9 9l2.5 2.5m0-9l-2.5 2.5m9-9l-2.5 2.5" />
+            <svg
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.5-8.5l2.5 2.5m-9 9l2.5 2.5m0-9l-2.5 2.5m9-9l-2.5 2.5"
+              />
             </svg>
           </button>
           <button
             type="button"
-            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${showGraph && graphViewMode === "tree" ? "bg-gh-bg-hover border-gh-border" : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
-              } text-gh-header-text`}
+            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
+              showGraph && graphViewMode === "tree"
+                ? "bg-gh-bg-hover border-gh-border"
+                : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
+            } text-gh-header-text`}
             onClick={() => {
               setGraphViewMode("tree");
               setShowGraph(true);
@@ -600,8 +673,18 @@ export function App() {
             aria-pressed={showGraph && graphViewMode === "tree"}
             title="缩进树"
           >
-            <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-7.5-5.25H12" />
+            <svg
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M3.75 6.75h16.5M3.75 12h16.5m-7.5-5.25H12"
+              />
             </svg>
           </button>
           <WidthToggle isWide={isWide} onToggle={() => setIsWide((v) => !v)} />
@@ -612,9 +695,23 @@ export function App() {
             aria-label="Settings"
             title="Mermaid 设置"
           >
-            <svg className="size-5" fill="none" stroke="currentColor" strokeWidth={1.5} viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z" />
-              <path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
+            <svg
+              className="size-5"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth={1.5}
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M9.594 3.94c.09-.542.56-.94 1.11-.94h2.593c.55 0 1.02.398 1.11.94l.213 1.281c.063.374.313.686.645.87.074.04.147.083.22.127.325.196.72.257 1.075.124l1.217-.456a1.125 1.125 0 0 1 1.37.49l1.296 2.247a1.125 1.125 0 0 1-.26 1.431l-1.003.827c-.293.241-.438.613-.43.992a7.723 7.723 0 0 1 0 .255c-.008.378.137.75.43.991l1.004.827c.424.35.534.955.26 1.43l-1.298 2.247a1.125 1.125 0 0 1-1.369.491l-1.217-.456c-.355-.133-.75-.072-1.076.124a6.47 6.47 0 0 1-.22.128c-.331.183-.581.495-.644.869l-.213 1.281c-.09.543-.56.941-1.11.941h-2.594c-.55 0-1.019-.398-1.11-.94l-.213-1.281c-.062-.374-.312-.686-.644-.87a6.52 6.52 0 0 1-.22-.127c-.325-.196-.72-.257-1.076-.124l-1.217.456a1.125 1.125 0 0 1-1.369-.49l-1.297-2.247a1.125 1.125 0 0 1 .26-1.431l1.004-.827c.292-.24.437-.613.43-.991a6.932 6.932 0 0 1 0-.255c.007-.38-.138-.751-.43-.992l-1.004-.827a1.125 1.125 0 0 1-.26-1.43l1.297-2.247a1.125 1.125 0 0 1 1.37-.491l1.216.456c.356.133.751.072 1.076-.124.072-.044.146-.086.22-.128.332-.183.582-.495.644-.869l.214-1.28Z"
+              />
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z"
+              />
             </svg>
           </button>
           <ThemeToggle />

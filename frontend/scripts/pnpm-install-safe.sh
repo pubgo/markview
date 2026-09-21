@@ -7,12 +7,12 @@ CURRENT_ARCH="$(pnpm node -p "process.platform + '-' + process.arch")"
 
 if [ -d "node_modules" ]; then
   if [ ! -f "$STAMP_FILE" ]; then
-    echo "markview: node_modules 缺少架构标记，执行一次清理重装 ($CURRENT_ARCH)"
+    echo "markview: node_modules missing arch stamp; reinstalling (${CURRENT_ARCH})"
     rm -rf node_modules
   else
     PREV_ARCH="$(cat "$STAMP_FILE" 2>/dev/null || true)"
     if [ "$PREV_ARCH" != "$CURRENT_ARCH" ]; then
-      echo "markview: 检测到架构切换: $PREV_ARCH -> $CURRENT_ARCH，清理 node_modules 后重装"
+      echo "markview: arch changed: ${PREV_ARCH} -> ${CURRENT_ARCH}; cleaning node_modules"
       rm -rf node_modules
     fi
   fi
