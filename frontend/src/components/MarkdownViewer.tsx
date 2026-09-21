@@ -20,6 +20,7 @@ import {
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
+import { extractSlideNotes } from "../utils/slideNotes";
 import { TocToggle } from "./TocToggle";
 import { CopyButton } from "./CopyButton";
 import { PdfExportButton } from "./PdfExportButton";
@@ -1950,6 +1951,7 @@ export function MarkdownViewer({
   const [isSlidesFullscreen, setIsSlidesFullscreen] = useState(false);
   const [isSlidesOverlayVisible, setIsSlidesOverlayVisible] = useState(true);
   const [isSlidesOverlayPinned, setIsSlidesOverlayPinned] = useState(false);
+  const [isSlidesNotesVisible, setIsSlidesNotesVisible] = useState(true);
   const [slideIndex, setSlideIndex] = useState(0);
   const [collapsedHeadingIds, setCollapsedHeadingIds] = useState<Set<string>>(() => new Set());
   const [linkOpenError, setLinkOpenError] = useState<string | null>(null);
@@ -2268,11 +2270,13 @@ export function MarkdownViewer({
 
     if (isSlidesView) {
       const currentSlide = slides[slideIndex] ?? "";
-      const cover = isSlideCover(currentSlide);
+      const { body: slideBody, notes: slideNotes } = extractSlideNotes(currentSlide);
+      const cover = isSlideCover(slideBody);
+      const showNotes = isSlidesNotesVisible && slideNotes.length > 0;
       return (
         <div
           ref={slideShellRef}
-          className={`markdown-slide-shell${isSlidesFullscreen ? " markdown-slide-shell--fullscreen" : ""}${isSlidesFullscreen && !isSlidesOverlayVisible ? " markdown-slide-shell--overlay-hidden" : ""}`}
+          className={`markdown-slide-shell${isSlidesFullscreen ? " markdown-slide-shell--fullscreen" : ""}${isSlidesFullscreen && !isSlidesOverlayVisible ? " markdown-slide-shell--overlay-hidden" : ""}${showNotes ? " markdown-slide-shell--notes" : ""}`}
           data-testid="markdown-slide-shell"
           onMouseMove={handleSlidesOverlayActivity}
           onTouchStart={handleSlidesOverlayActivity}
@@ -2298,9 +2302,20 @@ export function MarkdownViewer({
               rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
               components={components}
             >
-              {currentSlide}
+              {slideBody}
             </Markdown>
           </section>
+          {showNotes && (
+            <aside
+              className="markdown-slide-notes"
+              data-testid="markdown-slide-notes"
+              aria-label="演讲者备注"
+              onClick={(event) => event.stopPropagation()}
+            >
+              <div className="markdown-slide-notes__label">备注</div>
+              <pre className="markdown-slide-notes__body">{slideNotes}</pre>
+            </aside>
+          )}
           <div
             className="markdown-slide-progress"
             role="progressbar"
@@ -2332,7 +2347,7 @@ export function MarkdownViewer({
             </span>
           </div>
           <div className="markdown-slide-help-badge" aria-hidden="true">
-            ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 ·{" "}
+            ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 · N 备注 ·{" "}
             {isSlidesOverlayPinned ? "H 取消固定" : "H 固定控件"}
           </div>
         </div>
@@ -2356,6 +2371,7 @@ export function MarkdownViewer({
     content,
     isRawView,
     isSlidesFullscreen,
+    isSlidesNotesVisible,
     isSlidesOverlayPinned,
     isSlidesOverlayVisible,
     isSlidesView,
@@ -2555,6 +2571,12 @@ export function MarkdownViewer({
           }
           return next;
         });
+        return;
+      }
+      if (event.key === "n" || event.key === "N") {
+        event.preventDefault();
+        setIsSlidesNotesVisible((current) => !current);
+        revealSlidesOverlay();
       }
     };
 
@@ -2625,7 +2647,7 @@ export function MarkdownViewer({
         {isSlidesView && (
           <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-md border border-gh-border bg-gh-bg-secondary px-3 py-2 text-xs text-gh-text-secondary">
             <span>
-              PPT 模式 · 第 {currentSlideLabel}/{Math.max(slides.length, 1)} 页 · 快捷键 F 全屏
+              PPT 模式 · 第 {currentSlideLabel}/{Math.max(slides.length, 1)} 页 · F 全屏 · N 备注
             </span>
             <div className="flex items-center gap-1">
               <button
