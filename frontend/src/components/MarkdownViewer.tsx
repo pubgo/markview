@@ -2240,6 +2240,36 @@ export function MarkdownViewer({
               {currentSlide}
             </Markdown>
           </section>
+          <div
+            className="markdown-slide-progress"
+            role="progressbar"
+            aria-valuemin={1}
+            aria-valuenow={Math.min(slideIndex + 1, Math.max(slides.length, 1))}
+            aria-valuemax={Math.max(slides.length, 1)}
+            aria-label={`幻灯片进度 ${Math.min(slideIndex + 1, Math.max(slides.length, 1))} / ${Math.max(slides.length, 1)}`}
+            data-testid="markdown-slide-progress"
+            title="点击进度条可跳转页码"
+            onClick={(event) => {
+              event.stopPropagation();
+              const total = Math.max(slides.length, 1);
+              const rect = event.currentTarget.getBoundingClientRect();
+              if (rect.width <= 0) return;
+              const ratio = Math.min(1, Math.max(0, (event.clientX - rect.left) / rect.width));
+              const nextIndex = Math.min(total - 1, Math.floor(ratio * total));
+              setSlideIndex(nextIndex);
+              revealSlidesOverlay();
+            }}
+          >
+            <div
+              className="markdown-slide-progress__fill"
+              style={{
+                width: `${(Math.min(slideIndex + 1, Math.max(slides.length, 1)) / Math.max(slides.length, 1)) * 100}%`,
+              }}
+            />
+            <span className="markdown-slide-progress__label" aria-hidden="true">
+              {Math.min(slideIndex + 1, Math.max(slides.length, 1))}/{Math.max(slides.length, 1)}
+            </span>
+          </div>
           <div className="markdown-slide-help-badge" aria-hidden="true">
             ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 · {isSlidesOverlayPinned ? "H 取消固定" : "H 固定控件"}
           </div>
@@ -2270,6 +2300,7 @@ export function MarkdownViewer({
     handleSlidesOverlayActivity,
     handleSlidePageClick,
     parsed,
+    revealSlidesOverlay,
     slideIndex,
     slides,
     toggleSlidesFullscreen,
