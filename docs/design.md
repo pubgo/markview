@@ -125,7 +125,7 @@
 
 与 [STRATEGY.md](../STRATEGY.md) 四条轨道对齐（细节见 [strategy-status.md](strategy-status.md)）：
 
-1. **演示质感**：进度/备注/deck 导出、沉浸细节（在现有 Slides 之上）
+1. **演示质感**：转场 / deck 导出、独立提词器、排版启发式（进度与备注已落地）
 2. **阅读 / review 定点打磨**：搜索键盘导航与防抖、大规模文档下的 Worker 化搜索
 3. **导出与静态发布**：`build`/Pages 包装体验、多分组静态、导出保真
 4. **图表深度**：离线 PlantUML、导出时图表一致性（不做插件市场）

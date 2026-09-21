@@ -370,4 +370,46 @@ describe("MarkdownViewer slides mode", () => {
       expect(fill.style.width).toBe("100%");
     });
   });
+
+  it("extracts HTML comment speaker notes and toggles with N", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `# 封面\n\n第一页内容\n\n<!-- 强调本地优先 -->\n\n---\n\n# 第二页\n\n第二页内容`,
+      baseDir: "/tmp",
+    });
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    const notes = await screen.findByTestId("markdown-slide-notes");
+    expect(notes).toHaveTextContent("强调本地优先");
+    expect(screen.queryByText("<!-- 强调本地优先 -->")).not.toBeInTheDocument();
+
+    await user.keyboard("n");
+    await waitFor(() => {
+      expect(screen.queryByTestId("markdown-slide-notes")).not.toBeInTheDocument();
+    });
+
+    await user.keyboard("n");
+    expect(await screen.findByTestId("markdown-slide-notes")).toHaveTextContent("强调本地优先");
+
+    await user.click(screen.getByRole("button", { name: "下一页" }));
+    await waitFor(() => {
+      expect(screen.queryByTestId("markdown-slide-notes")).not.toBeInTheDocument();
+    });
+  });
 });
