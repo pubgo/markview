@@ -10,7 +10,7 @@ export function RestartButton() {
   useEffect(() => {
     fetchVersion()
       .then(setVersion)
-      .catch(() => { });
+      .catch(() => {});
   }, []);
 
   const handleClick = useCallback(async () => {

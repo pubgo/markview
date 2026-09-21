@@ -10,12 +10,18 @@ function getMermaidTheme(): "dark" | "default" {
 }
 
 function escapeMermaidLabel(text: string): string {
-  return `"${text.replace(/"/g, "#quot;").replace(/[\n\r]/g, " ").slice(0, 40)}"`;
+  return `"${text
+    .replace(/"/g, "#quot;")
+    .replace(/[\n\r]/g, " ")
+    .slice(0, 40)}"`;
 }
 
 /** Safe for Mermaid edge label (no pipe/brackets). */
 function escapeEdgeLabel(text: string, maxLen = 24): string {
-  return text.replace(/["\[\]()|]/g, " ").trim().slice(0, maxLen);
+  return text
+    .replace(/["\[\]()|]/g, " ")
+    .trim()
+    .slice(0, maxLen);
 }
 
 /** Mermaid-safe node id (alphanumeric + underscore). */
@@ -61,12 +67,12 @@ function buildOutlineMermaid(
     const linkedToLabel = new Map<string, string>();
     for (const h of file.headings) {
       if (h.level === 1) currentH1 = h.text.trim();
-      const linked = h.linkedFiles ?? h.linkedFileIds?.map((id) => ({ fileId: id, label: "" })) ?? [];
+      const linked =
+        h.linkedFiles ?? h.linkedFileIds?.map((id) => ({ fileId: id, label: "" })) ?? [];
       for (const lf of linked) {
         const tid = lf.fileId;
         if (fileIdsInOutline.has(tid) && tid !== file.id && !linkedToLabel.has(tid)) {
-          const label =
-            lf.label?.trim() || currentH1 || (fileById.get(tid)?.name ?? tid);
+          const label = lf.label?.trim() || currentH1 || (fileById.get(tid)?.name ?? tid);
           linkedToLabel.set(tid, label);
         }
       }
@@ -96,15 +102,9 @@ function findFileIdAndIsLabel(
         const fidSafe = fid.replace(/-/g, "_");
         // Mermaid may prefix node ids (e.g. "outline-view-123-fl_abc_def"), so match by content
         const isFileLabel =
-          id.includes("fl_") &&
-          id.includes(fidSafe) &&
-          !id.includes("n_" + fidSafe + "_");
+          id.includes("fl_") && id.includes(fidSafe) && !id.includes("n_" + fidSafe + "_");
         if (isFileLabel) return { fileId: fid, isFileLabel: true };
-        if (
-          id.includes("n_" + fidSafe + "_") ||
-          id === fid ||
-          id.endsWith("-" + fid)
-        )
+        if (id.includes("n_" + fidSafe + "_") || id === fid || id.endsWith("-" + fid))
           return { fileId: fid, isFileLabel: false };
       }
     }
@@ -259,10 +259,13 @@ export function OutlineGraphView({ onClose }: OutlineGraphViewProps) {
       mermaid
         .render(id, code, container)
         .then(({ svg: s }) => setSvg(s))
-        .catch(() => { })
+        .catch(() => {})
         .finally(() => container.remove());
     });
-    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["data-theme"] });
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["data-theme"],
+    });
     return () => observer.disconnect();
   }, [outline, mermaidCode]);
 
@@ -343,7 +346,11 @@ export function OutlineGraphView({ onClose }: OutlineGraphViewProps) {
           type="button"
           className="bg-transparent border border-gh-border rounded-md px-2 py-1.5 text-gh-text-secondary text-sm hover:bg-gh-bg-hover"
           onClick={toggleFlowDirection}
-          title={flowDirection === "TB" ? "上下布局（TB），点击切换为左右（LR）" : "左右布局（LR），点击切换为上下（TB）"}
+          title={
+            flowDirection === "TB"
+              ? "上下布局（TB），点击切换为左右（LR）"
+              : "左右布局（LR），点击切换为上下（TB）"
+          }
         >
           {flowDirection === "TB" ? "上下" : "左右"}
         </button>
@@ -358,7 +365,10 @@ export function OutlineGraphView({ onClose }: OutlineGraphViewProps) {
       )}
       <div className="flex-1 min-h-0">
         <ZoomPanView className="h-full w-full">
-          <div ref={svgContainerRef} className="inline-block p-4 min-w-full min-h-full [&_svg]:max-w-full [&_svg]:h-auto" />
+          <div
+            ref={svgContainerRef}
+            className="inline-block p-4 min-w-full min-h-full [&_svg]:max-w-full [&_svg]:h-auto"
+          />
         </ZoomPanView>
       </div>
     </div>

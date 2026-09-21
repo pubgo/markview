@@ -42,10 +42,7 @@ function getLinkedIds(file: Outline["files"][number], fileIds: Set<string>): Set
 }
 
 /** 强连通分量：Tarjan 算法，返回每个节点所属的 SCC 编号（同一分量内编号相同） */
-function findSCCs(
-  nodes: string[],
-  getOutgoing: (id: string) => string[],
-): Map<string, number> {
+function findSCCs(nodes: string[], getOutgoing: (id: string) => string[]): Map<string, number> {
   const index = new Map<string, number>();
   const low = new Map<string, number>();
   const onStack = new Map<string, boolean>();
@@ -92,10 +89,7 @@ function parseOutlineToPack(outline: Outline): PackNodeData {
   const fileById = new Map(outline.files.map((f) => [f.id, f]));
 
   // 递归构建：A 链接 B → A 的圆包含 B 的圆；ancestors 避免循环
-  function buildFileNode(
-    file: Outline["files"][number],
-    ancestors: Set<string>,
-  ): PackNodeData {
+  function buildFileNode(file: Outline["files"][number], ancestors: Set<string>): PackNodeData {
     let h1Text = file.name;
     const nodeChildren: PackNodeData[] = [];
 
@@ -231,8 +225,7 @@ export function OutlineGravityView({ onClose }: OutlineGravityViewProps) {
         }
       })
       .catch((err) => {
-        if (!cancelled)
-          setError(err instanceof Error ? err.message : "Failed to fetch outline");
+        if (!cancelled) setError(err instanceof Error ? err.message : "Failed to fetch outline");
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
@@ -255,9 +248,7 @@ export function OutlineGravityView({ onClose }: OutlineGravityViewProps) {
     return () => ro.disconnect();
   }, [outline]);
 
-  const [theme, setTheme] = useState(() =>
-    document.documentElement.getAttribute("data-theme"),
-  );
+  const [theme, setTheme] = useState(() => document.documentElement.getAttribute("data-theme"));
   useEffect(() => {
     const obs = new MutationObserver(() => {
       setTheme(document.documentElement.getAttribute("data-theme"));
@@ -281,10 +272,7 @@ export function OutlineGravityView({ onClose }: OutlineGravityViewProps) {
     const textColor = isDark ? "#e6edf3" : "#1f2328";
     const strokeColor = isDark ? "#30363d" : "#d0d7de";
 
-    const pack = d3
-      .pack<PackNodeData>()
-      .size([width, height])
-      .padding(3);
+    const pack = d3.pack<PackNodeData>().size([width, height]).padding(3);
 
     const root = pack(
       d3
@@ -411,9 +399,15 @@ export function OutlineGravityView({ onClose }: OutlineGravityViewProps) {
     function zoomTo(v: [number, number, number]) {
       const k = width / v[2];
       view = v;
-      node.attr("transform", (d) => `translate(${(d.x - v[0]) * k + width / 2},${(d.y - v[1]) * k + height / 2})`);
+      node.attr(
+        "transform",
+        (d) => `translate(${(d.x - v[0]) * k + width / 2},${(d.y - v[1]) * k + height / 2})`,
+      );
       node.attr("r", (d) => d.r * k);
-      label.attr("transform", (d) => `translate(${(d.x - v[0]) * k + width / 2},${(d.y - v[1]) * k + height / 2})`);
+      label.attr(
+        "transform",
+        (d) => `translate(${(d.x - v[0]) * k + width / 2},${(d.y - v[1]) * k + height / 2})`,
+      );
       label.style("font-size", (d) => {
         if (d.data.type === "root") return "0";
         const r = d.r * k;
@@ -544,12 +538,15 @@ export function OutlineGravityView({ onClose }: OutlineGravityViewProps) {
         <button
           type="button"
           className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
-          onClick={() => (svgRef.current as SVGSVGElement & { _resetZoom?: () => void })?._resetZoom?.()}
+          onClick={() =>
+            (svgRef.current as SVGSVGElement & { _resetZoom?: () => void })?._resetZoom?.()
+          }
         >
           重置视图
         </button>
         <span className="text-sm text-gh-text-secondary">
-          圆 packing 视图：圆心显示一级标题；缩小只显示 H1，放大后显示 H2 及引用文档的 H1；滚轮缩放、拖拽画布；点击圆放大
+          圆 packing 视图：圆心显示一级标题；缩小只显示 H1，放大后显示 H2 及引用文档的
+          H1；滚轮缩放、拖拽画布；点击圆放大
         </span>
       </div>
       <div ref={containerRef} className="relative min-h-0 flex-1 overflow-hidden">

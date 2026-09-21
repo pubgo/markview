@@ -36,14 +36,7 @@ describe("GlobalSearchModal", () => {
     const onClose = vi.fn();
     const onSelect = vi.fn();
 
-    render(
-      <GlobalSearchModal
-        isOpen
-        groups={groups}
-        onClose={onClose}
-        onSelect={onSelect}
-      />,
-    );
+    render(<GlobalSearchModal isOpen groups={groups} onClose={onClose} onSelect={onSelect} />);
 
     const input = screen.getByPlaceholderText("Search all files... (⌘/Ctrl + Shift + F)");
     await user.type(input, "graph");

@@ -1,6 +1,11 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import type { FileEntry, Group } from "../hooks/useApi";
-import { buildTree, getCommonPrefixPath, getPatternBaseDir, type TreeNode } from "../utils/buildTree";
+import {
+  buildTree,
+  getCommonPrefixPath,
+  getPatternBaseDir,
+  type TreeNode,
+} from "../utils/buildTree";
 import { FileContextMenu } from "./FileContextMenu";
 import { FileIcon } from "./FileIcon";
 
@@ -202,7 +207,9 @@ function TreeNodeItem({
   const folderAbsPath =
     lastSegment && node.fullPath === lastSegment && !node.fullPath.includes("/")
       ? commonPrefixPath
-      : commonPrefixPath + (commonPrefixPath && !commonPrefixPath.endsWith("/") ? "/" : "") + node.fullPath;
+      : commonPrefixPath +
+        (commonPrefixPath && !commonPrefixPath.endsWith("/") ? "/" : "") +
+        node.fullPath;
   const matchingPattern = findPatternForFolder(folderAbsPath, groupPatterns);
   const canRemove = !readOnly && (onRemovePattern != null || onRemoveFolder != null);
 
@@ -322,10 +329,11 @@ function FileNodeItem({
   return (
     <div className="relative group/file">
       <button
-        className={`flex items-center gap-2 w-full px-3 py-2 border-none cursor-pointer text-left text-sm transition-colors duration-150 ${isActive
-          ? "bg-gh-bg-active text-gh-text font-semibold"
-          : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
-          }`}
+        className={`flex items-center gap-2 w-full px-3 py-2 border-none cursor-pointer text-left text-sm transition-colors duration-150 ${
+          isActive
+            ? "bg-gh-bg-active text-gh-text font-semibold"
+            : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
+        }`}
         style={{ paddingLeft: `${depth * 16 + 12}px` }}
         onClick={() => onFileSelect(file.id)}
         title={file.uploaded ? file.name : file.path}

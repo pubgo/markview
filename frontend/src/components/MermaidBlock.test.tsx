@@ -118,7 +118,11 @@ describe("MermaidBlock", () => {
     render(<MermaidBlock code="invalid mermaid" />);
 
     await waitFor(() => {
-      expect(screen.getByText("图表渲染失败：语法可能有误，请检查图表代码（parse error）。已回退为代码块显示。")).toBeInTheDocument();
+      expect(
+        screen.getByText(
+          "图表渲染失败：语法可能有误，请检查图表代码（parse error）。已回退为代码块显示。",
+        ),
+      ).toBeInTheDocument();
       expect(screen.getByTitle("Copy code")).toBeInTheDocument();
     });
     expect(screen.getByText("invalid mermaid")).toBeInTheDocument();
@@ -131,7 +135,9 @@ describe("MermaidBlock", () => {
 
     await waitFor(() => {
       expect(
-        screen.getByText("图表渲染失败：渲染超时，请稍后重试（render timeout after 3000ms）。已回退为代码块显示。"),
+        screen.getByText(
+          "图表渲染失败：渲染超时，请稍后重试（render timeout after 3000ms）。已回退为代码块显示。",
+        ),
       ).toBeInTheDocument();
     });
   });
@@ -284,7 +290,10 @@ describe("MermaidBlock", () => {
     });
 
     let fullscreenElement: Element | null = null;
-    const originalFullscreenDescriptor = Object.getOwnPropertyDescriptor(document, "fullscreenElement");
+    const originalFullscreenDescriptor = Object.getOwnPropertyDescriptor(
+      document,
+      "fullscreenElement",
+    );
     Object.defineProperty(document, "fullscreenElement", {
       get: () => fullscreenElement,
       configurable: true,
@@ -372,7 +381,10 @@ describe("MermaidBlock", () => {
     });
 
     let fullscreenElement: Element | null = null;
-    const originalFullscreenDescriptor = Object.getOwnPropertyDescriptor(document, "fullscreenElement");
+    const originalFullscreenDescriptor = Object.getOwnPropertyDescriptor(
+      document,
+      "fullscreenElement",
+    );
     Object.defineProperty(document, "fullscreenElement", {
       get: () => fullscreenElement,
       configurable: true,

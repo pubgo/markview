@@ -5,367 +5,369 @@ import { MarkdownViewer } from "./MarkdownViewer";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 
 vi.mock("../hooks/useApi", () => ({
-    fetchFileContent: vi.fn(),
-    openRelativeFile: vi.fn(),
+  fetchFileContent: vi.fn(),
+  openRelativeFile: vi.fn(),
 }));
 
 vi.mock("./TocToggle", () => ({
-    TocToggle: () => null,
+  TocToggle: () => null,
 }));
 
 vi.mock("./RawToggle", () => ({
-    RawToggle: () => null,
+  RawToggle: () => null,
 }));
 
 vi.mock("./CopyButton", () => ({
-    CopyButton: () => null,
+  CopyButton: () => null,
 }));
 
 vi.mock("./PdfExportButton", () => ({
-    PdfExportButton: () => null,
+  PdfExportButton: () => null,
 }));
 
 vi.mock("./RemoveButton", () => ({
-    RemoveButton: () => null,
+  RemoveButton: () => null,
 }));
 
 vi.mock("./BacklinksPanel", () => ({
-    BacklinksPanel: () => null,
+  BacklinksPanel: () => null,
 }));
 
 describe("MarkdownViewer slides mode", () => {
-    let requestFullscreenMock: ReturnType<typeof vi.fn>;
-    let exitFullscreenMock: ReturnType<typeof vi.fn>;
-    let fullscreenElement: Element | null;
+  let requestFullscreenMock: ReturnType<typeof vi.fn>;
+  let exitFullscreenMock: ReturnType<typeof vi.fn>;
+  let fullscreenElement: Element | null;
 
-    beforeEach(() => {
-        vi.clearAllMocks();
-        fullscreenElement = null;
-        Object.defineProperty(document, "fullscreenElement", {
-            configurable: true,
-            get: () => fullscreenElement,
-        });
-        requestFullscreenMock = vi.fn().mockImplementation(function (this: HTMLElement) {
-            fullscreenElement = this;
-            return Promise.resolve();
-        });
-        exitFullscreenMock = vi.fn().mockImplementation(() => {
-            fullscreenElement = null;
-            return Promise.resolve();
-        });
-        Object.defineProperty(document, "exitFullscreen", {
-            configurable: true,
-            value: exitFullscreenMock,
-        });
-        Object.defineProperty(HTMLElement.prototype, "requestFullscreen", {
-            configurable: true,
-            value: requestFullscreenMock,
-        });
-        vi.mocked(fetchFileContent).mockResolvedValue({
-            content: `# 封面\n\n第一页内容\n\n---\n\n# 第二页\n\n第二页内容`,
-            baseDir: "/tmp",
-        });
-        vi.mocked(openRelativeFile).mockResolvedValue({
-            id: "file-2",
-            name: "ok.md",
-            path: "/tmp/ok.md",
-        });
+  beforeEach(() => {
+    vi.clearAllMocks();
+    fullscreenElement = null;
+    Object.defineProperty(document, "fullscreenElement", {
+      configurable: true,
+      get: () => fullscreenElement,
+    });
+    requestFullscreenMock = vi.fn().mockImplementation(function (this: HTMLElement) {
+      fullscreenElement = this;
+      return Promise.resolve();
+    });
+    exitFullscreenMock = vi.fn().mockImplementation(() => {
+      fullscreenElement = null;
+      return Promise.resolve();
+    });
+    Object.defineProperty(document, "exitFullscreen", {
+      configurable: true,
+      value: exitFullscreenMock,
+    });
+    Object.defineProperty(HTMLElement.prototype, "requestFullscreen", {
+      configurable: true,
+      value: requestFullscreenMock,
+    });
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `# 封面\n\n第一页内容\n\n---\n\n# 第二页\n\n第二页内容`,
+      baseDir: "/tmp",
+    });
+    vi.mocked(openRelativeFile).mockResolvedValue({
+      id: "file-2",
+      name: "ok.md",
+      path: "/tmp/ok.md",
+    });
+  });
+
+  it("enters slides mode and flips pages by button", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("第一页内容");
+
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/PPT 模式/)).toBeInTheDocument();
+      expect(screen.getByText("第一页内容")).toBeInTheDocument();
+      expect(screen.queryByText("第二页内容")).not.toBeInTheDocument();
     });
 
-    it("enters slides mode and flips pages by button", async () => {
-        const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "下一页" }));
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    await waitFor(() => {
+      expect(screen.getByText("第二页内容")).toBeInTheDocument();
+      expect(screen.queryByText("第一页内容")).not.toBeInTheDocument();
+    });
+  });
 
-        await screen.findByText("第一页内容");
-
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-
-        await waitFor(() => {
-            expect(screen.getByText(/PPT 模式/)).toBeInTheDocument();
-            expect(screen.getByText("第一页内容")).toBeInTheDocument();
-            expect(screen.queryByText("第二页内容")).not.toBeInTheDocument();
-        });
-
-        await user.click(screen.getByRole("button", { name: "下一页" }));
-
-        await waitFor(() => {
-            expect(screen.getByText("第二页内容")).toBeInTheDocument();
-            expect(screen.queryByText("第一页内容")).not.toBeInTheDocument();
-        });
+  it("marks short title slides as covers and list slides as content", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `# 封面\n\n副标题\n\n---\n\n# 要点\n\n- 第一条\n- 第二条\n`,
+      baseDir: "/tmp",
     });
 
-    it("marks short title slides as covers and list slides as content", async () => {
-        const user = userEvent.setup();
-        vi.mocked(fetchFileContent).mockResolvedValue({
-            content: `# 封面\n\n副标题\n\n---\n\n# 要点\n\n- 第一条\n- 第二条\n`,
-            baseDir: "/tmp",
-        });
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="talk.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="talk.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    await screen.findByText("副标题");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
 
-        await screen.findByText("副标题");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-
-        await waitFor(() => {
-            const page = screen.getByTestId("markdown-slide-page");
-            expect(page).toHaveAttribute("data-slide-cover", "true");
-            expect(page.className).toContain("markdown-slide-page--cover");
-        });
-
-        await user.click(screen.getByRole("button", { name: "下一页" }));
-
-        await waitFor(() => {
-            const page = screen.getByTestId("markdown-slide-page");
-            expect(page).toHaveAttribute("data-slide-cover", "false");
-            expect(page.className).not.toContain("markdown-slide-page--cover");
-            expect(screen.getByText("第一条")).toBeInTheDocument();
-        });
+    await waitFor(() => {
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page).toHaveAttribute("data-slide-cover", "true");
+      expect(page.className).toContain("markdown-slide-page--cover");
     });
 
-    it("renders tables and mermaid blocks inside slides pages", async () => {
-        const user = userEvent.setup();
-        vi.mocked(fetchFileContent).mockResolvedValue({
-            content: `# 表\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n---\n\n# 图\n\n\`\`\`mermaid\ngraph TD; A-->B\n\`\`\`\n`,
-            baseDir: "/tmp",
-        });
+    await user.click(screen.getByRole("button", { name: "下一页" }));
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="media.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    await waitFor(() => {
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page).toHaveAttribute("data-slide-cover", "false");
+      expect(page.className).not.toContain("markdown-slide-page--cover");
+      expect(screen.getByText("第一条")).toBeInTheDocument();
+    });
+  });
 
-        await screen.findByText("表");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-
-        await waitFor(() => {
-            const page = screen.getByTestId("markdown-slide-page");
-            expect(page.querySelector("table")).toBeTruthy();
-            expect(screen.getByText("1")).toBeInTheDocument();
-        });
-
-        await user.click(screen.getByRole("button", { name: "下一页" }));
-
-        await waitFor(() => {
-            const page = screen.getByTestId("markdown-slide-page");
-            expect(page.querySelector(".mermaid-block, [data-mermaid-render-status]")).toBeTruthy();
-        });
+  it("renders tables and mermaid blocks inside slides pages", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `# 表\n\n| A | B |\n| - | - |\n| 1 | 2 |\n\n---\n\n# 图\n\n\`\`\`mermaid\ngraph TD; A-->B\n\`\`\`\n`,
+      baseDir: "/tmp",
     });
 
-    it("supports keyboard navigation in slides mode", async () => {
-        const user = userEvent.setup();
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="media.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    await screen.findByText("表");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
 
-        await screen.findByText("第一页内容");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-
-        fireEvent.keyDown(window, { key: "ArrowRight" });
-        await waitFor(() => {
-            expect(screen.getByText("第二页内容")).toBeInTheDocument();
-        });
-
-        fireEvent.keyDown(window, { key: "ArrowLeft" });
-        await waitFor(() => {
-            expect(screen.getByText("第一页内容")).toBeInTheDocument();
-        });
+    await waitFor(() => {
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page.querySelector("table")).toBeTruthy();
+      expect(screen.getByText("1")).toBeInTheDocument();
     });
 
-    it("enters fullscreen when clicking fullscreen button", async () => {
-        const user = userEvent.setup();
+    await user.click(screen.getByRole("button", { name: "下一页" }));
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    await waitFor(() => {
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page.querySelector(".mermaid-block, [data-mermaid-render-status]")).toBeTruthy();
+    });
+  });
 
-        await screen.findByText("第一页内容");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
+  it("supports keyboard navigation in slides mode", async () => {
+    const user = userEvent.setup();
 
-        await user.click(screen.getByRole("button", { name: "全屏展示" }));
-        expect(requestFullscreenMock).toHaveBeenCalledOnce();
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
 
-        document.dispatchEvent(new Event("fullscreenchange"));
-        await waitFor(() => {
-            const shell = screen.getByTestId("markdown-slide-shell");
-            expect(shell.className).toContain("markdown-slide-shell--fullscreen");
-        });
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    fireEvent.keyDown(window, { key: "ArrowRight" });
+    await waitFor(() => {
+      expect(screen.getByText("第二页内容")).toBeInTheDocument();
     });
 
-    it("goes to next slide when clicking slide body", async () => {
-        const user = userEvent.setup();
-
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
-
-        await screen.findByText("第一页内容");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-
-        const slidePage = document.querySelector(".markdown-slide-page") as HTMLElement;
-        expect(slidePage).toBeTruthy();
-        await user.click(slidePage);
-
-        await waitFor(() => {
-            expect(screen.getByText("第二页内容")).toBeInTheDocument();
-        });
+    fireEvent.keyDown(window, { key: "ArrowLeft" });
+    await waitFor(() => {
+      expect(screen.getByText("第一页内容")).toBeInTheDocument();
     });
+  });
 
-    it("exits fullscreen before leaving slides on Escape", async () => {
-        const user = userEvent.setup();
+  it("enters fullscreen when clicking fullscreen button", async () => {
+    const user = userEvent.setup();
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
 
-        await screen.findByText("第一页内容");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-        await user.click(screen.getByRole("button", { name: "全屏展示" }));
-        expect(requestFullscreenMock).toHaveBeenCalledOnce();
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
 
-        fireEvent.keyDown(window, { key: "Escape" });
+    await user.click(screen.getByRole("button", { name: "全屏展示" }));
+    expect(requestFullscreenMock).toHaveBeenCalledOnce();
 
-        expect(exitFullscreenMock).toHaveBeenCalledOnce();
-        expect(screen.getByText(/PPT 模式/)).toBeInTheDocument();
+    document.dispatchEvent(new Event("fullscreenchange"));
+    await waitFor(() => {
+      const shell = screen.getByTestId("markdown-slide-shell");
+      expect(shell.className).toContain("markdown-slide-shell--fullscreen");
     });
+  });
 
-    it("auto-hides overlay controls in fullscreen after inactivity", async () => {
-        const user = userEvent.setup();
+  it("goes to next slide when clicking slide body", async () => {
+    const user = userEvent.setup();
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
 
-        await screen.findByText("第一页内容");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
-        await user.click(screen.getByRole("button", { name: "全屏展示" }));
-        document.dispatchEvent(new Event("fullscreenchange"));
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
 
-        const shell = screen.getByTestId("markdown-slide-shell");
-        expect(shell.className).not.toContain("markdown-slide-shell--overlay-hidden");
+    const slidePage = document.querySelector(".markdown-slide-page") as HTMLElement;
+    expect(slidePage).toBeTruthy();
+    await user.click(slidePage);
 
-        await waitFor(() => {
-            expect(shell.className).toContain("markdown-slide-shell--overlay-hidden");
-        }, {
-            timeout: 4500,
-        });
+    await waitFor(() => {
+      expect(screen.getByText("第二页内容")).toBeInTheDocument();
     });
+  });
 
-    it("shows slide progress that updates when navigating", async () => {
-        const user = userEvent.setup();
+  it("exits fullscreen before leaving slides on Escape", async () => {
+    const user = userEvent.setup();
 
-        render(
-            <MarkdownViewer
-                fileId="file-1"
-                fileName="README.md"
-                revision={0}
-                onFileOpened={() => { }}
-                onHeadingsChange={() => { }}
-                isTocOpen={false}
-                onTocToggle={() => { }}
-                onRemoveFile={() => { }}
-                isWide={false}
-            />,
-        );
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
 
-        await screen.findByText("第一页内容");
-        await user.click(screen.getByRole("button", { name: "Slides" }));
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+    await user.click(screen.getByRole("button", { name: "全屏展示" }));
+    expect(requestFullscreenMock).toHaveBeenCalledOnce();
 
-        const progress = await screen.findByTestId("markdown-slide-progress");
-        expect(progress).toHaveAttribute("aria-valuenow", "1");
-        expect(progress).toHaveAttribute("aria-valuemax", "2");
-        const fill = progress.querySelector(".markdown-slide-progress__fill") as HTMLElement;
-        expect(fill.style.width).toBe("50%");
+    fireEvent.keyDown(window, { key: "Escape" });
 
-        await user.click(screen.getByRole("button", { name: "下一页" }));
-        await waitFor(() => {
-            expect(progress).toHaveAttribute("aria-valuenow", "2");
-            expect(fill.style.width).toBe("100%");
-        });
+    expect(exitFullscreenMock).toHaveBeenCalledOnce();
+    expect(screen.getByText(/PPT 模式/)).toBeInTheDocument();
+  });
+
+  it("auto-hides overlay controls in fullscreen after inactivity", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+    await user.click(screen.getByRole("button", { name: "全屏展示" }));
+    document.dispatchEvent(new Event("fullscreenchange"));
+
+    const shell = screen.getByTestId("markdown-slide-shell");
+    expect(shell.className).not.toContain("markdown-slide-shell--overlay-hidden");
+
+    await waitFor(
+      () => {
+        expect(shell.className).toContain("markdown-slide-shell--overlay-hidden");
+      },
+      {
+        timeout: 4500,
+      },
+    );
+  });
+
+  it("shows slide progress that updates when navigating", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    const progress = await screen.findByTestId("markdown-slide-progress");
+    expect(progress).toHaveAttribute("aria-valuenow", "1");
+    expect(progress).toHaveAttribute("aria-valuemax", "2");
+    const fill = progress.querySelector(".markdown-slide-progress__fill") as HTMLElement;
+    expect(fill.style.width).toBe("50%");
+
+    await user.click(screen.getByRole("button", { name: "下一页" }));
+    await waitFor(() => {
+      expect(progress).toHaveAttribute("aria-valuenow", "2");
+      expect(fill.style.width).toBe("100%");
     });
-
+  });
 });
