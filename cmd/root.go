@@ -126,14 +126,19 @@ Supported Markdown Features:
   - Raw HTML
 
 Glob Patterns:
-  Use --watch (-w) to specify glob patterns. Matching directories are
-  watched and new files are automatically added.
-  Cannot be combined with file arguments.
+  Positional arguments that contain glob characters (* ? [) are treated as
+  watch patterns (same as --watch / -w). Quote them so the shell does not
+  expand the glob first. Matching directories are watched and new files are
+  automatically added. Cannot be combined with concrete file arguments.
 
-	$ markview -w '**/*.md'                   Watch all .md files recursively
-	$ markview -w 'docs/**/*.md' -t docs      Watch docs/ tree in "docs" group
-	$ markview -w '*.md' -w 'docs/**/*.md'    Watch multiple patterns
+	$ markview '**/*.md'                      Watch all .md files recursively
+	$ markview -w '**/*.md'                   Same, via explicit --watch
+	$ markview 'docs/**/*.md' -t docs         Watch docs/ tree in "docs" group
+	$ markview '*.md' 'docs/**/*.md'          Watch multiple patterns
 	$ markview --unwatch '**/*.md'            Stop watching a pattern
+
+  Expansion respects project .gitignore (and always skips .git/). Concrete
+  file arguments (no glob chars) still open those files directly.
 
 WARNING: --bind with a non-loopback address:
 	Binding to a non-loopback address (e.g. 0.0.0.0) exposes markview to the
@@ -255,7 +260,12 @@ func run(cmd *cobra.Command, args []string) error {
 	}
 	target = resolved
 
-	if len(watchPatterns) > 0 && len(args) > 0 {
+	fileArgs, globArgs := partitionCLIArgs(args)
+	if len(globArgs) > 0 {
+		watchPatterns = append(append([]string{}, watchPatterns...), globArgs...)
+	}
+
+	if len(watchPatterns) > 0 && len(fileArgs) > 0 {
 		hasGlob := false
 		for _, p := range watchPatterns {
 			if hasGlobChars(p) {
@@ -264,9 +274,9 @@ func run(cmd *cobra.Command, args []string) error {
 			}
 		}
 		if !hasGlob {
-			return fmt.Errorf("cannot use --watch (-w) with file arguments\n(hint: the shell may have expanded the glob pattern; quote it to prevent expansion, e.g. -w '**/*.md')")
+			return fmt.Errorf("cannot use --watch (-w) with file arguments\n(hint: the shell may have expanded the glob pattern; quote it to prevent expansion, e.g. markview '**/*.md')")
 		}
-		return fmt.Errorf("cannot use --watch (-w) with file arguments")
+		return fmt.Errorf("cannot mix watch patterns with file arguments")
 	}
 
 	patterns, err := resolvePatterns(watchPatterns)
@@ -274,7 +284,7 @@ func run(cmd *cobra.Command, args []string) error {
 		return err
 	}
 
-	files, err := resolveFiles(args)
+	files, err := resolveFiles(fileArgs)
 	if err != nil {
 		return err
 	}
@@ -417,6 +427,20 @@ func isLoopbackBind(bind string) bool {
 
 func hasGlobChars(s string) bool {
 	return strings.ContainsAny(s, "*?[")
+}
+
+// partitionCLIArgs splits positional args into concrete file paths and glob
+// patterns. Args that still contain glob metacharacters (typically quoted so
+// the shell did not expand them) are treated as watch patterns.
+func partitionCLIArgs(args []string) (files, globs []string) {
+	for _, arg := range args {
+		if hasGlobChars(arg) {
+			globs = append(globs, arg)
+		} else {
+			files = append(files, arg)
+		}
+	}
+	return files, globs
 }
 
 func resolvePatterns(patterns []string) ([]string, error) {

@@ -65,6 +65,16 @@ func TestRun_UnwatchWithArgs(t *testing.T) {
 	}
 }
 
+func TestPartitionCLIArgs(t *testing.T) {
+	files, globs := partitionCLIArgs([]string{"README.md", "**/*.md", "docs/*.md", "CHANGELOG.md"})
+	if len(files) != 2 || files[0] != "README.md" || files[1] != "CHANGELOG.md" {
+		t.Fatalf("files=%v", files)
+	}
+	if len(globs) != 2 || globs[0] != "**/*.md" || globs[1] != "docs/*.md" {
+		t.Fatalf("globs=%v", globs)
+	}
+}
+
 func TestRun_WatchWithArgs(t *testing.T) {
 	t.Run("with glob pattern", func(t *testing.T) {
 		watchPatterns = []string{"**/*.md"}
@@ -72,11 +82,26 @@ func TestRun_WatchWithArgs(t *testing.T) {
 
 		err := run(rootCmd, []string{"README.md"})
 		if err == nil {
-			t.Fatal("run should return error when --watch and args are both specified")
+			t.Fatal("run should return error when --watch and file args are both specified")
 		}
-		want := "cannot use --watch (-w) with file arguments"
+		want := "cannot mix watch patterns with file arguments"
 		if err.Error() != want {
 			t.Fatalf("got error %q, want %q", err.Error(), want)
+		}
+	})
+
+	t.Run("positional glob alone does not error as file mix", func(t *testing.T) {
+		watchPatterns = nil
+		defer func() { watchPatterns = nil }()
+
+		// resolvePatterns needs abs paths that don't require a running server to fail early;
+		// mixing glob positional with a concrete file should still error before I/O.
+		err := run(rootCmd, []string{"**/*.md", "README.md"})
+		if err == nil {
+			t.Fatal("expected mix error")
+		}
+		if err.Error() != "cannot mix watch patterns with file arguments" {
+			t.Fatalf("got %q", err.Error())
 		}
 	})
 
