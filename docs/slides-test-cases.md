@@ -7,6 +7,7 @@
 | 文件 | 覆盖点 |
 | ---- | ------ |
 | `frontend/src/utils/slideNotes.test.ts` | HTML 注释提取 / 剥离 / 多注释合并 / 空注释忽略 |
+| `frontend/src/utils/slideColumns.test.ts` | 页内 `\|\|\|` 分栏（含代码块忽略） |
 | `frontend/src/utils/slideCover.test.ts` | 短封面启发式 |
 | `frontend/src/components/MarkdownViewer.slides.test.tsx` | 进入 Slides、翻页、封面标记、全屏/overlay、进度条、演讲者备注 + `N` |
 | `frontend/src/components/SlidesToggle.test.tsx` | Slides 开关按钮 |
@@ -53,6 +54,13 @@ $ markview testdata/slides-notes.md testdata/slides-media.md
 | -- | ---- | ---- |
 | TR-01 | Slides 下翻到下一页 | 新页带 `markdown-slide-page--enter`；内容切换正确 |
 | TR-02 | 系统开启「减少动态效果」 | 无位移动画（仅瞬时切换） |
+
+## 3.2 双栏
+
+| ID | 步骤 | 期望 |
+| -- | ---- | ---- |
+| COL-01 | 打开含 `\|\|\|` 的页（见 `testdata/slides-notes.md`） | `data-slide-columns="2"`，左右内容同时可见 |
+| COL-02 | 代码块内写 `\|\|\|` | 不分栏，当作普通代码 |
 
 ## 4. 进度条回归
 

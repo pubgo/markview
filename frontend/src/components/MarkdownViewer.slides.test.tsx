@@ -445,4 +445,38 @@ describe("MarkdownViewer slides mode", () => {
       expect(screen.getByText("第二页内容")).toBeInTheDocument();
     });
   });
+
+  it("renders ||| as a two-column slide layout", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `## 左栏\n\n- A\n\n|||\n\n## 右栏\n\n- B`,
+      baseDir: "/tmp",
+    });
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("左栏");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    const page = await screen.findByTestId("markdown-slide-page");
+    expect(page).toHaveAttribute("data-slide-columns", "2");
+    expect(page.className).toContain("markdown-slide-page--columns");
+    expect(screen.getByTestId("markdown-slide-columns")).toBeInTheDocument();
+    expect(screen.getByText("左栏")).toBeInTheDocument();
+    expect(screen.getByText("右栏")).toBeInTheDocument();
+    expect(screen.getByText("A")).toBeInTheDocument();
+    expect(screen.getByText("B")).toBeInTheDocument();
+  });
 });
