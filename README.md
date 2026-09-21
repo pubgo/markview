@@ -34,7 +34,7 @@
 - MDX 支持（渲染 Markdown，去除 `import`/`export`，转义 JSX 标签）
 - <img src="images/icons/width-expand.svg" width="16" height="16" alt="宽布局"> 宽版 / <img src="images/icons/width-compress.svg" width="16" height="16" alt="窄布局"> 窄版阅读宽度切换
 - <img src="images/icons/raw.svg" width="16" height="16" alt="原文"> 原始 Markdown 视图
-- 内置 Slides 演示模式（`---` 分页、封面居中、全屏舞台、键盘翻页）
+- 内置 Slides 演示模式（`---` 分页、封面居中、备注、双栏、全屏舞台、进度条）
 - 应用内 PDF 导出（单文档 / 分组合并；跟随明暗主题）
 - `markview build`：将 Markdown 打包为可托管的静态站点
 - <img src="images/icons/copy.svg" width="16" height="16" alt="复制"> 内容复制（Markdown / 文本 / HTML）
