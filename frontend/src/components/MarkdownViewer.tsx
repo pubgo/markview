@@ -2291,8 +2291,10 @@ export function MarkdownViewer({
             {isSlidesFullscreen ? "退出全屏" : "全屏展示"}
           </button>
           <section
-            className={`markdown-slide-page${cover ? " markdown-slide-page--cover" : ""}`}
+            key={slideIndex}
+            className={`markdown-slide-page markdown-slide-page--enter${cover ? " markdown-slide-page--cover" : ""}`}
             data-testid="markdown-slide-page"
+            data-slide-index={slideIndex}
             data-slide-cover={cover ? "true" : "false"}
             onClick={handleSlidePageClick}
             title="点击空白区域可进入下一页"

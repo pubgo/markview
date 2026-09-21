@@ -47,6 +47,13 @@ $ markview testdata/slides-notes.md testdata/slides-media.md
 | SN-08 | 备注面板上点击 | 不触发「空白点击下一页」 |
 | SN-09 | 阅读模式（退出 Slides） | 原文中 HTML 注释仍在源码里；阅读渲染不依赖备注面板 |
 
+## 3.1 翻页转场
+
+| ID | 步骤 | 期望 |
+| -- | ---- | ---- |
+| TR-01 | Slides 下翻到下一页 | 新页带 `markdown-slide-page--enter`；内容切换正确 |
+| TR-02 | 系统开启「减少动态效果」 | 无位移动画（仅瞬时切换） |
+
 ## 4. 进度条回归
 
 | ID | 步骤 | 期望 |
