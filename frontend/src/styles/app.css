@@ -230,6 +230,34 @@ body,
   color: var(--color-gh-text-secondary);
 }
 
+.markdown-slide-page--columns {
+  display: flex;
+  flex-direction: column;
+}
+
+.markdown-slide-columns {
+  flex: 1;
+  display: grid;
+  gap: clamp(1rem, 2.5vw, 2rem);
+  align-items: start;
+  min-height: 0;
+  width: 100%;
+}
+
+.markdown-slide-columns__col {
+  min-width: 0;
+}
+
+.markdown-slide-columns__col > :first-child {
+  margin-top: 0;
+}
+
+@media (max-width: 720px) {
+  .markdown-slide-columns {
+    grid-template-columns: 1fr !important;
+  }
+}
+
 .markdown-body--slides .markdown-slide-page h1 {
   font-size: clamp(2.25rem, 4.4vw, 3.5rem);
   line-height: 1.15;

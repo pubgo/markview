@@ -34,7 +34,7 @@
 - MDX 支持（渲染 Markdown，去除 `import`/`export`，转义 JSX 标签）
 - <img src="images/icons/width-expand.svg" width="16" height="16" alt="宽布局"> 宽版 / <img src="images/icons/width-compress.svg" width="16" height="16" alt="窄布局"> 窄版阅读宽度切换
 - <img src="images/icons/raw.svg" width="16" height="16" alt="原文"> 原始 Markdown 视图
-- 内置 Slides 演示模式（`---` 分页、封面居中、全屏舞台、键盘翻页）
+- 内置 Slides 演示模式（`---` 分页、封面居中、备注、双栏、全屏舞台、进度条）
 - 应用内 PDF 导出（单文档 / 分组合并；跟随明暗主题）
 - `markview build`：将 Markdown 打包为可托管的静态站点
 - <img src="images/icons/copy.svg" width="16" height="16" alt="复制"> 内容复制（Markdown / 文本 / HTML）
@@ -151,6 +151,7 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 - 底部进度条显示当前页/总页，点击可跳转；全屏时随控件一起显隐
 - 演讲者备注：页内 HTML 注释（`<!-- ... -->`，与 Marp 兼容）会从观众画面剥离，并以备注面板展示；`N` 切换显示
 - 翻页时短淡入/上移过渡（尊重系统「减少动态效果」）
+- 页内双栏：单独一行的 `|||` 将当前页拆成多列（代码块内的 `|||` 忽略）
 
 示例：
 
@@ -160,6 +161,20 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 这是第一页
 
 <!-- 开场：强调本地优先，不要展开编辑器对比 -->
+
+---
+
+## 对比
+
+### 方案 A
+
+- 本地优先
+
+|||
+
+### 方案 B
+
+- 在线协作
 
 ---
 
@@ -183,7 +198,18 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 > [!TIP]
 > 全屏状态下，演示控件会在短暂无操作后自动隐藏；移动鼠标、触控或按键会再次显示。
 
-试用媒体页示例：`testdata/slides-media.md`。演讲者备注边界夹具：`testdata/slides-notes.md`。验收清单见 [docs/slides-test-cases.md](docs/slides-test-cases.md)。
+**完整演示稿（推荐先看）：** [`testdata/slides-complete.md`](testdata/slides-complete.md)  
+覆盖封面、备注、`|||` 双栏/三栏、表格、Mermaid、图片、代码块内分隔符，以及快捷键说明页。
+
+专项夹具：
+
+| 文件 | 内容 |
+| ---- | ---- |
+| [`testdata/slides-complete.md`](testdata/slides-complete.md) | 内置 Slides 能力总览 |
+| [`testdata/slides-media.md`](testdata/slides-media.md) | 表格 / Mermaid / 图片 |
+| [`testdata/slides-notes.md`](testdata/slides-notes.md) | 备注边界 + 双栏 |
+
+验收清单：[docs/slides-test-cases.md](docs/slides-test-cases.md)。离线 Marp 导出模板见 [docs/slides/](docs/slides/)。
 
 ### 导出 PDF
 
