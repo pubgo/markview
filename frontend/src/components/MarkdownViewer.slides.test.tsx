@@ -412,4 +412,37 @@ describe("MarkdownViewer slides mode", () => {
       expect(screen.queryByTestId("markdown-slide-notes")).not.toBeInTheDocument();
     });
   });
+
+  it("applies enter transition class when changing slides", async () => {
+    const user = userEvent.setup();
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="README.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("第一页内容");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    const firstPage = await screen.findByTestId("markdown-slide-page");
+    expect(firstPage).toHaveAttribute("data-slide-index", "0");
+    expect(firstPage.className).toContain("markdown-slide-page--enter");
+
+    await user.click(screen.getByRole("button", { name: "下一页" }));
+    await waitFor(() => {
+      const nextPage = screen.getByTestId("markdown-slide-page");
+      expect(nextPage).toHaveAttribute("data-slide-index", "1");
+      expect(nextPage.className).toContain("markdown-slide-page--enter");
+      expect(screen.getByText("第二页内容")).toBeInTheDocument();
+    });
+  });
 });
