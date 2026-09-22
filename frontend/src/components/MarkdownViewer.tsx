@@ -22,6 +22,14 @@ import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
 import { extractSlideNotes } from "../utils/slideNotes";
 import { parseSlideColumnLayout } from "../utils/slideColumns";
+import { slidePreviewTitle } from "../utils/slidePreviewTitle";
+import {
+  PRESENTER_CHANNEL,
+  buildPresenterUrl,
+  createPresenterSessionId,
+  isPresenterMessage,
+  type PresenterState,
+} from "../utils/slidesPresenterChannel";
 import { TocToggle } from "./TocToggle";
 import { CopyButton } from "./CopyButton";
 import { PdfExportButton } from "./PdfExportButton";
@@ -1954,11 +1962,16 @@ export function MarkdownViewer({
   const [isSlidesOverlayPinned, setIsSlidesOverlayPinned] = useState(false);
   const [isSlidesNotesVisible, setIsSlidesNotesVisible] = useState(true);
   const [slideIndex, setSlideIndex] = useState(0);
+  const [presenterSessionId, setPresenterSessionId] = useState<string | null>(null);
+  const [presenterPopupBlocked, setPresenterPopupBlocked] = useState(false);
   const [collapsedHeadingIds, setCollapsedHeadingIds] = useState<Set<string>>(() => new Set());
   const [linkOpenError, setLinkOpenError] = useState<string | null>(null);
   const articleRef = useRef<HTMLElement>(null);
   const slideShellRef = useRef<HTMLDivElement>(null);
   const slidesOverlayTimerRef = useRef<number | null>(null);
+  const presenterWindowRef = useRef<Window | null>(null);
+  const presenterChannelRef = useRef<BroadcastChannel | null>(null);
+  const presenterStateRef = useRef<PresenterState | null>(null);
   const [prevFetchKey, setPrevFetchKey] = useState({ fileId, revision });
 
   if (fileId !== prevFetchKey.fileId || revision !== prevFetchKey.revision) {
@@ -2177,6 +2190,80 @@ export function MarkdownViewer({
     setSlideIndex(Math.max(0, slides.length - 1));
   }, [slides.length]);
 
+  const closePresenter = useCallback(() => {
+    presenterWindowRef.current?.close();
+    presenterWindowRef.current = null;
+    setPresenterSessionId(null);
+    setPresenterPopupBlocked(false);
+  }, []);
+
+  const openPresenter = useCallback(() => {
+    const sessionId = createPresenterSessionId();
+    const url = buildPresenterUrl(sessionId);
+    const win = window.open(
+      url,
+      `markview-presenter-${sessionId}`,
+      "popup=yes,width=520,height=780",
+    );
+    if (!win) {
+      setPresenterPopupBlocked(true);
+      return;
+    }
+    setPresenterPopupBlocked(false);
+    presenterWindowRef.current = win;
+    setPresenterSessionId(sessionId);
+    setIsSlidesNotesVisible(false);
+  }, []);
+
+  const togglePresenter = useCallback(() => {
+    if (presenterSessionId) {
+      closePresenter();
+      return;
+    }
+    openPresenter();
+  }, [closePresenter, openPresenter, presenterSessionId]);
+
+  useEffect(() => {
+    if (!isSlidesView) {
+      closePresenter();
+    }
+  }, [closePresenter, isSlidesView]);
+
+  useEffect(() => {
+    if (!presenterSessionId) {
+      presenterStateRef.current = null;
+      return;
+    }
+    const currentSlide = slides[slideIndex] ?? "";
+    const { notes } = extractSlideNotes(currentSlide);
+    const state: PresenterState = {
+      type: "state",
+      sessionId: presenterSessionId,
+      fileId,
+      slideIndex,
+      slideCount: Math.max(slides.length, 1),
+      notes,
+      title: slidePreviewTitle(currentSlide),
+      prevTitle: slideIndex > 0 ? slidePreviewTitle(slides[slideIndex - 1] ?? "") : null,
+      nextTitle:
+        slideIndex < slides.length - 1 ? slidePreviewTitle(slides[slideIndex + 1] ?? "") : null,
+      deckRevision: revision,
+    };
+    presenterStateRef.current = state;
+    presenterChannelRef.current?.postMessage(state);
+  }, [fileId, presenterSessionId, revision, slideIndex, slides]);
+
+  useEffect(() => {
+    if (!presenterSessionId) return;
+    const timer = window.setInterval(() => {
+      if (presenterWindowRef.current?.closed) {
+        presenterWindowRef.current = null;
+        setPresenterSessionId(null);
+      }
+    }, 800);
+    return () => window.clearInterval(timer);
+  }, [presenterSessionId]);
+
   const handleSlidePageClick = useCallback(
     (event: React.MouseEvent<HTMLElement>) => {
       const target = event.target as HTMLElement | null;
@@ -2225,6 +2312,42 @@ export function MarkdownViewer({
     setIsSlidesOverlayVisible(true);
     scheduleSlidesOverlayHide();
   }, [isSlidesFullscreen, isSlidesView, scheduleSlidesOverlayHide]);
+
+  useEffect(() => {
+    if (!isSlidesView) return;
+
+    const channel = new BroadcastChannel(PRESENTER_CHANNEL);
+    presenterChannelRef.current = channel;
+
+    const onMessage = (event: MessageEvent) => {
+      if (!isPresenterMessage(event.data)) return;
+      if (!presenterSessionId || event.data.sessionId !== presenterSessionId) return;
+      if (event.data.type === "hello") {
+        const latest = presenterStateRef.current;
+        if (latest) channel.postMessage(latest);
+        return;
+      }
+      if (event.data.type === "goto") {
+        const total = Math.max(slides.length, 1);
+        const nextIndex = Math.min(total - 1, Math.max(0, Math.floor(event.data.slideIndex)));
+        setSlideIndex(nextIndex);
+        revealSlidesOverlay();
+      }
+    };
+
+    channel.addEventListener("message", onMessage);
+    if (presenterStateRef.current) {
+      channel.postMessage(presenterStateRef.current);
+    }
+
+    return () => {
+      channel.removeEventListener("message", onMessage);
+      channel.close();
+      if (presenterChannelRef.current === channel) {
+        presenterChannelRef.current = null;
+      }
+    };
+  }, [isSlidesView, presenterSessionId, revealSlidesOverlay, slides.length]);
 
   useEffect(() => {
     const onFullscreenChange = () => {
@@ -2286,6 +2409,16 @@ export function MarkdownViewer({
         >
           <button
             type="button"
+            className="markdown-slide-presenter-btn"
+            onClick={togglePresenter}
+            title={presenterSessionId ? "关闭提词器（P）" : "打开提词器（P）"}
+            aria-label={presenterSessionId ? "关闭提词器" : "打开提词器"}
+            data-testid="markdown-slide-presenter-btn"
+          >
+            {presenterSessionId ? "关闭提词器" : "提词器"}
+          </button>
+          <button
+            type="button"
             className="markdown-slide-fullscreen-btn"
             onClick={() => void toggleSlidesFullscreen()}
             title={isSlidesFullscreen ? "退出全屏（F / Esc）" : "全屏展示（F）"}
@@ -2293,6 +2426,11 @@ export function MarkdownViewer({
           >
             {isSlidesFullscreen ? "退出全屏" : "全屏展示"}
           </button>
+          {presenterPopupBlocked ? (
+            <div className="markdown-slide-presenter-hint" data-testid="presenter-popup-blocked">
+              允许弹窗后按 P 打开提词器
+            </div>
+          ) : null}
           <section
             key={slideIndex}
             className={`markdown-slide-page markdown-slide-page--enter${cover ? " markdown-slide-page--cover" : ""}${multiColumn ? " markdown-slide-page--columns" : ""}`}
@@ -2389,7 +2527,7 @@ export function MarkdownViewer({
             </span>
           </div>
           <div className="markdown-slide-help-badge" aria-hidden="true">
-            ←/→ 翻页 · 空白点击下一页 · F 全屏 · Esc 退出 · N 备注 ·{" "}
+            ←/→ 翻页 · 空白点击下一页 · F 全屏 · P 提词器 · Esc 退出 · N 备注 ·{" "}
             {isSlidesOverlayPinned ? "H 取消固定" : "H 固定控件"}
           </div>
         </div>
@@ -2420,9 +2558,12 @@ export function MarkdownViewer({
     handleSlidesOverlayActivity,
     handleSlidePageClick,
     parsed,
+    presenterPopupBlocked,
+    presenterSessionId,
     revealSlidesOverlay,
     slideIndex,
     slides,
+    togglePresenter,
     toggleSlidesFullscreen,
     transformedMarkdown,
   ]);
@@ -2619,6 +2760,12 @@ export function MarkdownViewer({
         event.preventDefault();
         setIsSlidesNotesVisible((current) => !current);
         revealSlidesOverlay();
+        return;
+      }
+      if (event.key === "p" || event.key === "P") {
+        event.preventDefault();
+        togglePresenter();
+        revealSlidesOverlay();
       }
     };
 
@@ -2637,6 +2784,7 @@ export function MarkdownViewer({
     loading,
     revealSlidesOverlay,
     scheduleSlidesOverlayHide,
+    togglePresenter,
     toggleSlidesFullscreen,
   ]);
 
