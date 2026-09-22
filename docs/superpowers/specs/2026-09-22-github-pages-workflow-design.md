@@ -13,7 +13,7 @@ Ship a **built-in** `.github/workflows/pages.yml` that, on `master` push (and ma
 | Decision | Choice |
 | -------- | ------ |
 | Approach | **A** — `upload-pages-artifact` + `deploy-pages` |
-| Build input | Repository root (`.`) — all discovered `.md` / `.mdx` |
+| Build input | Repository root (`.`) — all discovered `.md` / `.mdx` (skips `.git` / `node_modules` / `vendor` / output dir) |
 | Output dir | `site/` |
 | Triggers | `push` to `master` + `workflow_dispatch` |
 | Out of scope | Multi-group export, `--base-path`, custom domain CLI |
