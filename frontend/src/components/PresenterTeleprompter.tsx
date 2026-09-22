@@ -84,10 +84,12 @@ export function PresenterTeleprompter({ sessionId }: PresenterTeleprompterProps)
     });
   };
 
+  const hasNotes = Boolean(state?.notes.trim());
+
   return (
     <div className="presenter-teleprompter" data-testid="presenter-teleprompter">
       <header className="presenter-teleprompter__header">
-        <div className="presenter-teleprompter__brand">markview 提词器</div>
+        <div className="presenter-teleprompter__brand">提词器</div>
         <div className="presenter-teleprompter__page" data-testid="presenter-page">
           {state ? `${state.slideIndex + 1} / ${state.slideCount}` : "— / —"}
         </div>
@@ -97,30 +99,35 @@ export function PresenterTeleprompter({ sessionId }: PresenterTeleprompterProps)
         <p className="presenter-teleprompter__waiting">等待主窗口同步…</p>
       ) : (
         <>
-          <h1 className="presenter-teleprompter__title" data-testid="presenter-title">
+          <p className="presenter-teleprompter__slide" data-testid="presenter-title">
             {state.title}
-          </h1>
-          <pre className="presenter-teleprompter__notes" data-testid="presenter-notes">
-            {state.notes.trim().length > 0 ? state.notes : "（无备注）"}
+          </p>
+          <pre
+            className={`presenter-teleprompter__notes${hasNotes ? "" : " presenter-teleprompter__notes--empty"}`}
+            data-testid="presenter-notes"
+          >
+            {hasNotes ? state.notes : "（本页无备注）"}
           </pre>
-          <div className="presenter-teleprompter__neighbors">
-            <div className="presenter-teleprompter__neighbor">
-              <span className="presenter-teleprompter__neighbor-label">上一页</span>
-              <span>{state.prevTitle ?? "—"}</span>
-            </div>
-            <div className="presenter-teleprompter__neighbor">
-              <span className="presenter-teleprompter__neighbor-label">下一页</span>
-              <span>{state.nextTitle ?? "—"}</span>
-            </div>
-          </div>
-          <div className="presenter-teleprompter__actions">
-            <button type="button" onClick={() => goRelative(-1)}>
-              上一页
+          <footer className="presenter-teleprompter__footer">
+            <button
+              type="button"
+              className="presenter-teleprompter__nav"
+              onClick={() => goRelative(-1)}
+              disabled={!state.prevTitle && state.slideIndex === 0}
+            >
+              <span className="presenter-teleprompter__nav-label">上一页</span>
+              <span className="presenter-teleprompter__nav-title">{state.prevTitle ?? "—"}</span>
             </button>
-            <button type="button" onClick={() => goRelative(1)}>
-              下一页
+            <button
+              type="button"
+              className="presenter-teleprompter__nav"
+              onClick={() => goRelative(1)}
+              disabled={!state.nextTitle && state.slideIndex >= state.slideCount - 1}
+            >
+              <span className="presenter-teleprompter__nav-label">下一页</span>
+              <span className="presenter-teleprompter__nav-title">{state.nextTitle ?? "—"}</span>
             </button>
-          </div>
+          </footer>
         </>
       )}
     </div>

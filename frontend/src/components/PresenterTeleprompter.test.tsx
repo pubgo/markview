@@ -107,7 +107,7 @@ describe("PresenterTeleprompter", () => {
     });
 
     await screen.findByTestId("presenter-notes");
-    fireEvent.click(screen.getByRole("button", { name: "下一页" }));
+    fireEvent.click(screen.getByRole("button", { name: /下一页/ }));
 
     await waitFor(() => {
       expect(gotos.some((m) => m.type === "goto" && m.slideIndex === 1)).toBe(true);
