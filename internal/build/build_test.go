@@ -17,7 +17,7 @@ func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 			t.Fatalf("mkdir: %v", err)
 		}
-		if err := os.WriteFile(path, []byte(body), 0o644); err != nil {
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
 			t.Fatalf("write: %v", err)
 		}
 	}
@@ -38,20 +38,13 @@ func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 		t.Fatalf("read index: %v", err)
 	}
 	html := string(data)
-	if !strings.Contains(html, "README.md") && !strings.Contains(html, "guide.md") {
-		// Embedded JSON may escape paths; ensure dependency junk is absent.
+	if !strings.Contains(html, "guide.md") && !strings.Contains(html, "README.md") {
+		t.Fatalf("expected root markdown paths in embedded data")
 	}
 	if strings.Contains(html, "node_modules") {
-		t.Fatalf("static site embedded node_modules paths:\n%s", html[:min(500, len(html))])
+		t.Fatalf("static site embedded node_modules paths")
 	}
 	if strings.Contains(html, ".git/hooks") {
 		t.Fatalf("static site embedded .git paths")
 	}
-}
-
-func min(a, b int) int {
-	if a < b {
-		return a
-	}
-	return b
 }
