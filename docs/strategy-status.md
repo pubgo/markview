@@ -26,11 +26,12 @@
 - 演讲者备注（HTML 注释剥离 + 备注面板；`N` 切换；全屏随控件显隐）
 - 翻页短淡入过渡（`prefers-reduced-motion` 关闭）
 - 页内双栏（单独一行 `|||` 分列）
+- Slides 模式可导出多页 deck PDF（逐页截幻灯片面）
 
 **未齐（相对「拿得出手的技术分享」）**
 
 - 独立提词器窗口 / 双屏；更丰富转场选项
-- 应用内「幻灯片 PDF/PPTX」导出（现靠 Marp Makefile 或整篇 PDF）
+- 应用内 PPTX 导出（PDF deck 已有；完整 PPTX 仍靠 Marp Makefile）
 - 更丰富的图文排版启发式（全幅背景图等）
 
 ### 2.2 阅读 / review 体验 — **强**

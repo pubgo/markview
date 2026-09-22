@@ -2705,7 +2705,23 @@ export function MarkdownViewer({
         <SlidesToggle isSlidesOpen={isSlidesView} onToggle={handleSlidesToggle} />
         <RawToggle isRaw={isRawView} onToggle={handleRawToggle} />
         <CopyButton content={content} />
-        <PdfExportButton articleRef={articleRef} fileName={fileName} />
+        <PdfExportButton
+          articleRef={articleRef}
+          fileName={fileName}
+          slidesDeck={
+            isSlidesView
+              ? {
+                  slideCount: Math.max(slides.length, 1),
+                  getSlideIndex: () => slideIndex,
+                  goToSlide: setSlideIndex,
+                  getSlidePage: () =>
+                    articleRef.current?.querySelector<HTMLElement>(
+                      '[data-testid="markdown-slide-page"]',
+                    ) ?? null,
+                }
+              : null
+          }
+        />
         <RemoveButton onRemove={onRemoveFile} />
       </div>
     </div>

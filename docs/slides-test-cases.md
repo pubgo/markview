@@ -64,6 +64,14 @@ $ markview testdata/slides-notes.md testdata/slides-media.md
 | COL-01 | 打开含 `\|\|\|` 的页（见 `testdata/slides-notes.md`） | `data-slide-columns="2"`，左右内容同时可见 |
 | COL-02 | 代码块内写 `\|\|\|` | 不分栏，当作普通代码 |
 
+## 3.3 Deck PDF 导出
+
+| ID | 步骤 | 期望 |
+| -- | ---- | ---- |
+| PDF-01 | Slides 下点右侧 PDF | 下载 `*-deck.pdf`，页数约等于幻灯片页数 |
+| PDF-02 | 导出过程中 | 按钮禁用；结束后回到原页码 |
+| PDF-03 | 阅读模式点 PDF | 仍为单页整篇导出（非 deck） |
+
 ## 4. 进度条回归
 
 | ID | 步骤 | 期望 |

@@ -16,15 +16,25 @@
 - 等待 Mermaid 等图表渲染完成后再截图
 - 尽量保留可点击链接与标题大纲（PDF outline）
 
-### 1.2 分组合并
+### 1.2 Slides 多页 deck
+
+进入 **Slides** 演示模式后，同一 PDF 按钮会改为导出**多页幻灯片 PDF**：
+
+- 按页切换并截取 `.markdown-slide-page`（不含备注面板、进度条等控件）
+- 等待每页图表渲染完成
+- 输出文件名形如 `talk-deck.pdf`
+- 导出结束后回到原来的页码
+
+### 1.3 分组合并
 
 侧边栏/顶栏提供「合并 PDF」：按当前分组内文件顺序，把多篇文档合并为一个 PDF（每篇一页或按内容高度分页）。
 
-### 1.3 边界
+### 1.4 边界
 
 - PDF 本质是**渲染结果截图**，不是纯文本排版引擎；复杂 CSS / 超大图可能影响清晰度。
 - PlantUML 依赖在线 Kroki；导出前需图表已成功渲染。
-- **内置 Slides 演示模式目前不能直接导出为幻灯片 PDF**；讲稿离线可用下方 Marp 路径，或先退出 Slides 再导出整篇文档 PDF。
+- 应用内 deck PDF **不是 PPTX**；需要 PPTX 时仍用下方 Marp 路径。
+- 大 deck 导出可能较慢（逐页截图）。
 
 ## 2. `markview build`：生成静态站点
 
@@ -108,9 +118,9 @@ jobs:
 
 | | 应用内 Slides | Marp（Makefile） |
 | --- | --- | --- |
-| 入口 | 浏览器 `Slides` 按钮 | `make slides-pdf` / `slides-pptx` |
+| 入口 | 浏览器 `Slides` 按钮；PDF 可导出多页 deck | `make slides-pdf` / `slides-pptx` |
 | 分页 | Markdown `---` | Marp 语法 + 仓库主题 |
-| 用途 | 现场演示 | 离线 PDF/PPTX 讲稿 |
+| 用途 | 现场演示 + 应用内 deck PDF | 离线 PDF/PPTX 讲稿 |
 
 ```console
 $ make slides-preview
