@@ -76,7 +76,7 @@ $ npx --yes serve dist
 
 ### 3.1 本仓库官方 workflow
 
-仓库已内置 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml)：
+仓库已内置 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml)（从**本仓源码**构建并部署）：
 
 - 触发：`push` 到 `master`，或手动 `workflow_dispatch`
 - 构建：`markview build . -o site --base-path /<repo>`（仓库根目录 Markdown；跳过 `node_modules` / `.git` / `vendor`；子路径托管保留 `/markview/`）
@@ -84,16 +84,44 @@ $ npx --yes serve dist
 
 **一次性设置：** GitHub → Settings → Pages → Build and deployment → Source = **GitHub Actions**。
 
-### 3.2 其它仓库复用
+### 3.2 其它仓库复用（推荐）
 
-1. 安装/构建 markview 后执行：`markview build . -o site`（或 `docs/` 等路径）。
-2. 将 `site/` 发布为 Pages 产物（可复制本仓库 `pages.yml` 并改分支名）。
-3. 若站点挂在子路径（例如 `https://user.github.io/repo/`），确认托管平台对 SPA fallback（`index.html`）配置正确；当前构建以相对 `assets/` 为主，多数子路径场景可用。
+其它项目**不要**直接复制本仓 `pages.yml`（那会 `go install .` 编 markview 源码）。请调用可复用 workflow：
+
+[`.github/workflows/pages-reusable.yml`](../.github/workflows/pages-reusable.yml)
+
+调用方示例（完整可拷贝文件见 [`docs/examples/pages-caller.yml`](examples/pages-caller.yml)）：
+
+```yaml
+name: pages
+on:
+  push:
+    branches: [master]
+  workflow_dispatch:
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+jobs:
+  pages:
+    uses: pubgo/markview/.github/workflows/pages-reusable.yml@master
+    with:
+      build-path: "."
+      # markview-version: "latest"   # 或钉死 vX.Y.Z
+```
+
+行为摘要：
+
+- 用 `go install github.com/kooksee/markview@…` 安装已发布的 markview（不依赖本仓源码树）
+- 默认 `--base-path /<你的仓库名>`；根站可用 `skip-base-path: true`
+- 调用方仍需把 Pages Source 设为 **GitHub Actions**
+
+也可本地/其它 CI 自行：`go install github.com/kooksee/markview@latest && markview build . -o site --base-path /repo`。
 
 ### 3.3 尚无独立产品化的部分
 
 - 静态导出暂不支持多 `--target` 分组原样镜像。
-- 自定义域名场景一般 base-path 为空即可；项目站（`user.github.io/repo`）需 `--base-path /repo`（本仓库 Pages workflow 已自动传入）。
+- 自定义域名场景一般 base-path 为空即可；项目站（`user.github.io/repo`）需 `--base-path /repo`（reusable / 本仓 Pages workflow 默认会加）。
 
 ## 4. 可选：Marp 讲稿导出（仓库工具链）
 

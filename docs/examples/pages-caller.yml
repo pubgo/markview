@@ -1,0 +1,27 @@
+# Example caller for any repository that wants markview → GitHub Pages.
+# Copy to .github/workflows/pages.yml in YOUR repo (not this markview repo).
+#
+# Prerequisites:
+#   Settings → Pages → Source = GitHub Actions
+
+name: pages
+
+on:
+  push:
+    branches:
+      - master # or main
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+jobs:
+  pages:
+    uses: pubgo/markview/.github/workflows/pages-reusable.yml@master
+    with:
+      build-path: "." # or "docs/"
+      # base-path: "/my-repo"           # optional; default is /${{ github.event.repository.name }}
+      # skip-base-path: true            # for https://user.github.io/ (no /repo)
+      # markview-version: "v0.1.0"      # pin a release; default latest
