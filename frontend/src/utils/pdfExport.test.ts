@@ -1,5 +1,9 @@
 import { describe, expect, it, afterEach } from "vitest";
-import { resolvePdfCaptureBackgroundColor, toPdfFilename } from "./pdfExport";
+import {
+  resolvePdfCaptureBackgroundColor,
+  toPdfFilename,
+  toSlidesDeckPdfFilename,
+} from "./pdfExport";
 
 describe("toPdfFilename", () => {
   it("returns document.pdf for empty name", () => {
@@ -20,6 +24,16 @@ describe("toPdfFilename", () => {
 
   it("appends .pdf when no extension", () => {
     expect(toPdfFilename("notes")).toBe("notes.pdf");
+  });
+});
+
+describe("toSlidesDeckPdfFilename", () => {
+  it("appends -deck before .pdf", () => {
+    expect(toSlidesDeckPdfFilename("talk.md")).toBe("talk-deck.pdf");
+  });
+
+  it("does not double-append -deck", () => {
+    expect(toSlidesDeckPdfFilename("talk-deck.md")).toBe("talk-deck.pdf");
   });
 });
 

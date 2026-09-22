@@ -74,6 +74,7 @@
   - 演讲者备注：页内 HTML 注释剥离为备注面板；`N` 切换显示；全屏时随控件显隐
   - 翻页短淡入/上移过渡（`prefers-reduced-motion: reduce` 时关闭）
   - 页内双栏：单独一行 `|||` 分列（代码块内忽略）
+  - Slides 下 PDF 按钮导出多页 deck（`*-deck.pdf`）
 - 全局全文搜索后可跳转到目标文档并定位命中内容
 
 ## 4. 结构化关系能力
@@ -87,6 +88,7 @@
 ## 5. 导出与复制
 
 - 单文档 PDF 导出（跟随明暗主题背景）
+- Slides 模式多页 deck PDF（逐页截幻灯片面；`*-deck.pdf`）
 - 分组合并 PDF 导出
 - `markview build` 静态站点（自包含 SPA；见 [export-and-static.md](export-and-static.md)）
 - 复制内容（Markdown / 文本 / HTML）
@@ -103,13 +105,13 @@
 3. `.mdx` 为兼容阅读模式，不执行组件逻辑。
 4. 图谱能力当前聚焦 Markdown 链接关系，不是全格式知识图谱。
 5. 应用内无用户插件系统；扩展渲染以一等公民组件方式增加（策略：深度优先于插件市场）。
-6. 内置 Slides 不能直接导出 deck PDF/PPTX（可用 Marp Makefile 或整篇 PDF）。
+6. 应用内 deck 导出为 PDF 截图，不是 PPTX（PPTX 仍可用 Marp Makefile）。
 
 ## 7. 后续增强建议（建议优先级）
 
 ### P0（优先）
 
-1. 演示质感剩余项：转场选项、deck 导出、独立提词器、全幅图文（对照 STRATEGY「演示质感」）
+1. 演示质感剩余项：转场选项、独立提词器、全幅图文；PPTX 仍靠 Marp（对照 STRATEGY「演示质感」）
 2. 导出与静态发布包装：补齐 Pages 示例 workflow 与多分组静态（对照「导出与静态发布」）
 3. PlantUML 离线/自托管回退，降低导出对公网依赖
 

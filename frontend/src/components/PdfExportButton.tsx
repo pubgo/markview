@@ -1,24 +1,51 @@
-import { exportArticleAsPdf } from "../utils/pdfExport";
+import {
+  exportArticleAsPdf,
+  exportSlidesDeckAsPdf,
+  type SlidesDeckExportController,
+} from "../utils/pdfExport";
+import { useState } from "react";
 
 interface PdfExportButtonProps {
   articleRef: React.RefObject<HTMLElement | null>;
   fileName: string;
+  /** When set, export captures each slide page into a multi-page deck PDF. */
+  slidesDeck?: SlidesDeckExportController | null;
 }
 
-export function PdfExportButton({ articleRef, fileName }: PdfExportButtonProps) {
+export function PdfExportButton({ articleRef, fileName, slidesDeck }: PdfExportButtonProps) {
+  const [exporting, setExporting] = useState(false);
+  const isDeck = (slidesDeck?.slideCount ?? 0) > 0;
+
   const handleExport = async () => {
-    const article = articleRef.current;
-    if (!article) return;
-    await exportArticleAsPdf(article, fileName);
+    if (exporting) return;
+    setExporting(true);
+    try {
+      if (isDeck && slidesDeck) {
+        await exportSlidesDeckAsPdf(slidesDeck, fileName);
+        return;
+      }
+      const article = articleRef.current;
+      if (!article) return;
+      await exportArticleAsPdf(article, fileName);
+    } finally {
+      setExporting(false);
+    }
   };
 
   return (
     <button
       type="button"
-      className="flex items-center justify-center bg-transparent border border-gh-border rounded-md p-1.5 text-gh-text-secondary cursor-pointer transition-colors duration-150 hover:bg-gh-bg-hover"
-      onClick={handleExport}
-      title="导出 PDF（单页，不截断）"
-      aria-label="Export PDF"
+      className="flex items-center justify-center bg-transparent border border-gh-border rounded-md p-1.5 text-gh-text-secondary cursor-pointer transition-colors duration-150 hover:bg-gh-bg-hover disabled:opacity-50"
+      onClick={() => void handleExport()}
+      disabled={exporting}
+      title={
+        isDeck
+          ? exporting
+            ? "正在导出幻灯片 PDF…"
+            : "导出幻灯片 PDF（每页一页）"
+          : "导出 PDF（单页，不截断）"
+      }
+      aria-label={isDeck ? "Export slides PDF" : "Export PDF"}
     >
       <svg
         className="size-5"

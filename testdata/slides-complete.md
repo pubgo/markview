@@ -167,4 +167,4 @@ this is not a column split
 
 问题与讨论
 
-<!-- 收尾：把完整示例路径留给听众 — testdata/slides-complete.md -->
+<!-- 收尾：导出可用右侧 PDF（Slides 下为多页 deck）；完整示例路径 testdata/slides-complete.md -->

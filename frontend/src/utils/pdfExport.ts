@@ -763,3 +763,64 @@ export async function exportArticleAsPdf(
     openPrintFallback(article, filename);
   }
 }
+
+export function toSlidesDeckPdfFilename(fileName: string): string {
+  const base = toPdfFilename(fileName).replace(/\.pdf$/i, "");
+  if (/[-_]deck$/i.test(base)) return `${base}.pdf`;
+  return `${base}-deck.pdf`;
+}
+
+export interface SlidesDeckExportController {
+  slideCount: number;
+  getSlideIndex: () => number;
+  goToSlide: (index: number) => void;
+  getSlidePage: () => HTMLElement | null;
+}
+
+async function waitForSlidePageElement(
+  getSlidePage: () => HTMLElement | null,
+  index: number,
+): Promise<HTMLElement> {
+  const deadline = Date.now() + 10000;
+  while (Date.now() < deadline) {
+    const el = getSlidePage();
+    if (el && el.getAttribute("data-slide-index") === String(index)) {
+      return el;
+    }
+    await new Promise<void>((resolve) => {
+      requestAnimationFrame(() => resolve());
+    });
+  }
+  throw new Error(`Timed out waiting for slide ${index + 1}`);
+}
+
+/**
+ * Capture each Slides page (16:9 surface only) into a multi-page PDF.
+ * Restores the original slide index when finished (including on failure).
+ */
+export async function exportSlidesDeckAsPdf(
+  controller: SlidesDeckExportController,
+  fileName: string,
+  options: PdfCaptureOptions = {},
+): Promise<void> {
+  const count = Math.max(0, controller.slideCount);
+  if (count === 0) {
+    throw new Error("No slides to export");
+  }
+
+  const filename = toSlidesDeckPdfFilename(fileName);
+  const previousIndex = controller.getSlideIndex();
+  const snapshots: PdfArticleSnapshot[] = [];
+
+  try {
+    for (let i = 0; i < count; i++) {
+      controller.goToSlide(i);
+      const page = await waitForSlidePageElement(controller.getSlidePage, i);
+      const snapshot = await captureArticleForMergedPdf(page, `Slide ${i + 1}`, options);
+      snapshots.push(snapshot);
+    }
+    await exportMergedPdfFromSnapshots(snapshots, filename);
+  } finally {
+    controller.goToSlide(previousIndex);
+  }
+}

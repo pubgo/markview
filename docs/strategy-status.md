@@ -26,11 +26,12 @@
 - 演讲者备注（HTML 注释剥离 + 备注面板；`N` 切换；全屏随控件显隐）
 - 翻页短淡入过渡（`prefers-reduced-motion` 关闭）
 - 页内双栏（单独一行 `|||` 分列）
+- Slides 模式可导出多页 deck PDF（逐页截幻灯片面）
 
 **未齐（相对「拿得出手的技术分享」）**
 
 - 独立提词器窗口 / 双屏；更丰富转场选项
-- 应用内「幻灯片 PDF/PPTX」导出（现靠 Marp Makefile 或整篇 PDF）
+- 应用内 PPTX 导出（PDF deck 已有；完整 PPTX 仍靠 Marp Makefile）
 - 更丰富的图文排版启发式（全幅背景图等）
 
 ### 2.2 阅读 / review 体验 — **强**
@@ -52,14 +53,14 @@
 **已有**
 
 - 单文档 PDF、分组合并 PDF（主题感知背景）
+- Slides 模式多页 deck PDF（逐页截取幻灯片面）
 - `markview build` 自包含静态 SPA
 - 仓库内 Marp 讲稿导出（Makefile）
 
 **未齐**
 
-- README/文档曾长期缺失 build/PDF 说明（由 `docs/export-and-static.md` 补齐）
 - 无官方 GitHub Pages workflow；静态导出单分组
-- Slides 模式不能直接导出 deck
+- 应用内无 PPTX（deck PDF 已有；PPTX 仍靠 Marp）
 
 详见 [export-and-static.md](export-and-static.md)。
 
