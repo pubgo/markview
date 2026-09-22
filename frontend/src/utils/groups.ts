@@ -10,13 +10,30 @@ export function allFileIds(groups: Group[]): Set<string> {
   return ids;
 }
 
+/** App mount path for static hosting under a subpath (e.g. "/markview"). Empty on local server. */
+export function getAppBasePath(): string {
+  if (typeof window === "undefined") return "";
+  const raw = window.__MARKVIEW_BASE_PATH__;
+  if (typeof raw !== "string" || raw.trim() === "" || raw === "/") return "";
+  return raw.replace(/\/+$/, "") || "";
+}
+
 export function parseGroupFromPath(pathname: string): string {
-  const path = pathname.replace(/^\//, "").replace(/\/$/, "");
+  const base = getAppBasePath();
+  let path = pathname;
+  if (base && (path === base || path.startsWith(`${base}/`))) {
+    path = path.slice(base.length) || "/";
+  }
+  path = path.replace(/^\//, "").replace(/\/$/, "");
   return path || "default";
 }
 
 export function groupToPath(groupName: string): string {
-  return groupName === "default" ? "/" : `/${groupName}`;
+  const base = getAppBasePath();
+  if (groupName === "default") {
+    return base || "/";
+  }
+  return `${base}/${groupName}`;
 }
 
 export function buildFileUrl(groupName: string, fileId: string): string {
