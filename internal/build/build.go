@@ -279,7 +279,8 @@ func buildAndWrite(entries []*server.FileEntry, outputDir, basePath string) erro
 		}
 
 		outPath := filepath.Join(absOutput, path)
-		return os.WriteFile(outPath, fileData, 0o644)
+		// Public static assets must be world-readable for any static host.
+		return os.WriteFile(outPath, fileData, 0o644) //nolint:gosec // G306: site files are meant to be served
 	})
 	if err != nil {
 		return fmt.Errorf("writing output: %w", err)
