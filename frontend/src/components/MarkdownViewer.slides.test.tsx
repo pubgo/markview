@@ -513,4 +513,94 @@ describe("MarkdownViewer slides mode", () => {
     expect(screen.getByText("展")).toBeInTheDocument();
     expect(screen.getByText("存")).toBeInTheDocument();
   });
+
+  it("opens a teleprompter popup with P and syncs goto from the channel", async () => {
+    const user = userEvent.setup();
+    const popup = {
+      closed: false,
+      close: vi.fn(() => {
+        popup.closed = true;
+      }),
+    };
+    const openMock = vi.spyOn(window, "open").mockReturnValue(popup as unknown as Window);
+
+    type Listener = (event: MessageEvent) => void;
+    class MockBroadcastChannel {
+      static instances: MockBroadcastChannel[] = [];
+      name: string;
+      onmessage: Listener | null = null;
+      private listeners = new Set<Listener>();
+      constructor(name: string) {
+        this.name = name;
+        MockBroadcastChannel.instances.push(this);
+      }
+      addEventListener(_type: string, listener: Listener) {
+        this.listeners.add(listener);
+      }
+      removeEventListener(_type: string, listener: Listener) {
+        this.listeners.delete(listener);
+      }
+      postMessage(data: unknown) {
+        for (const instance of MockBroadcastChannel.instances) {
+          if (instance === this || instance.name !== this.name) continue;
+          const event = { data } as MessageEvent;
+          instance.onmessage?.(event);
+          for (const listener of instance.listeners) listener(event);
+        }
+      }
+      close() {
+        MockBroadcastChannel.instances = MockBroadcastChannel.instances.filter((i) => i !== this);
+      }
+    }
+    MockBroadcastChannel.instances = [];
+    vi.stubGlobal("BroadcastChannel", MockBroadcastChannel);
+
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `# 封面\n\n<!-- 开场白 -->\n\n---\n\n# 第二页\n\n正文`,
+      baseDir: "/tmp",
+    });
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="talk.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("封面");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+    await screen.findByTestId("markdown-slide-page");
+
+    await user.keyboard("p");
+
+    expect(openMock).toHaveBeenCalled();
+    const openedUrl = String(openMock.mock.calls[0]?.[0] ?? "");
+    expect(openedUrl).toContain("presenter=1");
+    expect(openedUrl).toContain("session=");
+
+    await waitFor(() => {
+      expect(screen.queryByTestId("markdown-slide-notes")).not.toBeInTheDocument();
+    });
+
+    const session = new URL(openedUrl, "http://localhost").searchParams.get("session");
+    expect(session).toBeTruthy();
+
+    await waitFor(() => expect(MockBroadcastChannel.instances.length).toBeGreaterThanOrEqual(1));
+    const tele = new MockBroadcastChannel("markview-slides-presenter");
+    tele.postMessage({ type: "goto", sessionId: session, slideIndex: 1 });
+
+    await waitFor(() => {
+      expect(screen.getByTestId("markdown-slide-page")).toHaveAttribute("data-slide-index", "1");
+    });
+
+    openMock.mockRestore();
+    vi.unstubAllGlobals();
+  });
 });

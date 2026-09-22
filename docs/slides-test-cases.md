@@ -9,7 +9,10 @@
 | `frontend/src/utils/slideNotes.test.ts` | HTML 注释提取 / 剥离 / 多注释合并 / 空注释忽略 |
 | `frontend/src/utils/slideColumns.test.ts` | 页内 `\|\|\|` 分栏（含代码块忽略） |
 | `frontend/src/utils/slideCover.test.ts` | 短封面启发式 |
-| `frontend/src/components/MarkdownViewer.slides.test.tsx` | 进入 Slides、翻页、封面标记、全屏/overlay、进度条、演讲者备注 + `N` |
+| `frontend/src/components/MarkdownViewer.slides.test.tsx` | 进入 Slides、翻页、封面标记、全屏/overlay、进度条、演讲者备注 + `N`、提词器 `P` |
+| `frontend/src/components/PresenterTeleprompter.test.tsx` | 提词器渲染 state / 发送 goto |
+| `frontend/src/utils/slidesPresenterChannel.test.ts` | 通道消息校验与 URL |
+| `frontend/src/utils/slidePreviewTitle.test.ts` | 上下页标题预览 |
 | `frontend/src/components/SlidesToggle.test.tsx` | Slides 开关按钮 |
 
 本地命令：
@@ -71,6 +74,16 @@ $ markview testdata/slides-notes.md testdata/slides-media.md
 | PDF-01 | Slides 下点右侧 PDF | 下载 `*-deck.pdf`，页数约等于幻灯片页数 |
 | PDF-02 | 导出过程中 | 按钮禁用；结束后回到原页码 |
 | PDF-03 | 阅读模式点 PDF | 仍为单页整篇导出（非 deck） |
+
+## 3.4 提词器窗口
+
+| ID | 步骤 | 期望 |
+| -- | ---- | ---- |
+| TP-01 | Slides 下按 `P`（允许弹窗） | 新开提词器窗；主窗备注默认隐藏 |
+| TP-02 | 主窗 `→` | 提词器页码与备注同步 |
+| TP-03 | 提词器点「下一页」 | 主窗翻页 |
+| TP-04 | 再按 `P` | 提词器关闭 |
+| TP-05 | 弹窗被拦 | 主窗出现「允许弹窗后按 P」提示 |
 
 ## 4. 进度条回归
 
