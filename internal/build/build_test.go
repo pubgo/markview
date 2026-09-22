@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
+func TestStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -28,8 +28,8 @@ func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	mustWrite(".git/hooks/README.md", "# Git\n")
 
 	out := filepath.Join(root, "site")
-	if err := BuildStaticSite(root, out, ""); err != nil {
-		t.Fatalf("BuildStaticSite: %v", err)
+	if err := StaticSite(root, out, ""); err != nil {
+		t.Fatalf("StaticSite: %v", err)
 	}
 
 	index := filepath.Join(out, "index.html")
@@ -49,7 +49,7 @@ func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	}
 }
 
-func TestBuildStaticSiteInjectsBasePath(t *testing.T) {
+func TestStaticSiteInjectsBasePath(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -59,8 +59,8 @@ func TestBuildStaticSiteInjectsBasePath(t *testing.T) {
 	}
 
 	out := filepath.Join(root, "site")
-	if err := BuildStaticSite(root, out, "/markview"); err != nil {
-		t.Fatalf("BuildStaticSite: %v", err)
+	if err := StaticSite(root, out, "/markview"); err != nil {
+		t.Fatalf("StaticSite: %v", err)
 	}
 
 	data, err := os.ReadFile(filepath.Join(out, "index.html"))

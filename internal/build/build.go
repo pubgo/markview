@@ -39,10 +39,10 @@ type staticData struct {
 	Version   map[string]string                    `json:"version"`
 }
 
-// BuildStaticSite scans inputDir for markdown files, builds the static data,
+// StaticSite scans inputDir for markdown files, builds the static data,
 // and writes the SPA with embedded data to outputDir.
 // basePath is the URL mount prefix for project sites (e.g. "/markview"); empty for domain root.
-func BuildStaticSite(inputDir, outputDir, basePath string) error {
+func StaticSite(inputDir, outputDir, basePath string) error {
 	absInput, err := filepath.Abs(inputDir)
 	if err != nil {
 		return fmt.Errorf("cannot resolve input directory: %w", err)
@@ -108,8 +108,8 @@ func BuildStaticSite(inputDir, outputDir, basePath string) error {
 	return buildAndWrite(entries, absOutput, basePath)
 }
 
-// BuildStaticSiteFromFiles builds a static site from explicit file paths.
-func BuildStaticSiteFromFiles(filePaths []string, outputDir, basePath string) error {
+// StaticSiteFromFiles builds a static site from explicit file paths.
+func StaticSiteFromFiles(filePaths []string, outputDir, basePath string) error {
 	if len(filePaths) == 0 {
 		return fmt.Errorf("no files specified")
 	}

@@ -66,7 +66,7 @@ func runBuild(_ *cobra.Command, args []string) error {
 		}
 
 		fmt.Fprintf(os.Stderr, "markview: scanning %s for markdown files...\n", firstAbs)
-		if err := build.BuildStaticSite(firstAbs, absOutput, buildBasePath); err != nil {
+		if err := build.StaticSite(firstAbs, absOutput, buildBasePath); err != nil {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "markview: static site built to %s\n", absOutput)
@@ -100,7 +100,7 @@ func runBuild(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "markview: building from %d file(s)...\n", len(files))
-	if err := build.BuildStaticSiteFromFiles(files, absOutput, buildBasePath); err != nil {
+	if err := build.StaticSiteFromFiles(files, absOutput, buildBasePath); err != nil {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "markview: static site built to %s\n", absOutput)
