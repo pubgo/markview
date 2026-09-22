@@ -54,13 +54,29 @@ func BuildStaticSite(inputDir, outputDir string) error {
 		return fmt.Errorf("%s is not a directory", absInput)
 	}
 
-	// Scan for markdown files
+	// Scan for markdown files (skip dependency / VCS trees; avoid re-scanning output).
+	absOutput, err := filepath.Abs(outputDir)
+	if err != nil {
+		return fmt.Errorf("cannot resolve output directory: %w", err)
+	}
+	skipDirNames := map[string]struct{}{
+		".git":         {},
+		"node_modules": {},
+		"vendor":       {},
+	}
+
 	var files []string
 	err = filepath.WalkDir(absInput, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
 		}
 		if d.IsDir() {
+			if _, skip := skipDirNames[d.Name()]; skip {
+				return fs.SkipDir
+			}
+			if path == absOutput || strings.HasPrefix(path, absOutput+string(os.PathSeparator)) {
+				return fs.SkipDir
+			}
 			return nil
 		}
 		ext := strings.ToLower(filepath.Ext(path))
@@ -88,7 +104,7 @@ func BuildStaticSite(inputDir, outputDir string) error {
 		})
 	}
 
-	return buildAndWrite(entries, outputDir)
+	return buildAndWrite(entries, absOutput)
 }
 
 // BuildStaticSiteFromFiles builds a static site from explicit file paths.
