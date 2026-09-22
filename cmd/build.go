@@ -10,6 +10,7 @@ import (
 )
 
 var buildOutput string
+var buildBasePath string
 
 var buildCmd = &cobra.Command{
 	Use:   "build [DIR or FILE ...]",
@@ -26,7 +27,8 @@ Examples:
 	markview build docs/                         Build from docs/ to docs-static/
 	markview build docs/ -o dist/                Build from docs/ to dist/
 	markview build .                             Build from current directory
-	markview build README.md CHANGELOG.md        Build from specific files`,
+	markview build README.md CHANGELOG.md        Build from specific files
+	markview build . -o site --base-path /repo   GitHub project Pages subpath`,
 	Args: cobra.MinimumNArgs(1),
 	RunE: runBuild,
 }
@@ -34,6 +36,7 @@ Examples:
 func init() {
 	rootCmd.AddCommand(buildCmd)
 	buildCmd.Flags().StringVarP(&buildOutput, "output", "o", "", "Output directory (default: <input>-static)")
+	buildCmd.Flags().StringVar(&buildBasePath, "base-path", "", "URL mount prefix for project Pages sites (e.g. /markview)")
 }
 
 func runBuild(_ *cobra.Command, args []string) error {
@@ -63,7 +66,7 @@ func runBuild(_ *cobra.Command, args []string) error {
 		}
 
 		fmt.Fprintf(os.Stderr, "markview: scanning %s for markdown files...\n", firstAbs)
-		if err := build.BuildStaticSite(firstAbs, absOutput); err != nil {
+		if err := build.StaticSite(firstAbs, absOutput, buildBasePath); err != nil {
 			return err
 		}
 		fmt.Fprintf(os.Stderr, "markview: static site built to %s\n", absOutput)
@@ -97,7 +100,7 @@ func runBuild(_ *cobra.Command, args []string) error {
 	}
 
 	fmt.Fprintf(os.Stderr, "markview: building from %d file(s)...\n", len(files))
-	if err := build.BuildStaticSiteFromFiles(files, absOutput); err != nil {
+	if err := build.StaticSiteFromFiles(files, absOutput, buildBasePath); err != nil {
 		return err
 	}
 	fmt.Fprintf(os.Stderr, "markview: static site built to %s\n", absOutput)

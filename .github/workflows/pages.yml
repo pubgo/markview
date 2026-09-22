@@ -43,7 +43,7 @@ jobs:
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Build static site from repository root
-        run: markview build . -o site
+        run: markview build . -o site --base-path /${{ github.event.repository.name }}
 
       - name: Configure Pages
         uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0

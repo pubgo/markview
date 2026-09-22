@@ -24,6 +24,8 @@ interface StaticDataPayload {
 declare global {
   interface Window {
     __MARKVIEW_STATIC_DATA__?: StaticDataPayload;
+    /** Optional mount path for project Pages sites, e.g. "/markview". */
+    __MARKVIEW_BASE_PATH__?: string;
   }
 }
 

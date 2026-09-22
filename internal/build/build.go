@@ -39,9 +39,10 @@ type staticData struct {
 	Version   map[string]string                    `json:"version"`
 }
 
-// BuildStaticSite scans inputDir for markdown files, builds the static data,
+// StaticSite scans inputDir for markdown files, builds the static data,
 // and writes the SPA with embedded data to outputDir.
-func BuildStaticSite(inputDir, outputDir string) error {
+// basePath is the URL mount prefix for project sites (e.g. "/markview"); empty for domain root.
+func StaticSite(inputDir, outputDir, basePath string) error {
 	absInput, err := filepath.Abs(inputDir)
 	if err != nil {
 		return fmt.Errorf("cannot resolve input directory: %w", err)
@@ -104,11 +105,11 @@ func BuildStaticSite(inputDir, outputDir string) error {
 		})
 	}
 
-	return buildAndWrite(entries, absOutput)
+	return buildAndWrite(entries, absOutput, basePath)
 }
 
-// BuildStaticSiteFromFiles builds a static site from explicit file paths.
-func BuildStaticSiteFromFiles(filePaths []string, outputDir string) error {
+// StaticSiteFromFiles builds a static site from explicit file paths.
+func StaticSiteFromFiles(filePaths []string, outputDir, basePath string) error {
 	if len(filePaths) == 0 {
 		return fmt.Errorf("no files specified")
 	}
@@ -138,7 +139,7 @@ func BuildStaticSiteFromFiles(filePaths []string, outputDir string) error {
 		})
 	}
 
-	return buildAndWrite(entries, outputDir)
+	return buildAndWrite(entries, outputDir, basePath)
 }
 
 // commonPrefix returns the longest common directory prefix of two paths.
@@ -159,7 +160,18 @@ func commonPrefix(a, b string) string {
 	return filepath.FromSlash(strings.Join(common, "/"))
 }
 
-func buildAndWrite(entries []*server.FileEntry, outputDir string) error {
+func normalizeBasePath(basePath string) string {
+	basePath = strings.TrimSpace(basePath)
+	if basePath == "" || basePath == "/" {
+		return ""
+	}
+	if !strings.HasPrefix(basePath, "/") {
+		basePath = "/" + basePath
+	}
+	return strings.TrimRight(basePath, "/")
+}
+
+func buildAndWrite(entries []*server.FileEntry, outputDir, basePath string) error {
 
 	// Read file contents and collect raw assets
 	contents := make(map[string]staticFileContent, len(entries))
@@ -249,6 +261,12 @@ func buildAndWrite(entries []*server.FileEntry, outputDir string) error {
 				`<script>window.__MARKVIEW_STATIC_DATA__=%s;</script>`,
 				string(dataJSON),
 			)
+			if base := normalizeBasePath(basePath); base != "" {
+				injection += fmt.Sprintf(
+					`<script>window.__MARKVIEW_BASE_PATH__=%q;</script>`,
+					base,
+				)
+			}
 			fileData = bytes.Replace(
 				fileData,
 				[]byte("</head>"),
@@ -261,7 +279,8 @@ func buildAndWrite(entries []*server.FileEntry, outputDir string) error {
 		}
 
 		outPath := filepath.Join(absOutput, path)
-		return os.WriteFile(outPath, fileData, 0o644)
+		// Public static assets must be world-readable for any static host.
+		return os.WriteFile(outPath, fileData, 0o644) //nolint:gosec // G306: site files are meant to be served
 	})
 	if err != nil {
 		return fmt.Errorf("writing output: %w", err)

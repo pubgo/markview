@@ -75,6 +75,14 @@ describe("parseGroupFromPath", () => {
   it("handles path without leading slash", () => {
     expect(parseGroupFromPath("notes")).toBe("notes");
   });
+
+  it("strips injected app base path before reading the group", () => {
+    window.__MARKVIEW_BASE_PATH__ = "/markview";
+    expect(parseGroupFromPath("/markview")).toBe("default");
+    expect(parseGroupFromPath("/markview/")).toBe("default");
+    expect(parseGroupFromPath("/markview/design")).toBe("design");
+    delete window.__MARKVIEW_BASE_PATH__;
+  });
 });
 
 describe("groupToPath", () => {
@@ -85,6 +93,13 @@ describe("groupToPath", () => {
   it("returns /name for named group", () => {
     expect(groupToPath("design")).toBe("/design");
   });
+
+  it("prefixes the injected app base path", () => {
+    window.__MARKVIEW_BASE_PATH__ = "/markview";
+    expect(groupToPath("default")).toBe("/markview");
+    expect(groupToPath("design")).toBe("/markview/design");
+    delete window.__MARKVIEW_BASE_PATH__;
+  });
 });
 
 describe("buildFileUrl", () => {
@@ -94,6 +109,12 @@ describe("buildFileUrl", () => {
 
   it("builds URL for named group", () => {
     expect(buildFileUrl("design", "def67890")).toBe("/design?file=def67890");
+  });
+
+  it("keeps project Pages sites under the base path", () => {
+    window.__MARKVIEW_BASE_PATH__ = "/markview";
+    expect(buildFileUrl("default", "abc12345")).toBe("/markview?file=abc12345");
+    delete window.__MARKVIEW_BASE_PATH__;
   });
 });
 

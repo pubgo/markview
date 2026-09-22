@@ -7,7 +7,7 @@ import (
 	"testing"
 )
 
-func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
+func TestStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	t.Parallel()
 
 	root := t.TempDir()
@@ -28,8 +28,8 @@ func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	mustWrite(".git/hooks/README.md", "# Git\n")
 
 	out := filepath.Join(root, "site")
-	if err := BuildStaticSite(root, out); err != nil {
-		t.Fatalf("BuildStaticSite: %v", err)
+	if err := StaticSite(root, out, ""); err != nil {
+		t.Fatalf("StaticSite: %v", err)
 	}
 
 	index := filepath.Join(out, "index.html")
@@ -46,5 +46,29 @@ func TestBuildStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	}
 	if strings.Contains(html, ".git/hooks") {
 		t.Fatalf("static site embedded .git paths")
+	}
+}
+
+func TestStaticSiteInjectsBasePath(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	path := filepath.Join(root, "README.md")
+	if err := os.WriteFile(path, []byte("# Root\n"), 0o600); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+
+	out := filepath.Join(root, "site")
+	if err := StaticSite(root, out, "/markview"); err != nil {
+		t.Fatalf("StaticSite: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+	html := string(data)
+	if !strings.Contains(html, `window.__MARKVIEW_BASE_PATH__="/markview"`) {
+		t.Fatalf("expected base path injection in index.html")
 	}
 }

@@ -79,7 +79,7 @@ $ npx --yes serve dist
 仓库已内置 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml)：
 
 - 触发：`push` 到 `master`，或手动 `workflow_dispatch`
-- 构建：`markview build . -o site`（仓库根目录 Markdown；跳过 `node_modules` / `.git` / `vendor`）
+- 构建：`markview build . -o site --base-path /<repo>`（仓库根目录 Markdown；跳过 `node_modules` / `.git` / `vendor`；子路径托管保留 `/markview/`）
 - 部署：官方 `upload-pages-artifact` + `deploy-pages`
 
 **一次性设置：** GitHub → Settings → Pages → Build and deployment → Source = **GitHub Actions**。
@@ -93,7 +93,7 @@ $ npx --yes serve dist
 ### 3.3 尚无独立产品化的部分
 
 - 静态导出暂不支持多 `--target` 分组原样镜像。
-- 无自定义 domain / base-path 专用 CLI 开关；子路径异常时优先检查托管 SPA 回退与资源路径。
+- 自定义域名场景一般 base-path 为空即可；项目站（`user.github.io/repo`）需 `--base-path /repo`（本仓库 Pages workflow 已自动传入）。
 
 ## 4. 可选：Marp 讲稿导出（仓库工具链）
 
