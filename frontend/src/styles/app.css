@@ -235,6 +235,20 @@ body,
   flex-direction: column;
 }
 
+.markdown-slide-columns__title {
+  flex: 0 0 auto;
+  width: 100%;
+  margin-bottom: clamp(0.5rem, 1.5vw, 1rem);
+}
+
+.markdown-slide-columns__title > :first-child {
+  margin-top: 0;
+}
+
+.markdown-slide-columns__title > :last-child {
+  margin-bottom: 0;
+}
+
 .markdown-slide-columns {
   flex: 1;
   display: grid;

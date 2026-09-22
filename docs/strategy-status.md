@@ -53,14 +53,14 @@
 **已有**
 
 - 单文档 PDF、分组合并 PDF（主题感知背景）
+- Slides 模式多页 deck PDF（逐页截取幻灯片面）
 - `markview build` 自包含静态 SPA
 - 仓库内 Marp 讲稿导出（Makefile）
 
 **未齐**
 
-- README/文档曾长期缺失 build/PDF 说明（由 `docs/export-and-static.md` 补齐）
 - 无官方 GitHub Pages workflow；静态导出单分组
-- Slides 模式不能直接导出 deck
+- 应用内无 PPTX（deck PDF 已有；PPTX 仍靠 Marp）
 
 详见 [export-and-static.md](export-and-static.md)。
 

@@ -479,4 +479,38 @@ describe("MarkdownViewer slides mode", () => {
     expect(screen.getByText("A")).toBeInTheDocument();
     expect(screen.getByText("B")).toBeInTheDocument();
   });
+
+  it("renders three columns with a shared title above the grid", async () => {
+    const user = userEvent.setup();
+    vi.mocked(fetchFileContent).mockResolvedValue({
+      content: `## 三栏也可以\n\n### 写\n\nA\n\n|||\n\n### 展\n\nB\n\n|||\n\n### 存\n\nC`,
+      baseDir: "/tmp",
+    });
+
+    render(
+      <MarkdownViewer
+        fileId="file-1"
+        fileName="slides.md"
+        revision={0}
+        onFileOpened={() => {}}
+        onHeadingsChange={() => {}}
+        isTocOpen={false}
+        onTocToggle={() => {}}
+        onRemoveFile={() => {}}
+        isWide={false}
+      />,
+    );
+
+    await screen.findByText("三栏也可以");
+    await user.click(screen.getByRole("button", { name: "Slides" }));
+
+    const page = await screen.findByTestId("markdown-slide-page");
+    expect(page).toHaveAttribute("data-slide-columns", "3");
+    expect(screen.getByTestId("markdown-slide-columns-title")).toHaveTextContent("三栏也可以");
+    expect(screen.getByTestId("markdown-slide-columns").children).toHaveLength(3);
+    expect(screen.queryByText("|||")).not.toBeInTheDocument();
+    expect(screen.getByText("写")).toBeInTheDocument();
+    expect(screen.getByText("展")).toBeInTheDocument();
+    expect(screen.getByText("存")).toBeInTheDocument();
+  });
 });

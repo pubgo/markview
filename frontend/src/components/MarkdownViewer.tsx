@@ -21,7 +21,7 @@ import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
 import { extractSlideNotes } from "../utils/slideNotes";
-import { splitSlideColumns } from "../utils/slideColumns";
+import { parseSlideColumnLayout } from "../utils/slideColumns";
 import { TocToggle } from "./TocToggle";
 import { CopyButton } from "./CopyButton";
 import { PdfExportButton } from "./PdfExportButton";
@@ -2272,7 +2272,7 @@ export function MarkdownViewer({
     if (isSlidesView) {
       const currentSlide = slides[slideIndex] ?? "";
       const { body: slideBody, notes: slideNotes } = extractSlideNotes(currentSlide);
-      const columns = splitSlideColumns(slideBody);
+      const { title: columnTitle, columns } = parseSlideColumnLayout(slideBody);
       const multiColumn = columns.length > 1;
       const cover = !multiColumn && isSlideCover(slideBody);
       const showNotes = isSlidesNotesVisible && slideNotes.length > 0;
@@ -2304,23 +2304,39 @@ export function MarkdownViewer({
             title="点击空白区域可进入下一页"
           >
             {multiColumn ? (
-              <div
-                className="markdown-slide-columns"
-                data-testid="markdown-slide-columns"
-                style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}
-              >
-                {columns.map((columnMarkdown, columnIndex) => (
-                  <div key={columnIndex} className="markdown-slide-columns__col">
+              <>
+                {columnTitle ? (
+                  <div
+                    className="markdown-slide-columns__title"
+                    data-testid="markdown-slide-columns-title"
+                  >
                     <Markdown
                       remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkGemoji]}
                       rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
                       components={components}
                     >
-                      {columnMarkdown}
+                      {columnTitle}
                     </Markdown>
                   </div>
-                ))}
-              </div>
+                ) : null}
+                <div
+                  className="markdown-slide-columns"
+                  data-testid="markdown-slide-columns"
+                  style={{ gridTemplateColumns: `repeat(${columns.length}, minmax(0, 1fr))` }}
+                >
+                  {columns.map((columnMarkdown, columnIndex) => (
+                    <div key={columnIndex} className="markdown-slide-columns__col">
+                      <Markdown
+                        remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkGemoji]}
+                        rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
+                        components={components}
+                      >
+                        {columnMarkdown}
+                      </Markdown>
+                    </div>
+                  ))}
+                </div>
+              </>
             ) : (
               <Markdown
                 remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkGemoji]}
