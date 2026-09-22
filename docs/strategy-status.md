@@ -56,7 +56,7 @@
 - 单文档 PDF、分组合并 PDF（主题感知背景）
 - Slides 模式多页 deck PDF（逐页截取幻灯片面）
 - `markview build` 自包含静态 SPA
-- 官方 GitHub Pages workflow（根目录 `markview build .` → Actions Pages；`--base-path` 支持项目站子路径）
+- 官方 GitHub Pages workflow（本仓源码构建；另提供 `pages-reusable.yml` 供其它仓库 `workflow_call`）
 - 仓库内 Marp 讲稿导出（Makefile）
 
 **未齐**

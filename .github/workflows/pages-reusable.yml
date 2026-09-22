@@ -1,0 +1,104 @@
+name: pages-reusable
+
+# Callable by other repositories:
+#   jobs:
+#     pages:
+#       uses: pubgo/markview/.github/workflows/pages-reusable.yml@master
+#       with:
+#         build-path: "."
+#       permissions:
+#         contents: read
+#         pages: write
+#         id-token: write
+
+on:
+  workflow_call:
+    inputs:
+      build-path:
+        description: Path or directory passed to `markview build`
+        type: string
+        default: "."
+      output-dir:
+        description: Output directory for the static site
+        type: string
+        default: "site"
+      base-path:
+        description: >-
+          URL mount prefix (e.g. /my-repo). Empty means
+          /${{ github.event.repository.name }} for project Pages.
+        type: string
+        default: ""
+      skip-base-path:
+        description: Set true for user/org root sites (user.github.io with no /repo suffix)
+        type: boolean
+        default: false
+      markview-version:
+        description: Go module version/ref for `go install github.com/kooksee/markview@…`
+        type: string
+        default: "latest"
+      go-version:
+        description: Go version for setup-go
+        type: string
+        default: "stable"
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-${{ github.repository }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Build static site
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out caller repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Set up Go
+        uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
+        with:
+          go-version: ${{ inputs.go-version }}
+          cache: false
+
+      - name: Install markview
+        run: |
+          go install "github.com/kooksee/markview@${{ inputs.markview-version }}"
+          echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
+
+      - name: Resolve base path
+        id: base
+        run: |
+          if [ "${{ inputs.skip-base-path }}" = "true" ]; then
+            echo "args=" >> "$GITHUB_OUTPUT"
+          elif [ -n "${{ inputs.base-path }}" ]; then
+            echo "args=--base-path ${{ inputs.base-path }}" >> "$GITHUB_OUTPUT"
+          else
+            echo "args=--base-path /${{ github.event.repository.name }}" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Build static site
+        run: markview build ${{ inputs.build-path }} -o ${{ inputs.output-dir }} ${{ steps.base.outputs.args }}
+
+      - name: Configure Pages
+        uses: actions/configure-pages@45bfe0192ca1faeb007ade9deae92b16b8254a0d # v6.0.0
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@fc324d3547104276b827a68afc52ff2a11cc49c9 # v5.0.0
+        with:
+          path: ${{ inputs.output-dir }}
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy
+        id: deployment
+        uses: actions/deploy-pages@368f82528645a54fb793d4d04e342629a3f51346 # v5.0.1
