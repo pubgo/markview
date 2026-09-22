@@ -74,43 +74,26 @@ $ npx --yes serve dist
 
 `markview build` 输出的是相对资源路径的 SPA，一般可丢到任意静态托管。
 
-### 3.1 推荐流程（仓库文档站）
+### 3.1 本仓库官方 workflow
 
-1. 在 CI 或本地执行：`markview build docs/ -o site`（路径按仓库调整）。
-2. 将 `site/` 发布为 Pages 产物（GitHub Actions `peaceiris/actions-gh-pages`、`actions/upload-pages-artifact` 等均可）。
+仓库已内置 [`.github/workflows/pages.yml`](../.github/workflows/pages.yml)：
+
+- 触发：`push` 到 `master`，或手动 `workflow_dispatch`
+- 构建：`markview build . -o site`（仓库根目录 Markdown；跳过 `node_modules` / `.git` / `vendor`）
+- 部署：官方 `upload-pages-artifact` + `deploy-pages`
+
+**一次性设置：** GitHub → Settings → Pages → Build and deployment → Source = **GitHub Actions**。
+
+### 3.2 其它仓库复用
+
+1. 安装/构建 markview 后执行：`markview build . -o site`（或 `docs/` 等路径）。
+2. 将 `site/` 发布为 Pages 产物（可复制本仓库 `pages.yml` 并改分支名）。
 3. 若站点挂在子路径（例如 `https://user.github.io/repo/`），确认托管平台对 SPA fallback（`index.html`）配置正确；当前构建以相对 `assets/` 为主，多数子路径场景可用。
 
-### 3.2 尚无独立产品化的部分
+### 3.3 尚无独立产品化的部分
 
-- 仓库**未内置**官方 `gh-pages` workflow；需自行加 Actions。
 - 静态导出暂不支持多 `--target` 分组原样镜像。
 - 无自定义 domain / base-path 专用 CLI 开关；子路径异常时优先检查托管 SPA 回退与资源路径。
-
-示例 Actions 骨架（需按仓库改路径，仅作参考）：
-
-```yaml
-# .github/workflows/pages.yml （示例，默认未启用）
-name: pages
-on:
-  push:
-    branches: [master]
-jobs:
-  build:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-go@v5
-        with:
-          go-version: "1.22"
-      - name: Install markview
-        run: go install ./...
-      - name: Build static site
-        run: markview build docs/ -o site
-      - uses: actions/upload-pages-artifact@v3
-        with:
-          path: site
-  # 另需配置 GitHub Pages environment / deploy job
-```
 
 ## 4. 可选：Marp 讲稿导出（仓库工具链）
 

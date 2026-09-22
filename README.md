@@ -232,7 +232,7 @@ $ markview build docs/ -o dist/        # 指定输出目录
 $ markview build README.md docs/a.md   # 仅打包列出的文件
 ```
 
-产物可用任意静态服务器打开，也可上传到 GitHub Pages 等托管（需自行配置 Actions；仓库未内置官方 Pages workflow）。
+产物可用任意静态服务器打开，也可上传到 GitHub Pages 等托管。本仓库已内置官方 Pages workflow（`pages.yml`：根目录 `markview build .`）；其它仓库可复用同一写法。
 
 与在线会话的差异、Pages 注意点见 [docs/export-and-static.md](docs/export-and-static.md)。
 
