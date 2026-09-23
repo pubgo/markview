@@ -21,7 +21,11 @@ jobs:
   pages:
     uses: pubgo/markview/.github/workflows/pages-reusable.yml@master
     with:
-      build-path: "." # or "docs/"
+      build-path: "." # or "docs"
       # base-path: "/my-repo"           # optional; default is /${{ github.event.repository.name }}
       # skip-base-path: true            # for https://user.github.io/ (no /repo)
-      # markview-version: "v0.1.0"      # pin a release; default latest
+      # markview-ref: "master"          # git ref of pubgo/markview to build from
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
