@@ -32,14 +32,14 @@ on:
         description: Set true for user/org root sites (user.github.io with no /repo suffix)
         type: boolean
         default: false
-      markview-version:
-        description: Go module version/ref for `go install github.com/kooksee/markview@…`
+      markview-ref:
+        description: Git ref of pubgo/markview to build from (module publish lacks embed assets)
         type: string
-        default: "latest"
+        default: "master"
       go-version:
-        description: Go version for setup-go
+        description: Go version for setup-go (empty = from markview go.mod)
         type: string
-        default: "stable"
+        default: ""
 
 permissions:
   contents: read
@@ -58,15 +58,30 @@ jobs:
       - name: Check out caller repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
 
+      - name: Check out markview
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: pubgo/markview
+          ref: ${{ inputs.markview-ref }}
+          path: .markview
+
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: ${{ inputs.go-version }}
-          cache: false
+          go-version: ${{ inputs.go-version || 'stable' }}
+          go-version-file: ${{ inputs.go-version == '' && '.markview/go.mod' || '' }}
+          cache-dependency-path: .markview/go.sum
+
+      - name: Set up pnpm
+        uses: pnpm/action-setup@41ff72655975bd51cab0327fa583b6e92b6d3061 # v4.2.0
+        with:
+          package_json_file: .markview/frontend/package.json
 
       - name: Install markview
+        working-directory: .markview
         run: |
-          go install "github.com/kooksee/markview@${{ inputs.markview-version }}"
+          go generate ./internal/static/
+          go install .
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
       - name: Resolve base path
