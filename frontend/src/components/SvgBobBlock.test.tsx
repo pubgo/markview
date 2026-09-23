@@ -42,7 +42,21 @@ describe("SvgBobBlock", () => {
       expect(img.src).toContain("blob:svgbob-diagram");
       expect(createObjectURL).toHaveBeenCalledTimes(1);
       expect(screen.getByTitle("Copy code")).toBeInTheDocument();
+      expect(screen.getByTitle("Copy image")).toBeInTheDocument();
     });
+  });
+
+  it("does not show image copy button when svgbob conversion fails", async () => {
+    vi.mocked(renderSvgBob).mockImplementation(() => {
+      throw new Error("svgbob parse error");
+    });
+
+    render(<SvgBobBlock code={"+---+"} />);
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Copy code")).toBeInTheDocument();
+    });
+    expect(screen.queryByTitle("Copy image")).not.toBeInTheDocument();
   });
 
   it("falls back to preformatted code when svgbob conversion fails", async () => {

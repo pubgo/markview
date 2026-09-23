@@ -38,7 +38,26 @@ describe("PlantUmlBlock", () => {
       expect(img.src).toContain("blob:plantuml-diagram");
       expect(createObjectURL).toHaveBeenCalledTimes(1);
       expect(screen.getByTitle("Copy code")).toBeInTheDocument();
+      expect(screen.getByTitle("Copy image")).toBeInTheDocument();
     });
+  });
+
+  it("does not show image copy button when PlantUML conversion fails", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue({
+        ok: false,
+        status: 500,
+        text: vi.fn().mockResolvedValue("render error"),
+      }),
+    );
+
+    render(<PlantUmlBlock code="@startuml\nA -> B\n@enduml" />);
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Copy code")).toBeInTheDocument();
+    });
+    expect(screen.queryByTitle("Copy image")).not.toBeInTheDocument();
   });
 
   it("falls back to preformatted code when PlantUML conversion fails", async () => {

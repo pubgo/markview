@@ -1027,7 +1027,7 @@ export function MermaidBlock({
             onReset={resetView}
           />
         )}
-        <MermaidImageCopyButton svg={svg} />
+        <DiagramImageCopyButton svg={svg} />
         <MermaidFullscreenButton
           isFullscreen={isFullscreen}
           onToggle={() => void handleFullscreenToggle()}
@@ -1053,6 +1053,7 @@ export function MermaidBlock({
 
 export function SvgBobBlock({ code }: { code: string }) {
   const [svgUrl, setSvgUrl] = useState<string | null>(null);
+  const [svgMarkup, setSvgMarkup] = useState<string | null>(null);
   const [renderStatus, setRenderStatus] = useState<"pending" | "rendered" | "failed">("pending");
   const [renderError, setRenderError] = useState<string | null>(null);
   const [themeVersion, setThemeVersion] = useState(0);
@@ -1170,6 +1171,7 @@ export function SvgBobBlock({ code }: { code: string }) {
             URL.revokeObjectURL(objectUrlRef.current);
           }
           objectUrlRef.current = nextUrl;
+          setSvgMarkup(normalizedSvg);
           setSvgUrl(nextUrl);
           setRenderStatus("rendered");
         } else {
@@ -1181,6 +1183,7 @@ export function SvgBobBlock({ code }: { code: string }) {
             URL.revokeObjectURL(objectUrlRef.current);
             objectUrlRef.current = null;
           }
+          setSvgMarkup(null);
           setSvgUrl(null);
           setRenderError(normalizeDiagramErrorMessage(err, "SVG Bob 渲染失败"));
           setRenderStatus("failed");
@@ -1198,7 +1201,7 @@ export function SvgBobBlock({ code }: { code: string }) {
     };
   }, [code, themeVersion]);
 
-  if (svgUrl) {
+  if (svgUrl && svgMarkup) {
     const canvasStyle = isFullscreen
       ? {
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
@@ -1235,6 +1238,7 @@ export function SvgBobBlock({ code }: { code: string }) {
             onReset={resetView}
           />
         )}
+        <DiagramImageCopyButton svg={svgMarkup} />
         <SvgBobFullscreenButton
           isFullscreen={isFullscreen}
           onToggle={() => void handleFullscreenToggle()}
@@ -1261,6 +1265,7 @@ export function SvgBobBlock({ code }: { code: string }) {
 
 export function PlantUmlBlock({ code }: { code: string }) {
   const [svgUrl, setSvgUrl] = useState<string | null>(null);
+  const [svgMarkup, setSvgMarkup] = useState<string | null>(null);
   const [renderStatus, setRenderStatus] = useState<"pending" | "rendered" | "failed">("pending");
   const [renderError, setRenderError] = useState<string | null>(null);
   const [themeVersion, setThemeVersion] = useState(0);
@@ -1385,6 +1390,7 @@ export function PlantUmlBlock({ code }: { code: string }) {
             URL.revokeObjectURL(objectUrlRef.current);
           }
           objectUrlRef.current = nextUrl;
+          setSvgMarkup(svg);
           setSvgUrl(nextUrl);
           setRenderStatus("rendered");
         } else {
@@ -1396,6 +1402,7 @@ export function PlantUmlBlock({ code }: { code: string }) {
             URL.revokeObjectURL(objectUrlRef.current);
             objectUrlRef.current = null;
           }
+          setSvgMarkup(null);
           setSvgUrl(null);
           setRenderError(normalizeDiagramErrorMessage(err, "PlantUML 渲染失败"));
           setRenderStatus("failed");
@@ -1414,7 +1421,7 @@ export function PlantUmlBlock({ code }: { code: string }) {
     };
   }, [code, themeVersion, retryVersion]);
 
-  if (svgUrl) {
+  if (svgUrl && svgMarkup) {
     const canvasStyle = isFullscreen
       ? {
           transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
@@ -1451,6 +1458,7 @@ export function PlantUmlBlock({ code }: { code: string }) {
             onReset={resetView}
           />
         )}
+        <DiagramImageCopyButton svg={svgMarkup} />
         <PlantUmlFullscreenButton
           isFullscreen={isFullscreen}
           onToggle={() => void handleFullscreenToggle()}
@@ -1491,7 +1499,7 @@ function PlantUmlFullscreenButton({
 }) {
   return (
     <button
-      className={`absolute right-10 top-2 flex items-center justify-center rounded-md p-1 cursor-pointer transition-all duration-150 border ${themedButtonStyle} ${isFullscreen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+      className={`absolute right-[4.5rem] top-2 flex items-center justify-center rounded-md p-1 cursor-pointer transition-all duration-150 border ${themedButtonStyle} ${isFullscreen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       onClick={onToggle}
       title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
     >
@@ -1517,7 +1525,7 @@ function SvgBobFullscreenButton({
 }) {
   return (
     <button
-      className={`absolute right-10 top-2 flex items-center justify-center rounded-md p-1 cursor-pointer transition-all duration-150 border ${themedButtonStyle} ${isFullscreen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
+      className={`absolute right-[4.5rem] top-2 flex items-center justify-center rounded-md p-1 cursor-pointer transition-all duration-150 border ${themedButtonStyle} ${isFullscreen ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}
       onClick={onToggle}
       title={isFullscreen ? "Exit fullscreen" : "Fullscreen"}
     >
@@ -1610,7 +1618,7 @@ function MermaidFullscreenButton({
   );
 }
 
-function MermaidImageCopyButton({ svg }: { svg: string }) {
+function DiagramImageCopyButton({ svg }: { svg: string }) {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
