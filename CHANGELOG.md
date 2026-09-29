@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.19.0 - 2026-09-29
+
+首个由 pubgo/markview 完全自主维护的版本；Go module 迁移为 `github.com/pubgo/markview`（`go install github.com/pubgo/markview@latest` 自本版生效），发版方式改为手动推送 `v*` tag 触发 goreleaser。
+
+### New Features 🎉
+- feat: unify diagram PNG copy and PDF wait across chart types (#21)：Mermaid / PlantUML / SvgBob 三种图表统一支持悬停复制 PNG，应用内 PDF 导出等待三种图表渲染完成
+- feat: add reusable GitHub Pages workflow for other repos (#19)
+
+### Other Changes
+- fix: build markview from source in pages-reusable (#20)
+- chore: migrate module and docs to pubgo/markview (#22)
+- chore: remove tagpr, fix workflow triggers and credits generation (#23)：ci/build-artifacts/trivy 的 push 触发分支修正为 master；`make credits` 改为直接生成 goreleaser 打包的 docs/CREDITS
+- ci: pin gostyle to v0.26.0 for go 1.26.0 toolchain (#21)
+
 ## [v0.18.1](https://github.com/kooksee/markview/compare/v0.18.0...v0.18.1) - 2026-03-10
 ### Other Changes
 - feat: add --skip-bind-address-confirmation flag to bypass non-loopback bind prompt by @110y in https://github.com/kooksee/markview/pull/103
