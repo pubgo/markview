@@ -130,11 +130,17 @@ jobs:
 
 行为摘要：
 
-- 用 `go install github.com/pubgo/markview@…` 安装已发布的 markview（不依赖本仓源码树）
+- markview 由 reusable workflow **从源码构建**：checkout markview 仓库后执行 `go generate ./internal/static/ && go install .`（前端资源在构建期生成并嵌入，无法通过 `go install github.com/pubgo/markview@version` 直接安装）
 - 默认 `--base-path /<你的仓库名>`；根站可用 `skip-base-path: true`
 - 调用方仍需把 Pages Source 设为 **GitHub Actions**
 
-也可本地/其它 CI 自行：`go install github.com/pubgo/markview@latest && markview build . -o site --base-path /repo`。
+也可本地/其它 CI 自行源码构建：
+
+```console
+$ git clone https://github.com/pubgo/markview && cd markview
+$ go generate ./internal/static/ && go install .
+$ markview build <你的仓库路径> -o site --base-path /repo
+```
 
 ### 3.3 尚无独立产品化的部分
 
