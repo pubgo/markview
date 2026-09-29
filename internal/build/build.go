@@ -97,7 +97,10 @@ func StaticSite(inputDir, outputDir, basePath string) error {
 	// Build entries with relative display paths
 	entries := make([]*server.FileEntry, 0, len(files))
 	for _, f := range files {
-		rel, _ := filepath.Rel(absInput, f)
+		rel, err := filepath.Rel(absInput, f)
+		if err != nil {
+			return fmt.Errorf("resolve relative path for %s: %w", f, err)
+		}
 		entries = append(entries, &server.FileEntry{
 			Name: rel,
 			ID:   server.FileID(f),
@@ -131,7 +134,10 @@ func StaticSiteFromFiles(filePaths []string, outputDir, basePath string) error {
 
 	entries := make([]*server.FileEntry, 0, len(absPaths))
 	for _, abs := range absPaths {
-		rel, _ := filepath.Rel(commonDir, abs)
+		rel, err := filepath.Rel(commonDir, abs)
+		if err != nil {
+			return fmt.Errorf("resolve relative path for %s: %w", abs, err)
+		}
 		entries = append(entries, &server.FileEntry{
 			Name: rel,
 			ID:   server.FileID(abs),

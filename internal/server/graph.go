@@ -145,7 +145,7 @@ func (s *State) BuildGraph() Graph {
 			if content == "" {
 				continue
 			}
-			baseDir := s.getBaseDirForEntry(entry, g.Name)
+			baseDir := s.baseDirForEntry(entry, g.Name)
 			for _, lh := range ExtractLinksWithHeadings(content) {
 				targetEntry := s.findFileByHrefLocked(baseDir, lh.HrefPath)
 				if targetEntry != nil {
@@ -328,10 +328,10 @@ func (s *State) extractHeadingsWithLinks(content string, baseDir string) []Outli
 	return out
 }
 
-// getBaseDirForEntry returns the base directory for resolving relative links.
+// baseDirForEntry returns the base directory for resolving relative links.
 // For non-uploaded files, uses the file's directory. For uploaded files (baseDir empty),
 // uses the directory of the first non-uploaded file in the same group as fallback.
-func (s *State) getBaseDirForEntry(entry *FileEntry, groupName string) string {
+func (s *State) baseDirForEntry(entry *FileEntry, groupName string) string {
 	_, baseDir := s.fileContentLocked(entry)
 	if baseDir != "" {
 		return baseDir
@@ -354,7 +354,7 @@ func (s *State) BuildOutline() Outline {
 	for _, g := range s.groups {
 		for _, entry := range g.Files {
 			content, _ := s.fileContentLocked(entry)
-			baseDir := s.getBaseDirForEntry(entry, g.Name)
+			baseDir := s.baseDirForEntry(entry, g.Name)
 			headings := s.extractHeadingsWithLinks(content, baseDir)
 			files = append(files, OutlineNode{
 				ID:       entry.ID,
