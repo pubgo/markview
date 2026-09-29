@@ -17,6 +17,11 @@ import {
   type MermaidSettings,
 } from "../hooks/useMermaidSettings";
 import { usePlantUmlSettings, getPlantUmlServerUrl } from "../hooks/usePlantUmlSettings";
+import {
+  useSlideTransition,
+  SLIDE_TRANSITION_OPTIONS,
+  type SlideTransition,
+} from "../hooks/useSlideTransition";
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
@@ -1960,6 +1965,7 @@ export function MarkdownViewer({
   const [loading, setLoading] = useState(true);
   const [isRawView, setIsRawView] = useState(false);
   const [isSlidesView, setIsSlidesView] = useState(false);
+  const [slideTransition, setSlideTransition] = useSlideTransition();
   const [isSlidesFullscreen, setIsSlidesFullscreen] = useState(false);
   const [isSlidesOverlayVisible, setIsSlidesOverlayVisible] = useState(true);
   const [isSlidesOverlayPinned, setIsSlidesOverlayPinned] = useState(false);
@@ -2436,7 +2442,13 @@ export function MarkdownViewer({
           ) : null}
           <section
             key={slideIndex}
-            className={`markdown-slide-page markdown-slide-page--enter${cover ? " markdown-slide-page--cover" : ""}${multiColumn ? " markdown-slide-page--columns" : ""}`}
+            className={`markdown-slide-page${
+              slideTransition === "none"
+                ? ""
+                : slideTransition === "slide"
+                  ? " markdown-slide-page--enter-slide"
+                  : " markdown-slide-page--enter"
+            }${cover ? " markdown-slide-page--cover" : ""}${multiColumn ? " markdown-slide-page--columns" : ""}`}
             data-testid="markdown-slide-page"
             data-slide-index={slideIndex}
             data-slide-cover={cover ? "true" : "false"}
@@ -2843,6 +2855,21 @@ export function MarkdownViewer({
               PPT 模式 · 第 {currentSlideLabel}/{Math.max(slides.length, 1)} 页 · F 全屏 · N 备注
             </span>
             <div className="flex items-center gap-1">
+              <label className="flex items-center gap-1">
+                <span className="sr-only">转场效果</span>
+                <select
+                  className="rounded-md border border-gh-border bg-transparent px-1.5 py-1 hover:bg-gh-bg-hover"
+                  value={slideTransition}
+                  onChange={(e) => setSlideTransition(e.target.value as SlideTransition)}
+                  title="页面切换转场效果"
+                >
+                  {SLIDE_TRANSITION_OPTIONS.map((opt) => (
+                    <option key={opt.value} value={opt.value}>
+                      {opt.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
               <button
                 type="button"
                 className="rounded-md border border-gh-border bg-transparent px-2 py-1 hover:bg-gh-bg-hover disabled:opacity-50"
