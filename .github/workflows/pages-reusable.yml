@@ -24,8 +24,8 @@ on:
         default: "site"
       base-path:
         description: >-
-          URL mount prefix (e.g. /my-repo). Empty means
-          /${{ github.event.repository.name }} for project Pages.
+          URL mount prefix (e.g. /my-repo). Empty means /<caller repo name>
+          for project Pages.
         type: string
         default: ""
       skip-base-path:
@@ -68,7 +68,9 @@ jobs:
       - name: Set up Go
         uses: actions/setup-go@4b73464bb391d4059bd26b0524d20df3927bd417 # v6.3.0
         with:
-          go-version: ${{ inputs.go-version || 'stable' }}
+          # go-version and go-version-file are mutually exclusive; resolve to
+          # exactly one non-empty input (empty string means unset)
+          go-version: ${{ inputs.go-version }}
           go-version-file: ${{ inputs.go-version == '' && '.markview/go.mod' || '' }}
           cache-dependency-path: .markview/go.sum
 

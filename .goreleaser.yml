@@ -61,6 +61,8 @@ changelog:
     exclude:
       - "^docs:"
       - "^test:"
+      - "^Merge "
+      - "^chore: bump version"
 nfpms:
   - id: markview-nfpms
     file_name_template: "{{ .ProjectName }}_{{ .Version }}-1_{{ .Arch }}"
