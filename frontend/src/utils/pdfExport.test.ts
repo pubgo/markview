@@ -1,5 +1,6 @@
 import { describe, expect, it, afterEach } from "vitest";
 import {
+  countPendingDiagramRenders,
   resolvePdfCaptureBackgroundColor,
   toPdfFilename,
   toSlidesDeckPdfFilename,
@@ -57,5 +58,28 @@ describe("resolvePdfCaptureBackgroundColor", () => {
     document.documentElement.setAttribute("data-theme", "dark");
     document.documentElement.style.setProperty("--color-gh-bg", "#111827");
     expect(resolvePdfCaptureBackgroundColor()).toBe("#111827");
+  });
+});
+
+describe("countPendingDiagramRenders", () => {
+  it("counts pending mermaid, plantuml, and svgbob blocks", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <div data-mermaid-render-status="pending"></div>
+      <div data-mermaid-render-status="rendered"></div>
+      <div data-plantuml-render-status="pending"></div>
+      <div data-svgbob-render-status="pending"></div>
+      <div data-svgbob-render-status="failed"></div>
+    `;
+    expect(countPendingDiagramRenders(root)).toBe(3);
+  });
+
+  it("returns zero when no diagrams are pending", () => {
+    const root = document.createElement("div");
+    root.innerHTML = `
+      <div data-mermaid-render-status="rendered"></div>
+      <div data-plantuml-render-status="failed"></div>
+    `;
+    expect(countPendingDiagramRenders(root)).toBe(0);
   });
 });

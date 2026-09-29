@@ -27,6 +27,17 @@ export interface PdfCaptureOptions {
   sourceFilePath?: string;
 }
 
+/** Pending diagram renders that PDF capture should wait on. */
+export const DIAGRAM_PENDING_SELECTOR = [
+  "[data-mermaid-render-status='pending']",
+  "[data-plantuml-render-status='pending']",
+  "[data-svgbob-render-status='pending']",
+].join(", ");
+
+export function countPendingDiagramRenders(root: ParentNode): number {
+  return root.querySelectorAll(DIAGRAM_PENDING_SELECTOR).length;
+}
+
 export interface PdfArticleSnapshot {
   fileName: string;
   sourceFilePath?: string;
@@ -240,12 +251,11 @@ async function resolvePdfLinkUrl(
 async function waitForRenderableResources(root: HTMLElement): Promise<void> {
   const wait = (ms: number) => new Promise<void>((resolve) => setTimeout(resolve, ms));
 
-  const waitForMermaid = async () => {
+  const waitForDiagrams = async () => {
     const timeoutMs = 8000;
     const start = Date.now();
     while (Date.now() - start < timeoutMs) {
-      const pendingCount = root.querySelectorAll("[data-mermaid-render-status='pending']").length;
-      if (pendingCount === 0) {
+      if (countPendingDiagramRenders(root) === 0) {
         return;
       }
       await wait(80);
@@ -319,7 +329,7 @@ async function waitForRenderableResources(root: HTMLElement): Promise<void> {
     }
   };
 
-  await waitForMermaid();
+  await waitForDiagrams();
 
   await waitForImages();
 

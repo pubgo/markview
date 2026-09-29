@@ -53,7 +53,8 @@ fmt-check:
 
 depsdev:
 	go install github.com/Songmu/gocredits/cmd/gocredits@latest
-	go install github.com/k1LoW/gostyle@latest
+	# gostyle v0.26.1 requires go >= 1.26.8; repo pins go 1.26.0 with GOTOOLCHAIN=local
+	go install github.com/k1LoW/gostyle@v0.26.0
 
 credits: depsdev generate
 	go mod download
