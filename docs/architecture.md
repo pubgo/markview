@@ -121,7 +121,7 @@ sequenceDiagram
 ## 6.2 持续集成与发布
 
 - 持续集成：前端 lint/format、Go lint、测试覆盖率
-- 发布：`tagpr` 管理版本，`goreleaser` 产出多平台二进制
+- 发布：推送 `v*` tag 触发 `release` workflow，`goreleaser` 产出多平台二进制
 - 许可证检查：Trivy 扫描许可证风险
 
 ## 7. 安全与边界

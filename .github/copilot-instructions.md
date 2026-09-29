@@ -83,7 +83,7 @@ cd frontend && pnpm run dev
 - `internal/backup/` — State persistence for open files/groups using atomic JSON writes to `$XDG_STATE_HOME/markview/backup/`. Enables session restoration across server restarts.
 - `internal/logfile/` — Rotating JSON logging to `$XDG_STATE_HOME/markview/log/` (max 10MB, 3 backups, 7-day retention).
 - `internal/xdg/` — XDG Base Directory helper. `StateHome()` returns `$XDG_STATE_HOME` or default `~/.local/state`.
-- `version/version.go` — Version info, updated by tagpr on release. Build embeds revision via ldflags.
+- `version/version.go` — Version info, bumped manually per release. Build embeds revision via ldflags.
 
 ## Frontend
 
@@ -129,6 +129,6 @@ Key endpoints:
 ## CI/CD
 
 - **CI**: golangci-lint (via reviewdog), gostyle, `make ci` (test + coverage), octocov
-- **Release**: tagpr for automated tagging, goreleaser for cross-platform builds. The `go generate` step (frontend build) runs in goreleaser's `before.hooks`.
+- **Release**: push a `v*` tag to trigger the release workflow; goreleaser for cross-platform builds. Bump `version/version.go` before tagging. The `go generate` step (frontend build) runs in goreleaser's `before.hooks`.
 - **License check**: Trivy scans for license issues
 - CI requires pnpm setup (`pnpm/action-setup`) before any Go build step because `go generate` triggers the frontend build.
