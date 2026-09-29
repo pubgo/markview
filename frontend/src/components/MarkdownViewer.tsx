@@ -9,7 +9,7 @@ import rehypeSlug from "rehype-slug";
 import rehypeKatex from "rehype-katex";
 import { rehypeGithubAlerts } from "rehype-github-alerts";
 import "katex/dist/katex.min.css";
-import { codeToHtml } from "shiki";
+import { highlightToHtml } from "../utils/highlight";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 import {
   getMermaidSettings,
@@ -1786,20 +1786,11 @@ function CodeBlock({ language, code }: { language: string; code: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    codeToHtml(code, { lang: language, theme: "github-dark" })
+    highlightToHtml(code, language)
       .then((result) => {
         if (!cancelled) setHtml(result);
       })
-      .catch(() => {
-        // Fallback: if language not supported, try plaintext
-        if (!cancelled) {
-          codeToHtml(code, { lang: "text", theme: "github-dark" })
-            .then((result) => {
-              if (!cancelled) setHtml(result);
-            })
-            .catch(() => {});
-        }
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
@@ -1841,19 +1832,11 @@ function RawView({ content }: { content: string }) {
 
   useEffect(() => {
     let cancelled = false;
-    codeToHtml(content, { lang: "markdown", theme: "github-dark" })
+    highlightToHtml(content, "markdown")
       .then((result) => {
         if (!cancelled) setHtml(result);
       })
-      .catch(() => {
-        if (!cancelled) {
-          codeToHtml(content, { lang: "text", theme: "github-dark" })
-            .then((result) => {
-              if (!cancelled) setHtml(result);
-            })
-            .catch(() => {});
-        }
-      });
+      .catch(() => {});
     return () => {
       cancelled = true;
     };
