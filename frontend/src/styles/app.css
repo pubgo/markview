@@ -233,12 +233,28 @@ body,
   }
 }
 
+@keyframes markdown-slide-enter-side {
+  from {
+    opacity: 0;
+    transform: translateX(24px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
 .markdown-slide-page--enter {
   animation: markdown-slide-enter 220ms ease-out;
 }
 
+.markdown-slide-page--enter-slide {
+  animation: markdown-slide-enter-side 220ms ease-out;
+}
+
 @media (prefers-reduced-motion: reduce) {
-  .markdown-slide-page--enter {
+  .markdown-slide-page--enter,
+  .markdown-slide-page--enter-slide {
     animation: none;
   }
 }
