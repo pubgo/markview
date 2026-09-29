@@ -16,10 +16,7 @@ import {
   useMermaidSettingsRevision,
   type MermaidSettings,
 } from "../hooks/useMermaidSettings";
-import {
-  usePlantUmlSettings,
-  getPlantUmlServerUrl,
-} from "../hooks/usePlantUmlSettings";
+import { usePlantUmlSettings, getPlantUmlServerUrl } from "../hooks/usePlantUmlSettings";
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
