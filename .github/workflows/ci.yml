@@ -36,6 +36,10 @@ jobs:
       - name: Generate frontend assets
         run: go generate ./internal/static/
 
+      - name: Check first-screen bundle size
+        if: runner.os == 'Linux'
+        run: node frontend/scripts/check-bundle-size.mjs internal/static/dist
+
       - name: Run oxlint
         if: runner.os == 'Linux'
         run: cd frontend && pnpm install && pnpm run lint
