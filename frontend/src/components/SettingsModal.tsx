@@ -6,6 +6,7 @@ import {
   bumpSettingsRevision,
   type MermaidSettings,
 } from "../hooks/useMermaidSettings";
+import { usePlantUmlSettings, PLANTUML_SERVER_URL_DEFAULT } from "../hooks/usePlantUmlSettings";
 
 interface SettingsModalProps {
   isOpen: boolean;
@@ -62,6 +63,7 @@ function SliderRow({ label, value, min, max, step, defaultValue, onChange }: Sli
 
 export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
   const [settings, update, reset] = useMermaidSettings();
+  const [plantUmlSettings, updatePlantUmlSettings, resetPlantUmlSettings] = usePlantUmlSettings();
   const [dirty, setDirty] = useState(false);
 
   const handleUpdate = useCallback(
@@ -107,7 +109,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
       >
         {/* Header */}
         <div className="flex items-center justify-between px-4 py-3 border-b border-gh-border">
-          <h2 className="text-base font-semibold text-gh-text">Mermaid 渲染设置</h2>
+          <h2 className="text-base font-semibold text-gh-text">渲染设置</h2>
           <button
             type="button"
             className="text-gh-text-secondary hover:text-gh-text cursor-pointer p-1"
@@ -212,6 +214,27 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             defaultValue={MERMAID_SETTINGS_DEFAULTS.thoroughness}
             onChange={(v) => handleUpdate({ thoroughness: v, preset: "custom-manual" })}
           />
+
+          <hr className="border-gh-border" />
+
+          {/* PlantUML server */}
+          <div>
+            <div className="text-sm font-medium text-gh-text mb-2">PlantUML 服务</div>
+            <label className="flex items-center gap-3">
+              <span className="w-28 shrink-0 text-sm text-gh-text-secondary">服务地址</span>
+              <input
+                type="text"
+                className="flex-1 bg-gh-bg border border-gh-border rounded-md px-2 py-1 text-sm text-gh-text focus:border-gh-accent outline-none"
+                placeholder={PLANTUML_SERVER_URL_DEFAULT}
+                value={plantUmlSettings.serverUrl}
+                onChange={(e) => updatePlantUmlSettings({ serverUrl: e.target.value })}
+              />
+            </label>
+            <div className="mt-1 text-xs text-gh-text-secondary">
+              需为 Kroki 兼容服务；自托管（如 Docker 运行 kroki）可离线渲染。留空使用公共
+              kroki.io，修改后立即重新渲染。
+            </div>
+          </div>
         </div>
 
         {/* Footer */}
@@ -221,6 +244,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             className="text-sm text-gh-text-secondary hover:text-gh-text cursor-pointer px-3 py-1.5 rounded-md hover:bg-gh-bg-hover transition-colors"
             onClick={() => {
               reset();
+              resetPlantUmlSettings();
               setDirty(true);
             }}
           >

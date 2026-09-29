@@ -44,7 +44,7 @@
 
 ### 2.2 导出保真（轨道 3）
 
-- [ ] PlantUML 离线化：支持自托管 Kroki / PlantUML server 地址配置；失败时明确降级提示（策略审计 P0 遗留）
+- [x] PlantUML 离线化：服务地址可配置（设置 → PlantUML 服务，Kroki 兼容端点，默认公共 kroki.io；自托管即可离线渲染），修改后图表自动重渲染
 - [ ] `markview build --group`：单分组静态导出
 - [ ] 远程图片加载失败占位与重试提示（capabilities P1 遗留）
 
