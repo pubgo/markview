@@ -86,6 +86,7 @@
 | ---- | ---- |
 | [STRATEGY.md](../STRATEGY.md) | 问题、做法、用户、指标、轨道 |
 | 本文 | 轨道成熟度与缺口快照 |
+| [roadmap.md](roadmap.md) | 滚动开发计划（P0–P3、基线与度量） |
 | [export-and-static.md](export-and-static.md) | PDF / build / Pages 操作说明 |
 | [design.md](design.md) | 产品设计原则与边界 |
 | [architecture.md](architecture.md) | 运行时架构 |
