@@ -1,4 +1,12 @@
-import { useEffect, useLayoutEffect, useRef, useState, useCallback, useMemo } from "react";
+import {
+  useCallback,
+  useEffect,
+  useLayoutEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ComponentProps,
+} from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
 import remarkGemoji from "remark-gemoji";
@@ -1789,6 +1797,58 @@ function CodeBlockCopyButton({ code, themed = false }: { code: string; themed?: 
   );
 }
 
+/** Markdown image with a retryable placeholder when a remote image fails to load. */
+function MarkdownImage({ src, alt, ...props }: ComponentProps<"img">) {
+  const [failed, setFailed] = useState(false);
+  const [attempt, setAttempt] = useState(0);
+  const isRemote = typeof src === "string" && /^https?:\/\//i.test(src);
+
+  if (failed && isRemote) {
+    return (
+      <span className="flex flex-col items-center justify-center gap-2 my-4 p-4 rounded-md border border-dashed border-gh-border bg-gh-bg-secondary text-gh-text-secondary text-sm">
+        <svg
+          className="size-6 opacity-60"
+          fill="none"
+          stroke="currentColor"
+          strokeWidth={1.5}
+          viewBox="0 0 24 24"
+          aria-hidden
+        >
+          <path
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            d="M2.25 15.75l5.159-5.159a2.25 2.25 0 013.182 0l5.159 5.159m-1.5-1.5l1.409-1.409a2.25 2.25 0 013.182 0l2.909 2.909M18 6h.008v.008H18V6z M3.75 3.75h16.5a1.5 1.5 0 011.5 1.5v13.5a1.5 1.5 0 01-1.5 1.5H3.75a1.5 1.5 0 01-1.5-1.5V5.25a1.5 1.5 0 011.5-1.5z"
+          />
+        </svg>
+        <span>图片加载失败{alt ? `：${alt}` : ""}</span>
+        <button
+          type="button"
+          className="px-3 py-1 rounded-md border border-gh-border bg-gh-bg hover:bg-gh-bg-hover text-gh-text cursor-pointer transition-colors"
+          onClick={() => {
+            setFailed(false);
+            setAttempt((n) => n + 1);
+          }}
+        >
+          重试
+        </button>
+      </span>
+    );
+  }
+
+  return (
+    <img
+      key={attempt}
+      src={src}
+      alt={alt}
+      loading="lazy"
+      onError={() => {
+        if (isRemote) setFailed(true);
+      }}
+      {...props}
+    />
+  );
+}
+
 function CodeBlock({ language, code }: { language: string; code: string }) {
   const [html, setHtml] = useState("");
 
@@ -2115,7 +2175,14 @@ export function MarkdownViewer({
         );
       },
       img: ({ src, alt, ...props }) => {
-        return <img src={resolveImageSrc(src, fileId)} alt={alt} {...props} />;
+        const resolved = resolveImageSrc(src, fileId);
+        return (
+          <MarkdownImage
+            src={resolved}
+            alt={typeof alt === "string" ? alt : undefined}
+            {...props}
+          />
+        );
       },
       a: ({ href, children, ...props }) => {
         const resolved = resolveLink(href, fileId);
