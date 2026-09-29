@@ -28,7 +28,7 @@ func TestStaticSiteSkipsNodeModulesAndGit(t *testing.T) {
 	mustWrite(".git/hooks/README.md", "# Git\n")
 
 	out := filepath.Join(root, "site")
-	if err := StaticSite(root, out, ""); err != nil {
+	if err := StaticSite(root, out, "", ""); err != nil {
 		t.Fatalf("StaticSite: %v", err)
 	}
 
@@ -59,7 +59,7 @@ func TestStaticSiteInjectsBasePath(t *testing.T) {
 	}
 
 	out := filepath.Join(root, "site")
-	if err := StaticSite(root, out, "/markview"); err != nil {
+	if err := StaticSite(root, out, "/markview", ""); err != nil {
 		t.Fatalf("StaticSite: %v", err)
 	}
 
@@ -71,4 +71,72 @@ func TestStaticSiteInjectsBasePath(t *testing.T) {
 	if !strings.Contains(html, `window.__MARKVIEW_BASE_PATH__="/markview"`) {
 		t.Fatalf("expected base path injection in index.html")
 	}
+}
+
+func TestStaticSiteGroupFilter(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	mustWrite := func(rel, body string) {
+		t.Helper()
+		path := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+	}
+	mustWrite("design/a.md", "# A\n")
+	mustWrite("design/sub/b.md", "# B\n")
+	mustWrite("api/c.md", "# C\n")
+	mustWrite("top.md", "# Top\n")
+
+	out := filepath.Join(t.TempDir(), "site")
+	if err := StaticSite(root, out, "", "design"); err != nil {
+		t.Fatalf("StaticSite: %v", err)
+	}
+
+	data, err := os.ReadFile(filepath.Join(out, "index.html"))
+	if err != nil {
+		t.Fatalf("read index: %v", err)
+	}
+	html := string(data)
+	if !strings.Contains(html, "static-data-not-found-placeholder") {
+		t.Log("group filter assertions rely on embedded data markers")
+	}
+	for _, want := range []string{"design/a.md", "design/sub/b.md"} {
+		if !strings.Contains(html, want) {
+			t.Fatalf("expected %q in embedded data", want)
+		}
+	}
+	for _, banned := range []string{"api/c.md", "top.md"} {
+		if strings.Contains(html, banned) {
+			t.Fatalf("group export leaked %q", banned)
+		}
+	}
+	if !strings.Contains(html, `"name":"design"`) {
+		t.Fatalf("expected exported group to be named %q", "design")
+	}
+}
+
+func TestStaticSiteGroupErrors(t *testing.T) {
+	t.Parallel()
+
+	root := t.TempDir()
+	if err := os.MkdirAll(filepath.Join(root, "design"), 0o755); err != nil {
+		t.Fatalf("mkdir: %v", err)
+	}
+
+	t.Run("unknown group", func(t *testing.T) {
+		if err := StaticSite(root, filepath.Join(t.TempDir(), "site"), "", "nope"); err == nil {
+			t.Fatal("expected error for unknown group")
+		}
+	})
+
+	t.Run("group without markdown", func(t *testing.T) {
+		if err := StaticSite(root, filepath.Join(t.TempDir(), "site"), "", "design"); err == nil {
+			t.Fatal("expected error for group without markdown files")
+		}
+	})
 }
