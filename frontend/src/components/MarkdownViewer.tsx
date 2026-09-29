@@ -16,6 +16,10 @@ import {
   useMermaidSettingsRevision,
   type MermaidSettings,
 } from "../hooks/useMermaidSettings";
+import {
+  usePlantUmlSettings,
+  getPlantUmlServerUrl,
+} from "../hooks/usePlantUmlSettings";
 import { RawToggle } from "./RawToggle";
 import { SlidesToggle } from "./SlidesToggle";
 import { isSlideCover } from "../utils/slideCover";
@@ -49,7 +53,8 @@ let svgbobModulePromise: Promise<{
 }> | null = null;
 
 async function renderPlantUml(code: string): Promise<string> {
-  const response = await fetch("https://kroki.io/plantuml/svg", {
+  const endpoint = `${getPlantUmlServerUrl()}/plantuml/svg`;
+  const response = await fetch(endpoint, {
     method: "POST",
     headers: {
       "Content-Type": "text/plain; charset=utf-8",
@@ -1273,6 +1278,7 @@ export function SvgBobBlock({ code }: { code: string }) {
 }
 
 export function PlantUmlBlock({ code }: { code: string }) {
+  const [plantUmlSettings] = usePlantUmlSettings();
   const [svgUrl, setSvgUrl] = useState<string | null>(null);
   const [svgMarkup, setSvgMarkup] = useState<string | null>(null);
   const [renderStatus, setRenderStatus] = useState<"pending" | "rendered" | "failed">("pending");
@@ -1428,7 +1434,7 @@ export function PlantUmlBlock({ code }: { code: string }) {
         objectUrlRef.current = null;
       }
     };
-  }, [code, themeVersion, retryVersion]);
+  }, [code, themeVersion, retryVersion, plantUmlSettings.serverUrl]);
 
   if (svgUrl && svgMarkup) {
     const canvasStyle = isFullscreen
