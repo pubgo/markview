@@ -25,7 +25,7 @@ import (
 	"log/slog"
 	"os"
 
-	"github.com/kooksee/markview/cmd"
+	"github.com/pubgo/markview/cmd"
 )
 
 func main() {

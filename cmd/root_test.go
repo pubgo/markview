@@ -8,7 +8,7 @@ import (
 	"strings"
 	"testing"
 
-	"github.com/kooksee/markview/internal/server"
+	"github.com/pubgo/markview/internal/server"
 )
 
 func TestResolvePatterns_NoGlobChars(t *testing.T) {

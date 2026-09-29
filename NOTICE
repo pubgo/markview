@@ -12,3 +12,10 @@ This project includes work derived from:
 markview is maintained as a derivative project with additional modifications.
 Please refer to LICENSE and CREDITS/CREDITS_FRONTEND for detailed license texts
 of this repository and third-party dependencies.
+
+Current maintenance:
+
+- Repository: https://github.com/pubgo/markview
+- Maintainer: barry <kooksee@163.com>
+- This project is independently maintained; the upstream k1LoW/mo attribution
+  above is retained to comply with the MIT License.

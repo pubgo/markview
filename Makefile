@@ -1,4 +1,4 @@
-PKG = github.com/kooksee/markview
+PKG = github.com/pubgo/markview
 COMMIT = $(shell git rev-parse --short HEAD)
 
 BUILD_LDFLAGS = "-s -w -X $(PKG)/version.Revision=$(COMMIT)"
