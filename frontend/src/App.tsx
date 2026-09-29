@@ -52,7 +52,6 @@ const OutlineTreeView = lazy(() =>
   import("./components/OutlineTreeView").then((m) => ({ default: m.OutlineTreeView })),
 );
 
-
 const WIDTH_STORAGE_KEY = "markview-layout-width";
 const VIEWMODE_STORAGE_KEY = "markview-sidebar-viewmode";
 const PDF_OPEN_FILE_PARAM = "markview_open";

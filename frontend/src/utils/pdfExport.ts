@@ -2,10 +2,10 @@ import type jsPDF from "jspdf";
 import { groupToPath, parseGroupFromPath } from "./groups";
 import { resolveLink } from "./resolve";
 
-let jsPdfCtorPromise: Promise<typeof import("jspdf")["default"]> | null = null;
+let jsPdfCtorPromise: Promise<(typeof import("jspdf"))["default"]> | null = null;
 
 /** Load jsPDF on demand — the PDF stack is only needed when exporting. */
-function loadJsPdf(): Promise<typeof import("jspdf")["default"]> {
+function loadJsPdf(): Promise<(typeof import("jspdf"))["default"]> {
   jsPdfCtorPromise ??= import("jspdf").then((m) => m.default);
   return jsPdfCtorPromise;
 }

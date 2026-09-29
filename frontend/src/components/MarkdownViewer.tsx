@@ -274,7 +274,7 @@ function getMermaidTheme(): "dark" | "default" {
   return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "default";
 }
 
-type MermaidApi = typeof import("mermaid")["default"];
+type MermaidApi = (typeof import("mermaid"))["default"];
 let mermaidPromise: Promise<MermaidApi> | null = null;
 
 /** Load mermaid on demand — documents without diagrams never pay for it. */
