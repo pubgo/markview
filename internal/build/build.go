@@ -42,7 +42,9 @@ type staticData struct {
 // StaticSite scans inputDir for markdown files, builds the static data,
 // and writes the SPA with embedded data to outputDir.
 // basePath is the URL mount prefix for project sites (e.g. "/markview"); empty for domain root.
-func StaticSite(inputDir, outputDir, basePath string) error {
+// group optionally restricts the export to a single top-level subdirectory of
+// inputDir, naming the exported group after it; empty exports everything as "default".
+func StaticSite(inputDir, outputDir, basePath, group string) error {
 	absInput, err := filepath.Abs(inputDir)
 	if err != nil {
 		return fmt.Errorf("cannot resolve input directory: %w", err)
@@ -53,6 +55,12 @@ func StaticSite(inputDir, outputDir, basePath string) error {
 	}
 	if !info.IsDir() {
 		return fmt.Errorf("%s is not a directory", absInput)
+	}
+	if group != "" {
+		gi, err := os.Stat(filepath.Join(absInput, group))
+		if err != nil || !gi.IsDir() {
+			return fmt.Errorf("group %q is not a directory under %s", group, absInput)
+		}
 	}
 
 	// Scan for markdown files (skip dependency / VCS trees; avoid re-scanning output).
@@ -94,6 +102,24 @@ func StaticSite(inputDir, outputDir, basePath string) error {
 		return fmt.Errorf("no markdown files found in %s", absInput)
 	}
 
+	// Single-group export: keep only files under <input>/<group>/.
+	groupName := "default"
+	if group != "" {
+		groupName = group
+		groupDir := filepath.Join(absInput, group)
+		prefix := groupDir + string(os.PathSeparator)
+		filtered := files[:0]
+		for _, f := range files {
+			if strings.HasPrefix(f, prefix) {
+				filtered = append(filtered, f)
+			}
+		}
+		files = filtered
+		if len(files) == 0 {
+			return fmt.Errorf("no markdown files found in group %q", group)
+		}
+	}
+
 	// Build entries with relative display paths
 	entries := make([]*server.FileEntry, 0, len(files))
 	for _, f := range files {
@@ -108,7 +134,7 @@ func StaticSite(inputDir, outputDir, basePath string) error {
 		})
 	}
 
-	return buildAndWrite(entries, absOutput, basePath)
+	return buildAndWrite(entries, absOutput, basePath, groupName)
 }
 
 // StaticSiteFromFiles builds a static site from explicit file paths.
@@ -145,7 +171,7 @@ func StaticSiteFromFiles(filePaths []string, outputDir, basePath string) error {
 		})
 	}
 
-	return buildAndWrite(entries, outputDir, basePath)
+	return buildAndWrite(entries, outputDir, basePath, "default")
 }
 
 // commonPrefix returns the longest common directory prefix of two paths.
@@ -177,7 +203,7 @@ func normalizeBasePath(basePath string) string {
 	return strings.TrimRight(basePath, "/")
 }
 
-func buildAndWrite(entries []*server.FileEntry, outputDir, basePath string) error {
+func buildAndWrite(entries []*server.FileEntry, outputDir, basePath, groupName string) error {
 
 	// Read file contents and collect raw assets
 	contents := make(map[string]staticFileContent, len(entries))
@@ -204,7 +230,7 @@ func buildAndWrite(entries []*server.FileEntry, outputDir, basePath string) erro
 	outline := buildOutline(entries, contents)
 
 	// Export group uses relative paths only
-	exportGroup := server.Group{Name: "default"}
+	exportGroup := server.Group{Name: groupName}
 	for _, f := range entries {
 		exportGroup.Files = append(exportGroup.Files, &server.FileEntry{
 			Name: f.Name,

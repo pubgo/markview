@@ -63,6 +63,7 @@ $ markview build docs/                    # 输出到 docs-static/
 $ markview build docs/ -o dist/           # 指定输出目录
 $ markview build README.md CHANGELOG.md   # 只打包列出的文件
 $ markview build .                        # 从当前目录递归扫描 .md/.mdx
+$ markview build docs/ --group design     # 只导出 docs/design/，导出分组名为 design
 ```
 
 产物通常包含：
