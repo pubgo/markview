@@ -368,10 +368,9 @@ CI 中也提供独立构建产物流程：`build-artifacts`（GitHub Actions）�
 
 ## 发布
 
-项目发布使用 GoReleaser，支持两种方式：
+项目发布使用 GoReleaser：推送 `v*` tag（例如 `v0.19.0`）即可触发 `release` workflow，自动构建多平台二进制并发布 GitHub Release。
 
-- 自动发版：`tagpr` 在 `main` 生成新版本 tag，随后触发 `release` workflow 发布 GitHub Release。
-- 手动发版：直接推送 `v*` tag（例如 `v0.13.0`），触发 `release` workflow。
+发版前请同步更新 `version/version.go` 中的 `Version` 常量。
 
 本地可先做一次发布前验证（不真正发布）：
 

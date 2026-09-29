@@ -56,14 +56,11 @@ depsdev:
 	# gostyle v0.26.1 requires go >= 1.26.8; repo pins go 1.26.0 with GOTOOLCHAIN=local
 	go install github.com/k1LoW/gostyle@v0.26.0
 
-credits: depsdev generate
+credits:
 	go mod download
-	gocredits -w .
+	gocredits . > docs/CREDITS
 	cd frontend && MARKVIEW_BUILD_CREDITS=1 pnpm run build
-	printf "\n================================================================\n\n" >> CREDITS
-	cat frontend/CREDITS_FRONTEND >> CREDITS
+	printf "\n================================================================\n\n" >> docs/CREDITS
+	cat frontend/CREDITS_FRONTEND >> docs/CREDITS
 
-prerelease_for_tagpr: credits
-	git add CHANGELOG.md CREDITS go.mod go.sum
-
-.PHONY: default ci generate test build dev screenshot lint fmt fmt-check depsdev credits prerelease_for_tagpr slides-preview slides-pdf slides-pptx
+.PHONY: default ci generate test build dev screenshot lint fmt fmt-check depsdev credits slides-preview slides-pdf slides-pptx
