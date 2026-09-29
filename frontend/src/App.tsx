@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, lazy, useMemo, useRef, useState, Suspense } from "react";
 import { Sidebar } from "./components/Sidebar";
 import { MarkdownViewer } from "./components/MarkdownViewer";
 import { ThemeToggle } from "./components/ThemeToggle";
@@ -13,7 +13,6 @@ import { DropOverlay } from "./components/DropOverlay";
 import { SettingsModal } from "./components/SettingsModal";
 import { TocPanel } from "./components/TocPanel";
 import type { TocHeading } from "./components/TocPanel";
-import { GraphView } from "./components/GraphView";
 import { useSSE } from "./hooks/useSSE";
 import { useFileDrop } from "./hooks/useFileDrop";
 import { useActiveHeading } from "./hooks/useActiveHeading";
@@ -36,10 +35,22 @@ import {
 } from "./utils/groups";
 import { buildTree, flattenTreeFiles, getAllFileIdsUnder, type TreeNode } from "./utils/buildTree";
 import { captureArticleForMergedPdf, exportMergedPdfFromSnapshots } from "./utils/pdfExport";
-import { OutlineGraphView } from "./components/OutlineGraphView";
-import { OutlineGravityView } from "./components/OutlineGravityView";
-import { OutlineTreeView } from "./components/OutlineTreeView";
 import { isStaticMode } from "./utils/staticData";
+
+// Graph views pull heavy renderers (mermaid / @antv/g6 / d3); load them only
+// when the graph panel is actually opened.
+const GraphView = lazy(() =>
+  import("./components/GraphView").then((m) => ({ default: m.GraphView })),
+);
+const OutlineGraphView = lazy(() =>
+  import("./components/OutlineGraphView").then((m) => ({ default: m.OutlineGraphView })),
+);
+const OutlineGravityView = lazy(() =>
+  import("./components/OutlineGravityView").then((m) => ({ default: m.OutlineGravityView })),
+);
+const OutlineTreeView = lazy(() =>
+  import("./components/OutlineTreeView").then((m) => ({ default: m.OutlineTreeView })),
+);
 
 const WIDTH_STORAGE_KEY = "markview-layout-width";
 const VIEWMODE_STORAGE_KEY = "markview-sidebar-viewmode";
@@ -737,15 +748,23 @@ export function App() {
         <main className="flex-1 flex flex-col overflow-hidden">
           <div ref={setScrollContainer} className="flex-1 overflow-y-auto p-8 bg-gh-bg">
             {showGraph ? (
-              graphViewMode === "outline" ? (
-                <OutlineGraphView onClose={() => setShowGraph(false)} />
-              ) : graphViewMode === "gravity" ? (
-                <OutlineGravityView onClose={() => setShowGraph(false)} />
-              ) : graphViewMode === "tree" ? (
-                <OutlineTreeView onClose={() => setShowGraph(false)} />
-              ) : (
-                <GraphView onClose={() => setShowGraph(false)} />
-              )
+              <Suspense
+                fallback={
+                  <div className="flex-1 flex items-center justify-center text-gh-fg-muted text-sm">
+                    加载图谱…
+                  </div>
+                }
+              >
+                {graphViewMode === "outline" ? (
+                  <OutlineGraphView onClose={() => setShowGraph(false)} />
+                ) : graphViewMode === "gravity" ? (
+                  <OutlineGravityView onClose={() => setShowGraph(false)} />
+                ) : graphViewMode === "tree" ? (
+                  <OutlineTreeView onClose={() => setShowGraph(false)} />
+                ) : (
+                  <GraphView onClose={() => setShowGraph(false)} />
+                )}
+              </Suspense>
             ) : activeFileId != null ? (
               <MarkdownViewer
                 fileId={activeFileId}

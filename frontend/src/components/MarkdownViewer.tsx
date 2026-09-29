@@ -10,7 +10,6 @@ import rehypeKatex from "rehype-katex";
 import { rehypeGithubAlerts } from "rehype-github-alerts";
 import "katex/dist/katex.min.css";
 import { codeToHtml } from "shiki";
-import mermaid from "mermaid";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
 import {
   getMermaidSettings,
@@ -273,6 +272,15 @@ interface MarkdownViewerProps {
 
 function getMermaidTheme(): "dark" | "default" {
   return document.documentElement.getAttribute("data-theme") === "dark" ? "dark" : "default";
+}
+
+type MermaidApi = (typeof import("mermaid"))["default"];
+let mermaidPromise: Promise<MermaidApi> | null = null;
+
+/** Load mermaid on demand — documents without diagrams never pay for it. */
+function loadMermaid(): Promise<MermaidApi> {
+  mermaidPromise ??= import("mermaid").then((m) => m.default);
+  return mermaidPromise;
 }
 
 let mermaidCounter = 0;
@@ -719,6 +727,7 @@ async function renderMermaid(code: string, width?: number): Promise<string> {
     container.style.width = `${width && width > 0 ? width : 800}px`;
     document.body.appendChild(container);
     try {
+      const mermaid = await loadMermaid();
       const { svg } = await mermaid.render(id, code, container);
       resolve!(svg);
     } catch (err) {
@@ -898,7 +907,7 @@ export function MermaidBlock({
             if (!renderBeautiful) throw new Error("beautiful-mermaid unavailable");
             renderedSvg = renderBeautifulMermaid(normalizedCode, renderBeautiful);
           } catch {
-            mermaid.initialize({
+            (await loadMermaid()).initialize({
               startOnLoad: false,
               theme: getMermaidTheme(),
               flowchart: {
@@ -912,7 +921,7 @@ export function MermaidBlock({
             renderedSvg = await renderMermaid(normalizedCode, width);
           }
         } else {
-          mermaid.initialize({
+          (await loadMermaid()).initialize({
             startOnLoad: false,
             theme: getMermaidTheme(),
             flowchart: {

@@ -1,7 +1,14 @@
-import { toJpeg } from "html-to-image";
-import jsPDF from "jspdf";
+import type jsPDF from "jspdf";
 import { groupToPath, parseGroupFromPath } from "./groups";
 import { resolveLink } from "./resolve";
+
+let jsPdfCtorPromise: Promise<(typeof import("jspdf"))["default"]> | null = null;
+
+/** Load jsPDF on demand — the PDF stack is only needed when exporting. */
+function loadJsPdf(): Promise<(typeof import("jspdf"))["default"]> {
+  jsPdfCtorPromise ??= import("jspdf").then((m) => m.default);
+  return jsPdfCtorPromise;
+}
 
 const PDF_MARGIN_MM = 15;
 const PDF_PAGE_WIDTH_MM = 210;
@@ -457,6 +464,7 @@ async function captureArticleSnapshot(
   const sourceFilePath = options.sourceFilePath;
 
   const backgroundColor = resolvePdfCaptureBackgroundColor();
+  const { toJpeg } = await import("html-to-image");
   const imageDataUrl = await toJpeg(article, {
     quality: 0.92,
     pixelRatio: 2,
@@ -600,9 +608,13 @@ function addHeadingsToOutline(
   }
 }
 
-function createPdfDocument(initialSnapshot: PdfArticleSnapshot, filename: string): jsPDF {
+async function createPdfDocument(
+  initialSnapshot: PdfArticleSnapshot,
+  filename: string,
+): Promise<jsPDF> {
+  const JsPdfCtor = await loadJsPdf();
   const { pageHeightMm } = getPageMetrics(initialSnapshot);
-  const pdf = new jsPDF({
+  const pdf = new JsPdfCtor({
     unit: "mm",
     format: [PDF_PAGE_WIDTH_MM, pageHeightMm],
   });
@@ -621,7 +633,7 @@ async function exportAsSinglePagePdf(
   options: PdfCaptureOptions = {},
 ): Promise<void> {
   const snapshot = await captureArticleSnapshot(article, filename, options);
-  const pdf = createPdfDocument(snapshot, filename);
+  const pdf = await createPdfDocument(snapshot, filename);
   const pageBySourcePath = new Map<string, number>();
   if (snapshot.sourceFilePath) {
     pageBySourcePath.set(normalizePath(snapshot.sourceFilePath), 1);
@@ -651,7 +663,7 @@ export async function exportMergedPdfFromSnapshots(
   }
 
   const filename = toPdfFilename(outputFileName);
-  const pdf = createPdfDocument(snapshots[0], filename);
+  const pdf = await createPdfDocument(snapshots[0], filename);
   const pageBySourcePath = new Map<string, number>();
 
   for (let i = 0; i < snapshots.length; i++) {
