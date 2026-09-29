@@ -1,12 +1,12 @@
 <p align="center">
 <br><br><br>
-<img src="https://github.com/kooksee/markview/raw/main/images/logo.svg" width="120" alt="markview">
+<img src="images/logo.svg" width="120" alt="markview">
 <br><br><br>
 </p>
 
 # markview
 
-[![build](https://github.com/kooksee/markview/actions/workflows/ci.yml/badge.svg)](https://github.com/kooksee/markview/actions/workflows/ci.yml) ![Coverage](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/kooksee/markview/coverage.svg) ![Code to Test Ratio](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/kooksee/markview/ratio.svg) ![Test Execution Time](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/kooksee/markview/time.svg)
+[![build](https://github.com/pubgo/markview/actions/workflows/ci.yml/badge.svg)](https://github.com/pubgo/markview/actions/workflows/ci.yml) ![Coverage](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/pubgo/markview/coverage.svg) ![Code to Test Ratio](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/pubgo/markview/ratio.svg) ![Test Execution Time](https://raw.githubusercontent.com/k1LoW/octocovs/main/badges/pubgo/markview/time.svg)
 
 `markview` 是一个在浏览器中打开 `.md` 文件并支持实时刷新的 Markdown 浏览工具。
 
@@ -47,15 +47,15 @@
 
 ## 安装
 
-**Homebrew：**
+**go install：**
 
 ```console
-$ brew install kooksee/tap/markview
+$ go install github.com/pubgo/markview@latest
 ```
 
 **手动安装：**
 
-从 [发布页](https://github.com/kooksee/markview/releases) 下载对应平台二进制文件。
+从 [发布页](https://github.com/pubgo/markview/releases) 下载对应平台二进制文件。
 
 ## 使用方式
 

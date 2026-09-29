@@ -2,7 +2,7 @@
 
 ## What is markview
 
-`markview` is a CLI tool that opens Markdown files in a browser with live-reload. It runs a Go HTTP server that embeds a React SPA as a single binary. The Go module is `github.com/kooksee/markview`.
+`markview` is a CLI tool that opens Markdown files in a browser with live-reload. It runs a Go HTTP server that embeds a React SPA as a single binary. The Go module is `github.com/pubgo/markview`.
 
 ## Build & Run
 

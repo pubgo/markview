@@ -1,4 +1,4 @@
-module github.com/kooksee/markview
+module github.com/pubgo/markview
 
 go 1.26.0
 

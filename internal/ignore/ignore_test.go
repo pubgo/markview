@@ -6,7 +6,7 @@ import (
 	"path/filepath"
 	"testing"
 
-	"github.com/kooksee/markview/internal/ignore"
+	"github.com/pubgo/markview/internal/ignore"
 )
 
 func TestWalk_SkipsGitignoreAndDotGit(t *testing.T) {

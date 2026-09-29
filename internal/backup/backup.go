@@ -6,7 +6,7 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/kooksee/markview/internal/xdg"
+	"github.com/pubgo/markview/internal/xdg"
 )
 
 // Dir returns the path to the backup directory.

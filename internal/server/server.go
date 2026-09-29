@@ -19,9 +19,9 @@ import (
 	"github.com/bmatcuk/doublestar/v4"
 	"github.com/fsnotify/fsnotify"
 	"github.com/k1LoW/donegroup"
-	"github.com/kooksee/markview/internal/ignore"
-	"github.com/kooksee/markview/internal/static"
-	"github.com/kooksee/markview/version"
+	"github.com/pubgo/markview/internal/ignore"
+	"github.com/pubgo/markview/internal/static"
+	"github.com/pubgo/markview/version"
 )
 
 type FileEntry struct {
