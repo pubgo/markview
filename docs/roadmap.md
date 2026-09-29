@@ -38,8 +38,8 @@
 
 - [x] mermaid / @antv（图谱视图）/ pdf 导出 改 `import()` 动态加载（图谱组件 `React.lazy` + Suspense；mermaid/jspdf/html-to-image 在使用点动态 import）— **首屏 3.79 → ~2.06 MB gzip（-46%）**
   - 关键坑：vite 8/rolldown 会把 `\0vite/preload-helper` 等虚拟 helper 放进"第一个被切出的 chunk"（此处为 mermaid），使 entry 静态依赖该懒 chunk 并进入 modulepreload；已用 `rolldownOptions.output.codeSplitting.groups`（`manualChunks` 已废弃）把所有 `\0` 虚拟模块锁进常驻 chunk 修复
-- [ ] shiki 惰性初始化：进入首屏文档后再 `createHighlighter`，高亮前先出无高亮文本（或骨架）——**当前首屏 1.6 MB gzip 里 shiki 占 ~78%，是达标前必须搬走的大头**
-- [ ] 目标：首屏 ≤ 1.2 MB gzip（主包 + react + katex + CSS 量级），图表/导出/高亮按需加载
+- [x] shiki 惰性初始化：`codeToHtml` 改为使用点动态 `import("shiki")`（`utils/highlight.ts` 统一封装 + plaintext 回退）；组件在 html 就绪前本就渲染无高亮 `<pre>` 兜底，天然实现「先出文本、后高亮」
+- [x] 目标：首屏 ≤ 1.2 MB gzip — **实际 ~456 KB**（entry 52 + markdown-runtime 327 + react 57 + CSS 20 + runtime ~1）
 - [ ] CI 产物体积回归防护：在 build-artifacts 或独立 job 里记录 dist 总 gzip 体积，超阈值（如 +10%）告警
 
 ### 2.2 导出保真（轨道 3）

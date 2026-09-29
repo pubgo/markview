@@ -51,6 +51,15 @@ export default defineConfig({
             },
             // Shiki themes & languages — largest payload, rarely all loaded at once
             { name: "shiki", test: /[\\/]node_modules[\\/](shiki|@shikijs)[\\/]/ },
+            // Shared hast/mdast utilities: the eager react-markdown pipeline
+            // and shiki both use them. Without this higher-priority group the
+            // shiki group captures them recursively and drags the 1.6MB shiki
+            // chunk back into the first screen.
+            {
+              name: "markdown-runtime",
+              test: /[\\/]node_modules[\\/](hast-util-[a-z-]+|property-information|zwitch|web-namespaces|html-void-elements|space-separated-tokens|comma-separated-tokens|character-entities[a-z-]*|decode-named-character-reference|devlop|unist-util-[a-z-]+|vfile[a-z-]*|unified|bail|trough|is-plain-obj|micromark[a-z-]*|mdast-util-[a-z-]+|markdown-table|stringify-entities|ccount|longest-streak|html-url-attributes|info-constant|remark-[a-z-]+|rehype-[a-z-]+)[\\/]/,
+              priority: 50,
+            },
             // Mermaid + beautiful-mermaid (loaded on demand per diagram)
             {
               name: "mermaid",
