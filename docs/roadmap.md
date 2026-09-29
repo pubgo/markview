@@ -1,0 +1,78 @@
+# 开发路线图（Roadmap）
+
+> 制定日期：2026-09-30。承接 [STRATEGY.md](../STRATEGY.md) 的四条投资轨道与 [strategy-status.md](strategy-status.md) 的成熟度审计，把「未齐项」排成可执行的计划。
+> 本文是滚动计划：完成一项勾一项；每季度随 strategy-status 审计一起复核。
+
+## 0. 基线快照（2026-09-30）
+
+- **版本**：v0.19.0（首个 pubgo 自主维护版本，2026-09-29 发布）
+- **工程**：master CI 已全绿（gosec G703 经 `os.Root` 重构解决；gostyle 存量违规清零；pages-reusable workflow file issue 修复）；发版 = 更新 `version/version.go` 后推 `v*` tag
+- **前端 bundle 基线（gzip，构建产物实测）**：
+
+  | chunk | gzip | 备注 |
+  | --- | --- | --- |
+  | shiki | ~1.65 MB | 代码高亮，最大头 |
+  | mermaid | ~1.10 MB | 图表渲染 |
+  | @antv/g6 | ~377 KB | 链接/大纲图谱 |
+  | index（主包） | ~310 KB | 应用入口 |
+  | pdf（jspdf + html-to-image） | ~134 KB | 导出 |
+  | katex | ~87 KB | 公式 |
+  | react | ~60 KB | |
+  | d3 | ~37 KB | mermaid/图谱共用 |
+  | CSS | ~22 KB | |
+
+  **首屏合计约 3.9 MB gzip**：`frontend/src` 目前没有任何 dynamic import，`vite.config.ts` 的 manualChunks 只做了拆分，静态 import 图上的所有 chunk 首屏全部加载。
+- **测试**：前端 35 文件 / 288 用例；Go 6 个测试文件（`internal/server` 已有穿越/符号链接逃逸安全用例，总体覆盖偏薄）
+
+## 1. P0 · 止血（已完成 ✅）
+
+- [x] pages-reusable.yml：input description 中的 GitHub context（actionlint expression error，每次 master push 产生失败 run）+ setup-go 互斥输入 (#26)
+- [x] gosec G703：`handleFileRaw` 改 `os.OpenRoot`，符号链接逃逸回归测试 (#26)
+- [x] gostyle 存量违规清零（`handlerrors` ×4、`getters` ×1）(#27)
+- [x] goreleaser release notes 降噪（排除 Merge / version-bump commit）(#26)
+- [x] 安装文档纠正：`go install module@version` 因 embed 构建期产物不可用，改为 release 二进制 / 源码构建 (#25)
+
+## 2. P1 · 近期（1–2 个月）
+
+### 2.1 前端加载性能（工程）
+
+- [ ] mermaid / @antv（图谱视图）/ pdf 导出 改 `import()` 动态加载（按需 chunk 已就绪，只差改成懒加载 + 骨架/loading 态）
+- [ ] shiki 惰性初始化：进入首屏文档后再 `createHighlighter`，高亮前先出无高亮文本（或骨架）
+- [ ] 目标：首屏 ≤ 1.2 MB gzip（主包 + react + katex + CSS 量级），图表/导出/高亮按需加载
+- [ ] CI 产物体积回归防护：在 build-artifacts 或独立 job 里记录 dist 总 gzip 体积，超阈值（如 +10%）告警
+
+### 2.2 导出保真（轨道 3）
+
+- [ ] PlantUML 离线化：支持自托管 Kroki / PlantUML server 地址配置；失败时明确降级提示（策略审计 P0 遗留）
+- [ ] `markview build --group`：单分组静态导出
+- [ ] 远程图片加载失败占位与重试提示（capabilities P1 遗留）
+
+### 2.3 演示质感（轨道 1）
+
+- [ ] 转场选项（none / fade / slide；尊重 `prefers-reduced-motion`）
+- [ ] 提词器计时器 + 手机遥控翻页（BroadcastChannel 同步已有基础）
+
+### 2.4 Go 测试摸底（工程）
+
+- [ ] `internal/server` HTTP API 用例补齐（文件 API、分组、搜索、安全路径）；以 octocov 报告定第一版覆盖率目标
+
+## 3. P2 · 中期（3–6 个月）
+
+- [ ] 阅读/review 定点打磨：搜索键盘导航、大会话性能（虚拟列表、索引防抖）——按策略此轨道不再扩面
+- [ ] frontmatter 容错：`...` 结束符、BOM
+- [ ] LAN 部署配套：远程访问 token 鉴权 + 部署文档（`--dangerously-allow-remote-access` 目前无防护）
+- [ ] 发布生态：`pubgo/homebrew-tap` + goreleaser `brews` 恢复 Homebrew 安装（或先提供 install script）
+- [ ] 可配置 Markdown 扩展开关；图谱维度增强（标签 / 引用类型 / 跨分组）
+
+## 4. P3 · 远期 / 探索（需单独设计，不承诺排期）
+
+- [ ] 文本可选的 PDF 导出：截图 PDF 的不可选中/超长单页是机制性短板，探索 headless print-to-PDF
+- [ ] 全盘索引：突破「仅会话内文件」边界（需索引缓存与失效机制设计）
+- [ ] 新渲染器一等公民化（Graphviz / D2 / Typst，按真实文档需求增量）
+- [ ] `go install` 支持：embed 占位 + build tag 方案（当前 19MB dist 不宜入库）
+
+## 5. 度量与节奏
+
+- **北极星**：沿用 STRATEGY 五指标（冷启动、少开编辑器、演示可用、导出保真、美化缺口）。
+- **工程三数**：master CI 常绿；前端首屏 gzip 体积（基线 ~3.9 MB，P1 目标 ≤1.2 MB）；octocov 覆盖率趋势。
+- **节奏**：小 PR 快合并，PR 绿才进 master；每积累 2–4 个 feature 推一次 minor tag；季度复核本文件与 strategy-status。
