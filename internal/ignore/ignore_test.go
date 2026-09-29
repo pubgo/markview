@@ -36,7 +36,10 @@ func TestWalk_SkipsGitignoreAndDotGit(t *testing.T) {
 	seen := map[string]bool{}
 	err := ignore.Walk(dir, func(abs string, d fs.DirEntry) error {
 		if !d.IsDir() {
-			rel, _ := filepath.Rel(dir, abs)
+			rel, err := filepath.Rel(dir, abs)
+			if err != nil {
+				t.Fatalf("rel %s under %s: %v", abs, dir, err)
+			}
 			seen[filepath.ToSlash(rel)] = true
 		}
 		return nil

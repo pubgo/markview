@@ -893,13 +893,15 @@ func (s *State) handleCreateForGlobs(path string) {
 			if !watched {
 				s.addDirWatch(path)
 				// Scan directory contents for matching files (gitignore-pruned)
-				_ = ignore.Walk(path, func(p string, d fs.DirEntry) error {
+				if err := ignore.Walk(path, func(p string, d fs.DirEntry) error {
 					if d.IsDir() {
 						return nil
 					}
 					s.matchAndAddFile(p, patterns)
 					return nil
-				})
+				}); err != nil {
+					slog.Warn("failed to scan watched directory", "path", path, "error", err)
+				}
 				watched = true
 			}
 		}
