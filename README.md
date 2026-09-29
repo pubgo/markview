@@ -47,15 +47,18 @@
 
 ## 安装
 
-**go install：**
+**下载发布版（推荐）：**
+
+从 [发布页](https://github.com/pubgo/markview/releases) 下载对应平台二进制文件（内含完整前端资源）。
+
+**从源码构建：**
 
 ```console
-$ go install github.com/pubgo/markview@latest
+$ git clone https://github.com/pubgo/markview && cd markview
+$ make build
 ```
 
-**手动安装：**
-
-从 [发布页](https://github.com/pubgo/markview/releases) 下载对应平台二进制文件。
+> 前端资源在构建期生成并嵌入二进制，因此不支持 `go install github.com/pubgo/markview@version`。
 
 ## 使用方式
 

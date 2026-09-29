@@ -2,7 +2,7 @@
 
 ## v0.19.0 - 2026-09-29
 
-首个由 pubgo/markview 完全自主维护的版本；Go module 迁移为 `github.com/pubgo/markview`（`go install github.com/pubgo/markview@latest` 自本版生效），发版方式改为手动推送 `v*` tag 触发 goreleaser。
+首个由 pubgo/markview 完全自主维护的版本；Go module 迁移为 `github.com/pubgo/markview`，发版方式改为手动推送 `v*` tag 触发 goreleaser。安装请使用 [release 二进制](https://github.com/pubgo/markview/releases)（前端资源为构建期生成并嵌入，不支持 `go install module@version`）。
 
 ### New Features 🎉
 - feat: unify diagram PNG copy and PDF wait across chart types (#21)：Mermaid / PlantUML / SvgBob 三种图表统一支持悬停复制 PNG，应用内 PDF 导出等待三种图表渲染完成
