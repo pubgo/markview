@@ -1207,10 +1207,19 @@ func handleFileRaw(state *State) http.HandlerFunc {
 			return
 		}
 
+		// os.Root confines every open to root: even if the check above were
+		// bypassed, neither ".." nor symlinks can reach outside the root.
+		rfs, err := os.OpenRoot(root)
+		if err != nil {
+			http.Error(w, err.Error(), http.StatusInternalServerError)
+			return
+		}
+		defer rfs.Close()
+
 		// ServeContent instead of ServeFile: ServeFile rejects any request whose
 		// URL path contains ".." (including encoded %2E%2E), even when the
 		// resolved filesystem path is already validated above.
-		f, err := os.Open(absPath)
+		f, err := rfs.Open(relToRoot)
 		if err != nil {
 			if os.IsNotExist(err) {
 				http.NotFound(w, r)

@@ -1383,6 +1383,27 @@ func TestFileRawParentAsset(t *testing.T) {
 			t.Fatalf("got status %d, want %d", rec.Code, http.StatusForbidden)
 		}
 	})
+
+	t.Run("rejects symlink escape outside git root", func(t *testing.T) {
+		outside := filepath.Join(t.TempDir(), "secret.txt")
+		if err := os.WriteFile(outside, []byte("secret"), 0o600); err != nil {
+			t.Fatal(err)
+		}
+		link := filepath.Join(docs, "evil.svg")
+		if err := os.Symlink(outside, link); err != nil {
+			t.Skipf("symlink not supported: %v", err)
+		}
+
+		req := httptest.NewRequest("GET", fmt.Sprintf("/_/api/files/%s/raw/evil.svg", entry.ID), nil)
+		rec := httptest.NewRecorder()
+		handler.ServeHTTP(rec, req)
+		if rec.Code == http.StatusOK {
+			t.Fatalf("symlink escape served: %q", rec.Body.String())
+		}
+		if strings.Contains(rec.Body.String(), "secret") {
+			t.Fatalf("secret content leaked: %q", rec.Body.String())
+		}
+	})
 }
 
 func TestDirMove(t *testing.T) {
