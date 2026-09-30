@@ -473,8 +473,8 @@ func TestHandleReorderFiles(t *testing.T) {
 
 func TestAddPattern_InitialExpansion(t *testing.T) {
 	dir := t.TempDir()
-	os.WriteFile(filepath.Join(dir, "a.md"), []byte("# A"), 0o600) //nolint:errcheck
-	os.WriteFile(filepath.Join(dir, "b.md"), []byte("# B"), 0o600) //nolint:errcheck
+	os.WriteFile(filepath.Join(dir, "a.md"), []byte("# A"), 0o600)   //nolint:errcheck
+	os.WriteFile(filepath.Join(dir, "b.md"), []byte("# B"), 0o600)   //nolint:errcheck
 	os.WriteFile(filepath.Join(dir, "c.txt"), []byte("text"), 0o600) //nolint:errcheck
 
 	s := newTestState(t)
@@ -499,9 +499,9 @@ func TestAddPattern_InitialExpansion(t *testing.T) {
 func TestAddPattern_RespectsGitignore(t *testing.T) {
 	dir := t.TempDir()
 	os.WriteFile(filepath.Join(dir, ".gitignore"), []byte("node_modules/\n"), 0o600) //nolint:errcheck
-	os.WriteFile(filepath.Join(dir, "readme.md"), []byte("# r"), 0o600)               //nolint:errcheck
-	os.MkdirAll(filepath.Join(dir, "node_modules"), 0o700)                            //nolint:errcheck
-	os.WriteFile(filepath.Join(dir, "node_modules", "x.md"), []byte("# x"), 0o600)    //nolint:errcheck
+	os.WriteFile(filepath.Join(dir, "readme.md"), []byte("# r"), 0o600)              //nolint:errcheck
+	os.MkdirAll(filepath.Join(dir, "node_modules"), 0o700)                           //nolint:errcheck
+	os.WriteFile(filepath.Join(dir, "node_modules", "x.md"), []byte("# x"), 0o600)   //nolint:errcheck
 
 	s := newTestState(t)
 	entries, err := s.AddPattern(filepath.Join(dir, "**", "*.md"), DefaultGroup)

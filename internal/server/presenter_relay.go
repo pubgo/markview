@@ -94,7 +94,7 @@ func (r *presenterRelay) subscribe(session string) (<-chan []byte, func()) {
 	}
 	sess.lastActive = time.Now()
 	ch := make(chan []byte, 16)
-	if sess.last != nil {
+	if len(sess.last) > 0 {
 		ch <- sess.last
 	}
 	sess.subs[ch] = struct{}{}

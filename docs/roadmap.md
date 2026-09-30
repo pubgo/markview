@@ -57,7 +57,7 @@
 
 ### 2.4 Go 测试摸底（工程）
 
-- [ ] `internal/server` HTTP API 用例补齐（文件 API、分组、搜索、安全路径）；以 octocov 报告定第一版覆盖率目标
+- [x] `internal/server` HTTP API 用例补齐：新增 api_test.go（groups / file content / graph / outline / reorder / patterns 全生命周期 / move / upload / status / shutdown）+ State 纯函数用例——server 包 62.1% → **74.7%**，全仓 50.5% → **56.6%**；下一版目标：server ≥ 80%（缺口集中在 fsnotify watchLoop 与 SSE 长连接）
 
 ## 3. P2 · 中期（3–6 个月）
 
