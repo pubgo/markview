@@ -1,6 +1,7 @@
 package server
 
 import (
+	"encoding/json"
 	"net"
 	"net/http"
 	"strings"
@@ -28,7 +29,8 @@ func handlePresenterQR() http.HandlerFunc {
 		}
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "no-store")
-		w.Write(png) //nolint:errcheck
+		//nolint:gosec // PNG bytes produced by qrcode.Encode, not request text
+		_, _ = w.Write(png)
 	}
 }
 
@@ -47,12 +49,13 @@ func handleLANHint() http.HandlerFunc {
 		}
 		ip := lanIPv4()
 		w.Header().Set("Content-Type", "application/json")
+		enc := json.NewEncoder(w)
 		if ip == "" {
 			w.WriteHeader(http.StatusNotFound)
-			w.Write([]byte(`{}`)) //nolint:errcheck
+			enc.Encode(struct{}{}) //nolint:errcheck
 			return
 		}
-		w.Write([]byte(`{"ip":"` + ip + `","port":"` + port + `"}`)) //nolint:errcheck
+		enc.Encode(map[string]string{"ip": ip, "port": port}) //nolint:errcheck
 	}
 }
 
