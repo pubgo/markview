@@ -1,9 +1,11 @@
 import { describe, expect, it } from "vitest";
 import {
   PRESENTER_CHANNEL,
+  buildPresenterRelayUrls,
   buildPresenterUrl,
   createPresenterSessionId,
   isPresenterMessage,
+  parsePresenterSearch,
 } from "./slidesPresenterChannel";
 
 describe("slidesPresenterChannel", () => {
@@ -23,7 +25,7 @@ describe("slidesPresenterChannel", () => {
       origin: "http://127.0.0.1:16275",
       pathname: "/g/default",
     });
-    expect(url).toBe("http://127.0.0.1:16275/g/default?presenter=1&session=sess-1");
+    expect(url).toBe("http://127.0.0.1:16275/g/default?presenter=1&session=sess-1&remote=1");
   });
 
   it("accepts valid presenter messages and rejects junk", () => {
@@ -57,5 +59,29 @@ describe("slidesPresenterChannel", () => {
     expect(isPresenterMessage(null)).toBe(false);
     expect(isPresenterMessage({ type: "goto" })).toBe(false);
     expect(isPresenterMessage({ type: "nope", sessionId: "s" })).toBe(false);
+  });
+});
+
+describe("presenter relay urls", () => {
+  it("builds relay endpoints for a session", () => {
+    const urls = buildPresenterRelayUrls("sess/1", { origin: "http://127.0.0.1:16275" });
+    expect(urls.postUrl).toBe("http://127.0.0.1:16275/_/api/presenter/sess%2F1/messages");
+    expect(urls.eventsUrl).toBe("http://127.0.0.1:16275/_/api/presenter/sess%2F1/events");
+  });
+});
+
+describe("parsePresenterSearch remote flag", () => {
+  it("marks remote=1 searches", () => {
+    expect(parsePresenterSearch("?presenter=1&session=s&remote=1")).toEqual({
+      sessionId: "s",
+      remote: true,
+    });
+  });
+
+  it("defaults remote to false", () => {
+    expect(parsePresenterSearch("?presenter=1&session=s")).toEqual({
+      sessionId: "s",
+      remote: false,
+    });
   });
 });

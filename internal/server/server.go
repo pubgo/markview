@@ -88,6 +88,8 @@ type State struct {
 	backupCh     chan struct{}     // dirty signal (buffered, size 1)
 	backupSaveFn func(RestoreData) // backup write callback
 	backupDone   chan struct{}     // closed when backupLoop exits
+
+	presenter *presenterRelay
 }
 
 func NewState(ctx context.Context) *State {
@@ -103,6 +105,7 @@ func NewState(ctx context.Context) *State {
 		restartCh:   make(chan string, 1),
 		shutdownCh:  make(chan struct{}, 1),
 		watchedDirs: make(map[string]int),
+		presenter:   newPresenterRelay(),
 	}
 
 	if w != nil {
@@ -991,6 +994,8 @@ func NewHandler(state *State) http.Handler {
 	mux.HandleFunc("GET /_/api/graph", handleGraph(state))
 	mux.HandleFunc("GET /_/api/outline", handleOutline(state))
 	mux.HandleFunc("GET /_/events", handleSSE(state))
+	mux.HandleFunc("POST /_/api/presenter/{session}/messages", handlePresenterPost(state))
+	mux.HandleFunc("GET /_/api/presenter/{session}/events", handlePresenterEvents(state))
 	mux.HandleFunc("GET /", handleSPA())
 
 	return mux

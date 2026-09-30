@@ -9,6 +9,10 @@ const presenter = parsePresenterSearch(window.location.search);
 
 createRoot(document.getElementById("root")!).render(
   <StrictMode>
-    {presenter ? <PresenterTeleprompter sessionId={presenter.sessionId} /> : <App />}
+    {presenter ? (
+      <PresenterTeleprompter sessionId={presenter.sessionId} remote={presenter.remote} />
+    ) : (
+      <App />
+    )}
   </StrictMode>,
 );

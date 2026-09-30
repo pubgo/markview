@@ -1018,6 +1018,56 @@ body,
   color: var(--color-gh-text-secondary);
 }
 
+.presenter-teleprompter__remote-badge {
+  margin-left: 0.4rem;
+  padding: 0.1rem 0.4rem;
+  border: 1px solid var(--color-gh-border);
+  border-radius: 999px;
+  font-size: 0.65rem;
+  letter-spacing: 0;
+  text-transform: none;
+}
+
+.presenter-teleprompter__timer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid var(--color-gh-border);
+  border-radius: 8px;
+  background: var(--color-gh-bg-secondary, transparent);
+}
+
+.presenter-teleprompter__clock {
+  font-variant-numeric: tabular-nums;
+  font-size: 1.6rem;
+  font-weight: 700;
+}
+
+.presenter-teleprompter__clock.is-paused {
+  color: var(--color-gh-text-secondary);
+}
+
+.presenter-teleprompter__timer-actions {
+  display: flex;
+  gap: 0.4rem;
+}
+
+.presenter-teleprompter__timer-actions button {
+  padding: 0.25rem 0.7rem;
+  border: 1px solid var(--color-gh-border);
+  border-radius: 6px;
+  background: transparent;
+  color: var(--color-gh-text);
+  cursor: pointer;
+  font-size: 0.8rem;
+}
+
+.presenter-teleprompter__timer-actions button:hover {
+  background: var(--color-gh-bg-hover, rgba(128, 128, 128, 0.12));
+}
+
 .presenter-teleprompter__page {
   font-variant-numeric: tabular-nums;
   font-size: 1rem;

@@ -38,6 +38,7 @@ import { parseSlideColumnLayout } from "../utils/slideColumns";
 import { slidePreviewTitle } from "../utils/slidePreviewTitle";
 import {
   PRESENTER_CHANNEL,
+  buildPresenterRelayUrls,
   buildPresenterUrl,
   createPresenterSessionId,
   isPresenterMessage,
@@ -52,6 +53,7 @@ import { resolveLink, resolveImageSrc, extractLanguage } from "../utils/resolve"
 import { findBestSearchTarget } from "../utils/searchJump";
 import { parseFrontmatter } from "../utils/frontmatter";
 import { stripMdxSyntax } from "../utils/mdx";
+import { isStaticMode } from "../utils/staticData";
 import { transformMarkdownForMo } from "../utils/markdownEnhance";
 import type { TocHeading } from "./TocPanel";
 import type { Components } from "react-markdown";
@@ -2324,6 +2326,15 @@ export function MarkdownViewer({
     };
     presenterStateRef.current = state;
     presenterChannelRef.current?.postMessage(state);
+    // Relay the same state to the server so remote devices (phone) can follow.
+    if (!isStaticMode()) {
+      const { postUrl } = buildPresenterRelayUrls(presenterSessionId);
+      void fetch(postUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(state),
+      }).catch(() => {});
+    }
   }, [fileId, presenterSessionId, revision, slideIndex, slides]);
 
   useEffect(() => {
@@ -2413,9 +2424,30 @@ export function MarkdownViewer({
       channel.postMessage(presenterStateRef.current);
     }
 
+    // Remote devices (phone) send goto commands through the server relay.
+    let remoteSource: EventSource | null = null;
+    if (presenterSessionId && !isStaticMode() && typeof EventSource !== "undefined") {
+      const { eventsUrl } = buildPresenterRelayUrls(presenterSessionId);
+      remoteSource = new EventSource(eventsUrl);
+      remoteSource.addEventListener("message", (event: MessageEvent<string>) => {
+        try {
+          const data: unknown = JSON.parse(event.data);
+          if (!isPresenterMessage(data)) return;
+          if (data.sessionId !== presenterSessionId || data.type !== "goto") return;
+          const total = Math.max(slides.length, 1);
+          const nextIndex = Math.min(total - 1, Math.max(0, Math.floor(data.slideIndex)));
+          setSlideIndex(nextIndex);
+          revealSlidesOverlay();
+        } catch {
+          // Ignore malformed payloads.
+        }
+      });
+    }
+
     return () => {
       channel.removeEventListener("message", onMessage);
       channel.close();
+      remoteSource?.close();
       if (presenterChannelRef.current === channel) {
         presenterChannelRef.current = null;
       }

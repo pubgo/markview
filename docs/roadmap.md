@@ -51,7 +51,8 @@
 ### 2.3 演示质感（轨道 1）
 
 - [x] 转场选项（none / fade / slide）——slides 工具栏内选择，localStorage 持久化；`prefers-reduced-motion` 下自动关闭动画
-- [ ] 提词器计时器 + 手机遥控翻页（BroadcastChannel 同步已有基础）
+- [x] 提词器计时器：经过时间时钟（暂停/继续/归零）
+- [x] 手机遥控翻页：Go 侧 presenter 中继（`POST /_/api/presenter/{session}/messages` + SSE events），提词器 URL 带 `remote=1` 时走服务器通道，同一局域网内任何设备打开该 URL 即可遥控；主窗口 presenter 模式自动向中继发布状态并接收远程 goto
 - [ ] slides 页面内容超高适配：高图/长内容被页面底部裁剪（2026-09-30 实测），考虑自动缩放或滚动
 
 ### 2.4 Go 测试摸底（工程）

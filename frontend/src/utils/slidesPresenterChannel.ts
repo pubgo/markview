@@ -40,7 +40,26 @@ export function buildPresenterUrl(
   const url = new URL(location.pathname || "/", location.origin);
   url.searchParams.set("presenter", "1");
   url.searchParams.set("session", sessionId);
+  // remote=1 switches the teleprompter to the server-relay transport so the
+  // same URL also works from other devices (e.g. a phone on the same LAN).
+  url.searchParams.set("remote", "1");
   return url.toString();
+}
+
+/** Server relay endpoints for the cross-device presenter transport. */
+export function buildPresenterRelayUrls(
+  sessionId: string,
+  location: Pick<Location, "origin"> = window.location,
+): { postUrl: string; eventsUrl: string } {
+  const session = encodeURIComponent(sessionId);
+  return {
+    postUrl: `${location.origin}/_/api/presenter/${session}/messages`,
+    eventsUrl: `${location.origin}/_/api/presenter/${session}/events`,
+  };
+}
+
+export function isRemotePresenterSearch(search: string): boolean {
+  return new URLSearchParams(search.startsWith("?") ? search : `?${search}`).get("remote") === "1";
 }
 
 export function isPresenterMessage(data: unknown): data is PresenterMessage {
@@ -66,10 +85,12 @@ export function isPresenterMessage(data: unknown): data is PresenterMessage {
   return false;
 }
 
-export function parsePresenterSearch(search: string): { sessionId: string } | null {
+export function parsePresenterSearch(
+  search: string,
+): { sessionId: string; remote: boolean } | null {
   const params = new URLSearchParams(search.startsWith("?") ? search : `?${search}`);
   if (params.get("presenter") !== "1") return null;
   const sessionId = params.get("session");
   if (!sessionId) return null;
-  return { sessionId };
+  return { sessionId, remote: isRemotePresenterSearch(search) };
 }
