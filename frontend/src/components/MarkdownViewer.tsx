@@ -1801,9 +1801,8 @@ function CodeBlockCopyButton({ code, themed = false }: { code: string; themed?: 
 function MarkdownImage({ src, alt, ...props }: ComponentProps<"img">) {
   const [failed, setFailed] = useState(false);
   const [attempt, setAttempt] = useState(0);
-  const isRemote = typeof src === "string" && /^https?:\/\//i.test(src);
 
-  if (failed && isRemote) {
+  if (failed) {
     return (
       <span className="flex flex-col items-center justify-center gap-2 my-4 p-4 rounded-md border border-dashed border-gh-border bg-gh-bg-secondary text-gh-text-secondary text-sm">
         <svg
@@ -1841,9 +1840,7 @@ function MarkdownImage({ src, alt, ...props }: ComponentProps<"img">) {
       src={src}
       alt={alt}
       loading="lazy"
-      onError={() => {
-        if (isRemote) setFailed(true);
-      }}
+      onError={() => setFailed(true)}
       {...props}
     />
   );

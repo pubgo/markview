@@ -52,13 +52,16 @@ describe("MarkdownImage remote failure placeholder", () => {
     expect(screen.getByAltText("remote pic")).toBeInTheDocument();
   });
 
-  it("does not show the placeholder for local images", async () => {
+  it("shows the placeholder for failed local images too", async () => {
     renderViewer("![local pic](./pic.png)");
 
     const img = await screen.findByAltText("local pic");
     fireEvent.error(img);
 
-    expect(screen.queryByText(/图片加载失败/)).not.toBeInTheDocument();
+    expect(screen.getByText(/图片加载失败/)).toBeInTheDocument();
+    expect(screen.getByText(/local pic/)).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "重试" }));
     expect(screen.getByAltText("local pic")).toBeInTheDocument();
   });
 });
