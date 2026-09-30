@@ -52,6 +52,7 @@
 
 - [x] 转场选项（none / fade / slide）——slides 工具栏内选择，localStorage 持久化；`prefers-reduced-motion` 下自动关闭动画
 - [ ] 提词器计时器 + 手机遥控翻页（BroadcastChannel 同步已有基础）
+- [ ] slides 页面内容超高适配：高图/长内容被页面底部裁剪（2026-09-30 实测），考虑自动缩放或滚动
 
 ### 2.4 Go 测试摸底（工程）
 
