@@ -1,5 +1,24 @@
 # Changelog
 
+## v0.20.0 - 2026-09-30
+
+性能与导出能力大幅增强：首屏 gzip 从 ~3.79MB 降至 ~456KB（-88%），PlantUML 支持自托管离线渲染，`markview` 命令直接接受目录输入。
+
+### New Features 🎉
+- feat: configurable PlantUML server URL for offline rendering (#32)：设置 → 渲染配置自托管 Kroki，修改后图表自动重渲染
+- feat: `markview build --group` for single-group static export (#33)
+- feat: retryable placeholder for failed images (#34)：图片加载失败显示占位 + 重试按钮（含本地图片）
+- feat: slide transition options (fade / slide / none) (#35)：slides 工具栏选择，`prefers-reduced-motion` 自动禁用
+- feat: `markview <directory>` opens all .md/.mdx under it (#36)：目录递归展开，跳过 .git/node_modules/vendor
+
+### Performance ⚡
+- perf: lazy-load mermaid, graph views, and the PDF stack (#29)：首屏 3.79MB → 2.06MB gzip
+- perf: lazy-load shiki (#30)：首屏降至 ~456KB；rolldown 虚拟 helper 归属修正（`codeSplitting.groups`）
+
+### Other Changes
+- ci: guard first-screen bundle size at 640KB gzip (#31)：CI 体积守门，`BUNDLE_LIMIT_KB` 可调
+- docs: add rolling roadmap with engineering and bundle baselines (#28)；slides 超高内容裁剪问题记入 roadmap (#37)
+
 ## v0.19.0 - 2026-09-29
 
 首个由 pubgo/markview 完全自主维护的版本；Go module 迁移为 `github.com/pubgo/markview`，发版方式改为手动推送 `v*` tag 触发 goreleaser。安装请使用 [release 二进制](https://github.com/pubgo/markview/releases)（前端资源为构建期生成并嵌入，不支持 `go install module@version`）。
