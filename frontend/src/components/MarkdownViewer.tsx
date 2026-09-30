@@ -2300,10 +2300,12 @@ export function MarkdownViewer({
   }, [closePresenter, openPresenter, presenterSessionId]);
 
   // Session creation without the desktop teleprompter popup — used by the
-  // "手机遥控" QR button so scanning alone can drive the deck.
+  // "手机遥控" QR button so scanning alone can drive the deck. The projector
+  // page starts with notes hidden; the phone can toggle them back on.
   const ensurePresenterSession = useCallback(() => {
     if (presenterSessionId) return;
     setPresenterSessionId(createPresenterSessionId());
+    setIsSlidesNotesVisible(false);
   }, [presenterSessionId]);
 
   const postStateToRelay = useCallback((state: PresenterState) => {
@@ -2454,11 +2456,17 @@ export function MarkdownViewer({
         try {
           const data: unknown = JSON.parse(event.data);
           if (!isPresenterMessage(data)) return;
-          if (data.sessionId !== presenterSessionId || data.type !== "goto") return;
-          const total = Math.max(slides.length, 1);
-          const nextIndex = Math.min(total - 1, Math.max(0, Math.floor(data.slideIndex)));
-          setSlideIndex(nextIndex);
-          revealSlidesOverlay();
+          if (data.sessionId !== presenterSessionId) return;
+          if (data.type === "goto") {
+            const total = Math.max(slides.length, 1);
+            const nextIndex = Math.min(total - 1, Math.max(0, Math.floor(data.slideIndex)));
+            setSlideIndex(nextIndex);
+            revealSlidesOverlay();
+            return;
+          }
+          if (data.type === "config") {
+            setIsSlidesNotesVisible(data.notesVisible);
+          }
         } catch {
           // Ignore malformed payloads.
         }

@@ -28,6 +28,11 @@ describe("slidesPresenterChannel", () => {
     expect(url).toBe("http://127.0.0.1:16275/g/default?presenter=1&session=sess-1&remote=1");
   });
 
+  it("accepts config messages with a boolean notesVisible", () => {
+    expect(isPresenterMessage({ type: "config", sessionId: "s", notesVisible: false })).toBe(true);
+    expect(isPresenterMessage({ type: "config", sessionId: "s", notesVisible: "yes" })).toBe(false);
+  });
+
   it("accepts valid presenter messages and rejects junk", () => {
     expect(
       isPresenterMessage({

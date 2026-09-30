@@ -24,7 +24,15 @@ export type PresenterGoto = {
   slideIndex: number;
 };
 
-export type PresenterMessage = PresenterHello | PresenterState | PresenterGoto;
+/** Remote control of presentation-affecting UI on the main window. */
+export type PresenterConfig = {
+  type: "config";
+  sessionId: string;
+  /** Whether the main window (projector page) shows the notes panel. */
+  notesVisible: boolean;
+};
+
+export type PresenterMessage = PresenterHello | PresenterState | PresenterGoto | PresenterConfig;
 
 export function createPresenterSessionId(): string {
   if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
@@ -69,6 +77,9 @@ export function isPresenterMessage(data: unknown): data is PresenterMessage {
   if (msg.type === "hello") return true;
   if (msg.type === "goto") {
     return typeof msg.slideIndex === "number" && Number.isFinite(msg.slideIndex);
+  }
+  if (msg.type === "config") {
+    return typeof msg.notesVisible === "boolean";
   }
   if (msg.type === "state") {
     return (

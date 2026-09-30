@@ -25,11 +25,16 @@ export function PresenterTeleprompter({ sessionId, remote = false }: PresenterTe
   const [state, setState] = useState<PresenterState | null>(null);
   const channelRef = useRef<BroadcastChannel | null>(null);
   const postGotoRef = useRef<((slideIndex: number) => void) | null>(null);
+  const postConfigRef = useRef<((notesVisible: boolean) => void) | null>(null);
 
   // Elapsed talk timer: starts on mount, pausable, resettable.
   const [elapsedMs, setElapsedMs] = useState(0);
   const [timerRunning, setTimerRunning] = useState(true);
   const timerBaseRef = useRef<number>(Date.now());
+
+  // Whether the main (projector) page shows its notes panel. Remote sessions
+  // start with it hidden so the audience never sees speaker notes.
+  const [mainNotesVisible, setMainNotesVisible] = useState(!remote);
 
   useEffect(() => {
     if (!timerRunning) return;
@@ -61,12 +66,18 @@ export function PresenterTeleprompter({ sessionId, remote = false }: PresenterTe
       // Server-relay transport: works from any device that can reach the
       // markview server (e.g. a phone on the same LAN).
       const { eventsUrl, postUrl } = buildPresenterRelayUrls(sessionId);
-      postGotoRef.current = (slideIndex: number) => {
+      const post = (payload: unknown) => {
         void fetch(postUrl, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ type: "goto", sessionId, slideIndex }),
+          body: JSON.stringify(payload),
         }).catch(() => {});
+      };
+      postGotoRef.current = (slideIndex: number) => {
+        post({ type: "goto", sessionId, slideIndex });
+      };
+      postConfigRef.current = (notesVisible: boolean) => {
+        post({ type: "config", sessionId, notesVisible });
       };
       const source = new EventSource(eventsUrl);
       source.addEventListener("message", (event: MessageEvent<string>) => {
@@ -82,6 +93,7 @@ export function PresenterTeleprompter({ sessionId, remote = false }: PresenterTe
       return () => {
         source.close();
         postGotoRef.current = null;
+        postConfigRef.current = null;
       };
     }
 
@@ -104,6 +116,7 @@ export function PresenterTeleprompter({ sessionId, remote = false }: PresenterTe
       channel.close();
       channelRef.current = null;
       postGotoRef.current = null;
+      postConfigRef.current = null;
     };
   }, [sessionId, remote]);
 
@@ -165,6 +178,19 @@ export function PresenterTeleprompter({ sessionId, remote = false }: PresenterTe
           {formatElapsed(elapsedMs)}
         </span>
         <div className="presenter-teleprompter__timer-actions">
+          {remote && (
+            <button
+              type="button"
+              onClick={() => {
+                const next = !mainNotesVisible;
+                setMainNotesVisible(next);
+                postConfigRef.current?.(next);
+              }}
+              data-testid="presenter-notes-toggle"
+            >
+              播放页备注：{mainNotesVisible ? "开" : "关"}
+            </button>
+          )}
           <button type="button" onClick={toggleTimer} data-testid="presenter-timer-toggle">
             {timerRunning ? "暂停" : "继续"}
           </button>

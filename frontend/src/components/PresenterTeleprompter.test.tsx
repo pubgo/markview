@@ -243,4 +243,25 @@ describe("PresenterTeleprompter remote mode", () => {
 
     expect(MockBroadcastChannel.instances.length).toBe(0);
   });
+
+  it("toggles main-window notes via a config message", async () => {
+    render(<PresenterTeleprompter sessionId="sess-remote" remote />);
+
+    await waitFor(() => expect(MockEventSource.instances.length).toBe(1));
+    MockEventSource.instances[0].emit("message", JSON.stringify(state));
+    await screen.findByTestId("presenter-notes");
+
+    // Remote sessions start with the projector notes hidden.
+    const toggle = screen.getByTestId("presenter-notes-toggle");
+    expect(toggle.textContent).toContain("关");
+
+    fireEvent.click(toggle);
+    await waitFor(() => expect(postCalls.length).toBe(1));
+    expect(postCalls[0].body).toMatchObject({ type: "config", notesVisible: true });
+    expect(toggle.textContent).toContain("开");
+
+    fireEvent.click(toggle);
+    await waitFor(() => expect(postCalls.length).toBe(2));
+    expect(postCalls[1].body).toMatchObject({ type: "config", notesVisible: false });
+  });
 });
