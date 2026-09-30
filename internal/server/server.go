@@ -996,6 +996,8 @@ func NewHandler(state *State) http.Handler {
 	mux.HandleFunc("GET /_/events", handleSSE(state))
 	mux.HandleFunc("POST /_/api/presenter/{session}/messages", handlePresenterPost(state))
 	mux.HandleFunc("GET /_/api/presenter/{session}/events", handlePresenterEvents(state))
+	mux.HandleFunc("GET /_/api/presenter/qr", handlePresenterQR())
+	mux.HandleFunc("GET /_/api/lan-hint", handleLANHint())
 	mux.HandleFunc("GET /", handleSPA())
 
 	return mux
