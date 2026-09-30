@@ -6,6 +6,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io/fs"
 	"log/slog"
 	"net"
 	"net/http"
@@ -478,13 +479,56 @@ func resolveFiles(args []string) ([]string, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot resolve path %s: %w", arg, err)
 		}
-		if stat, err := os.Stat(absPath); err != nil {
+		stat, err := os.Stat(absPath)
+		if err != nil {
 			return nil, fmt.Errorf("file not found: %s", absPath)
-		} else if stat.IsDir() {
-			return nil, fmt.Errorf("%s is a directory", absPath)
+		}
+		if stat.IsDir() {
+			matches, err := scanMarkdownDir(absPath)
+			if err != nil {
+				return nil, err
+			}
+			if len(matches) == 0 {
+				return nil, fmt.Errorf("no markdown files found in directory %s", absPath)
+			}
+			files = append(files, matches...)
+			continue
 		}
 		files = append(files, absPath)
 	}
+	return files, nil
+}
+
+// scanMarkdownDir recursively collects .md/.mdx files under dir, skipping the
+// same dependency / VCS trees as markview build. Results are sorted so the
+// deeplink output is deterministic.
+func scanMarkdownDir(dir string) ([]string, error) {
+	var files []string
+	skipDirs := map[string]struct{}{
+		".git":         {},
+		"node_modules": {},
+		"vendor":       {},
+	}
+	err := filepath.WalkDir(dir, func(path string, d fs.DirEntry, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		if d.IsDir() {
+			if _, skip := skipDirs[d.Name()]; skip {
+				return fs.SkipDir
+			}
+			return nil
+		}
+		ext := strings.ToLower(filepath.Ext(path))
+		if ext == ".md" || ext == ".mdx" {
+			files = append(files, path)
+		}
+		return nil
+	})
+	if err != nil {
+		return nil, fmt.Errorf("scanning directory %s: %w", dir, err)
+	}
+	sort.Strings(files)
 	return files, nil
 }
 

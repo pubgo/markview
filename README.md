@@ -65,6 +65,7 @@ $ make build
 ```console
 $ markview README.md                          # 打开单个文件
 $ markview README.md CHANGELOG.md docs/*.md   # 打开多个文件
+$ markview docs/                              # 打开目录下全部 .md/.mdx
 $ markview spec.md --target design            # 打开到指定分组
 ```
 

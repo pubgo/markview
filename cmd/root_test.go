@@ -583,3 +583,72 @@ func TestBindFlagDefault(t *testing.T) {
 		t.Errorf("bind flag default = %q, want %q", f.DefValue, "0.0.0.0")
 	}
 }
+
+func TestResolveFiles_ExpandsDirectory(t *testing.T) {
+	root := t.TempDir()
+	mustWrite := func(rel, body string) {
+		t.Helper()
+		path := filepath.Join(root, rel)
+		if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
+			t.Fatalf("mkdir: %v", err)
+		}
+		if err := os.WriteFile(path, []byte(body), 0o600); err != nil {
+			t.Fatalf("write: %v", err)
+		}
+	}
+	mustWrite("b.md", "# B\n")
+	mustWrite("a.md", "# A\n")
+	mustWrite("sub/c.mdx", "# C\n")
+	mustWrite("node_modules/dep.md", "# dep\n")
+	mustWrite("notes.txt", "not markdown\n")
+
+	files, err := resolveFiles([]string{root})
+	if err != nil {
+		t.Fatalf("resolveFiles: %v", err)
+	}
+
+	want := []string{
+		filepath.Join(root, "a.md"),
+		filepath.Join(root, "b.md"),
+		filepath.Join(root, "sub", "c.mdx"),
+	}
+	if len(files) != len(want) {
+		t.Fatalf("got %d files %v, want %d", len(files), files, len(want))
+	}
+	for i, w := range want {
+		if files[i] != w {
+			t.Fatalf("files[%d] = %s, want %s", i, files[i], w)
+		}
+	}
+}
+
+func TestResolveFiles_DirectoryWithoutMarkdown(t *testing.T) {
+	empty := t.TempDir()
+	if _, err := resolveFiles([]string{empty}); err == nil {
+		t.Fatal("expected error for directory without markdown files")
+	}
+}
+
+func TestResolveFiles_MixedFileAndDirectory(t *testing.T) {
+	root := t.TempDir()
+	path := filepath.Join(root, "a.md")
+	if err := os.WriteFile(path, []byte("# A\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	sub := filepath.Join(root, "sub")
+	if err := os.MkdirAll(sub, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	b := filepath.Join(sub, "b.md")
+	if err := os.WriteFile(b, []byte("# B\n"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+
+	files, err := resolveFiles([]string{path, sub})
+	if err != nil {
+		t.Fatalf("resolveFiles: %v", err)
+	}
+	if len(files) != 2 || files[0] != path || files[1] != b {
+		t.Fatalf("unexpected expansion: %v", files)
+	}
+}
