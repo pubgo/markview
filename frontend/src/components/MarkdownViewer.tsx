@@ -54,6 +54,7 @@ import { findBestSearchTarget } from "../utils/searchJump";
 import { parseFrontmatter } from "../utils/frontmatter";
 import { stripMdxSyntax } from "../utils/mdx";
 import { isStaticMode } from "../utils/staticData";
+import { computeFitScale } from "../utils/slideFit";
 import { PresenterQrButton } from "./PresenterQrButton";
 import { transformMarkdownForMo } from "../utils/markdownEnhance";
 import type { TocHeading } from "./TocPanel";
@@ -2007,6 +2008,49 @@ function CollapsibleHeading({
   );
 }
 
+/**
+ * Slides auto-fit: when the rendered slide is taller than the page (tall
+ * diagrams, long lists), scale the page down instead of clipping. The
+ * ResizeObserver also watches direct children so async content (mermaid
+ * SVG, images) re-triggers measurement as it loads.
+ */
+function useSlideAutoFit(enabled: boolean, slideIndex: number) {
+  useEffect(() => {
+    if (!enabled) return;
+    let ro: ResizeObserver | null = null;
+
+    const apply = () => {
+      const el = document.querySelector<HTMLElement>(".markdown-slide-page");
+      if (!el) return;
+      const scale = computeFitScale(el.clientHeight, el.scrollHeight);
+      if (scale < 1) {
+        el.style.transform = `scale(${scale})`;
+        el.style.transformOrigin = "top center";
+      } else if (el.style.transform) {
+        el.style.transform = "";
+        el.style.transformOrigin = "";
+      }
+    };
+
+    apply();
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(apply);
+      const el = document.querySelector(".markdown-slide-page");
+      if (el) {
+        ro.observe(el);
+        for (const child of Array.from(el.children)) ro.observe(child);
+      }
+    }
+    // Poll as a fallback for async content (mermaid SVG, images) that swaps
+    // subtrees the ResizeObserver instances above may not observe.
+    const poll = window.setInterval(apply, 800);
+    return () => {
+      window.clearInterval(poll);
+      ro?.disconnect();
+    };
+  }, [enabled, slideIndex]);
+}
+
 export function MarkdownViewer({
   fileId,
   fileName,
@@ -2031,6 +2075,7 @@ export function MarkdownViewer({
   const [isSlidesOverlayPinned, setIsSlidesOverlayPinned] = useState(false);
   const [isSlidesNotesVisible, setIsSlidesNotesVisible] = useState(true);
   const [slideIndex, setSlideIndex] = useState(0);
+  useSlideAutoFit(isSlidesView, slideIndex);
   const [presenterSessionId, setPresenterSessionId] = useState<string | null>(null);
   const [presenterPopupBlocked, setPresenterPopupBlocked] = useState(false);
   const [collapsedHeadingIds, setCollapsedHeadingIds] = useState<Set<string>>(() => new Set());
