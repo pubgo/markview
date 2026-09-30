@@ -29,6 +29,9 @@ type presenterRelay struct {
 type presenterRelaySession struct {
 	subs       map[chan []byte]struct{}
 	lastActive time.Time
+	// last is the most recent payload, replayed to subscribers that join
+	// later (e.g. a phone scanning the QR mid-talk).
+	last []byte
 }
 
 func newPresenterRelay() *presenterRelay {
@@ -71,6 +74,7 @@ func (r *presenterRelay) publish(session string, payload []byte) {
 		r.sessions[session] = sess
 	}
 	sess.lastActive = now
+	sess.last = payload
 	for ch := range sess.subs {
 		select {
 		case ch <- payload:
@@ -90,6 +94,9 @@ func (r *presenterRelay) subscribe(session string) (<-chan []byte, func()) {
 	}
 	sess.lastActive = time.Now()
 	ch := make(chan []byte, 16)
+	if sess.last != nil {
+		ch <- sess.last
+	}
 	sess.subs[ch] = struct{}{}
 	return ch, func() {
 		r.mu.Lock()

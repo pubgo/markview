@@ -2306,6 +2306,16 @@ export function MarkdownViewer({
     setPresenterSessionId(createPresenterSessionId());
   }, [presenterSessionId]);
 
+  const postStateToRelay = useCallback((state: PresenterState) => {
+    if (isStaticMode()) return;
+    const { postUrl } = buildPresenterRelayUrls(state.sessionId);
+    void fetch(postUrl, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(state),
+    }).catch(() => {});
+  }, []);
+
   useEffect(() => {
     if (!isSlidesView) {
       closePresenter();
@@ -2334,16 +2344,19 @@ export function MarkdownViewer({
     };
     presenterStateRef.current = state;
     presenterChannelRef.current?.postMessage(state);
-    // Relay the same state to the server so remote devices (phone) can follow.
-    if (!isStaticMode()) {
-      const { postUrl } = buildPresenterRelayUrls(presenterSessionId);
-      void fetch(postUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(state),
-      }).catch(() => {});
-    }
-  }, [fileId, presenterSessionId, revision, slideIndex, slides]);
+    postStateToRelay(state);
+  }, [fileId, postStateToRelay, presenterSessionId, revision, slideIndex, slides]);
+
+  // Periodically republish so devices joining late (phone scanning the QR
+  // mid-talk) sync even if they missed the last change.
+  useEffect(() => {
+    if (!presenterSessionId) return;
+    const timer = window.setInterval(() => {
+      const latest = presenterStateRef.current;
+      if (latest) postStateToRelay(latest);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [postStateToRelay, presenterSessionId]);
 
   useEffect(() => {
     if (!presenterSessionId) return;
