@@ -54,6 +54,7 @@ import { findBestSearchTarget } from "../utils/searchJump";
 import { parseFrontmatter } from "../utils/frontmatter";
 import { stripMdxSyntax } from "../utils/mdx";
 import { isStaticMode } from "../utils/staticData";
+import { PresenterQrButton } from "./PresenterQrButton";
 import { transformMarkdownForMo } from "../utils/markdownEnhance";
 import type { TocHeading } from "./TocPanel";
 import type { Components } from "react-markdown";
@@ -2298,6 +2299,13 @@ export function MarkdownViewer({
     openPresenter();
   }, [closePresenter, openPresenter, presenterSessionId]);
 
+  // Session creation without the desktop teleprompter popup — used by the
+  // "手机遥控" QR button so scanning alone can drive the deck.
+  const ensurePresenterSession = useCallback(() => {
+    if (presenterSessionId) return;
+    setPresenterSessionId(createPresenterSessionId());
+  }, [presenterSessionId]);
+
   useEffect(() => {
     if (!isSlidesView) {
       closePresenter();
@@ -2951,6 +2959,12 @@ export function MarkdownViewer({
               PPT 模式 · 第 {currentSlideLabel}/{Math.max(slides.length, 1)} 页 · F 全屏 · N 备注
             </span>
             <div className="flex items-center gap-1">
+              {!isStaticMode() && (
+                <PresenterQrButton
+                  sessionId={presenterSessionId}
+                  onEnsureSession={ensurePresenterSession}
+                />
+              )}
               <label className="flex items-center gap-1">
                 <span className="sr-only">转场效果</span>
                 <select
