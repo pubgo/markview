@@ -2,6 +2,7 @@ package server
 
 import (
 	"encoding/json"
+	"log/slog"
 	"net"
 	"net/http"
 	"strings"
@@ -30,7 +31,9 @@ func handlePresenterQR() http.HandlerFunc {
 		w.Header().Set("Content-Type", "image/png")
 		w.Header().Set("Cache-Control", "no-store")
 		//nolint:gosec // PNG bytes produced by qrcode.Encode, not request text
-		_, _ = w.Write(png)
+		if _, err := w.Write(png); err != nil {
+			slog.Warn("failed to write QR response", "error", err)
+		}
 	}
 }
 

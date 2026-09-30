@@ -21,13 +21,13 @@ import (
 	"time"
 
 	"github.com/k1LoW/donegroup"
+	"github.com/muesli/termenv"
+	"github.com/pkg/browser"
 	"github.com/pubgo/markview/internal/backup"
 	"github.com/pubgo/markview/internal/ignore"
 	"github.com/pubgo/markview/internal/logfile"
 	"github.com/pubgo/markview/internal/server"
 	"github.com/pubgo/markview/version"
-	"github.com/muesli/termenv"
-	"github.com/pkg/browser"
 	"github.com/spf13/cobra"
 )
 
