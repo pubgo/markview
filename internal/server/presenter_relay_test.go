@@ -1,6 +1,7 @@
 package server
 
 import (
+	"bufio"
 	"context"
 	"encoding/json"
 	"net/http"
@@ -166,4 +167,73 @@ func TestPresenterRelayConcurrentPublish(t *testing.T) {
 			return
 		}
 	}
+}
+
+// Regression: session extraction must go through the mux PathValue, not
+// path.Base — "…/messages" would otherwise resolve the session as "messages".
+func TestPresenterRelayEndToEndThroughMux(t *testing.T) {
+	s := NewState(testContext(t))
+	server := httptest.NewServer(NewHandler(s))
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 3*time.Second)
+	defer cancel()
+
+	req, err := http.NewRequestWithContext(ctx, "GET",
+		server.URL+"/_/api/presenter/e2e-sess/events", nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		t.Fatal(err)
+	}
+	defer resp.Body.Close()
+	if resp.StatusCode != http.StatusOK {
+		t.Fatalf("SSE status %d", resp.StatusCode)
+	}
+
+	postResp, err := http.Post(server.URL+"/_/api/presenter/e2e-sess/messages",
+		"application/json", strings.NewReader(`{"type":"state","sessionId":"e2e-sess"}`))
+	if err != nil {
+		t.Fatal(err)
+	}
+	postResp.Body.Close()
+	if postResp.StatusCode != http.StatusNoContent {
+		t.Fatalf("POST status %d", postResp.StatusCode)
+	}
+
+	type event struct {
+		Event string
+		Data  string
+	}
+	scanner := bufio.NewScanner(resp.Body)
+	var cur event
+	sawStarted := false
+	for scanner.Scan() {
+		line := scanner.Text()
+		switch {
+		case strings.HasPrefix(line, "event: "):
+			cur = event{Event: strings.TrimPrefix(line, "event: ")}
+		case strings.HasPrefix(line, "data: "):
+			cur.Data = strings.TrimPrefix(line, "data: ")
+		case line == "":
+			if cur.Event == "started" {
+				sawStarted = true
+			} else if cur.Event == "message" && cur.Data != "" {
+				var payload map[string]any
+				if err := json.Unmarshal([]byte(cur.Data), &payload); err != nil {
+					t.Fatalf("payload not JSON: %v (%q)", err, cur.Data)
+				}
+				if payload["type"] == "state" {
+					return // received the published message: full loop works
+				}
+			}
+			cur = event{}
+		}
+	}
+	if !sawStarted {
+		t.Fatal("never received started event")
+	}
+	t.Fatal("stream ended without receiving the published message")
 }

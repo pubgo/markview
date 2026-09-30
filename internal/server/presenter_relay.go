@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"io"
 	"net/http"
-	"path"
 	"sync"
 	"time"
 )
@@ -106,8 +105,8 @@ func (r *presenterRelay) subscribe(session string) (<-chan []byte, func()) {
 
 func handlePresenterPost(state *State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		session := path.Base(r.URL.Path)
-		if session == "" || session == "/" || session == "." {
+		session := r.PathValue("session")
+		if session == "" {
 			http.Error(w, "missing session id", http.StatusBadRequest)
 			return
 		}
@@ -127,8 +126,8 @@ func handlePresenterPost(state *State) http.HandlerFunc {
 
 func handlePresenterEvents(state *State) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
-		session := path.Base(r.URL.Path)
-		if session == "" || session == "/" || session == "." {
+		session := r.PathValue("session")
+		if session == "" {
 			http.Error(w, "missing session id", http.StatusBadRequest)
 			return
 		}
