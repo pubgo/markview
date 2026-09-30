@@ -237,3 +237,20 @@ func TestPresenterRelayEndToEndThroughMux(t *testing.T) {
 	}
 	t.Fatal("stream ended without receiving the published message")
 }
+
+func TestPresenterRelayReplaysLastToLateSubscriber(t *testing.T) {
+	r := newPresenterRelay()
+	r.publish("late", []byte(`{"type":"state","slideIndex":3}`))
+
+	ch, unsubscribe := r.subscribe("late")
+	defer unsubscribe()
+
+	select {
+	case got := <-ch:
+		if string(got) != `{"type":"state","slideIndex":3}` {
+			t.Fatalf("replayed payload: %s", got)
+		}
+	case <-time.After(time.Second):
+		t.Fatal("late subscriber did not receive replayed state")
+	}
+}
