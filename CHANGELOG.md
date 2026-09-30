@@ -1,5 +1,22 @@
 # Changelog
 
+## v0.21.0 - 2026-09-30
+
+演示遥控完整落地：手机扫码即成遥控提词器（看备注、计时、翻页、控制投屏页备注显隐）。
+
+### New Features 🎉
+- feat: teleprompter timer and cross-device remote control via server relay (#39)：提词器计时器（暂停/继续/归零）；服务器中继（POST messages + SSE events），`remote=1` 提词器 URL 在局域网任意设备可用
+- feat: scan-to-remote QR for the presenter in slides toolbar (#41)：slides 工具栏「手机遥控」按钮弹出二维码（lan-hint 自动解析局域网地址），扫码即开遥控页
+- feat: remote toggle for the projector page notes panel (#43)：手机远程开关投屏页备注面板；「手机遥控」会话默认隐藏投屏页备注
+
+### Fix bug 🐛
+- fix: extract presenter session via mux PathValue (#40)：会话提取误用 `path.Base` 导致遥控收发不在同一会话（端到端实测发现，附 mux 级回归测试）
+- fix: late-joining presenter devices now sync immediately (#42)：中继回放每会话最后一条消息 + 主窗口 5s 心跳重发，手机任意时刻扫码数秒内同步
+
+### Other Changes
+- test: add image placeholder fixture to testdata
+- docs: slides 超高内容裁剪问题记入 roadmap (#37)
+
 ## v0.20.0 - 2026-09-30
 
 性能与导出能力大幅增强：首屏 gzip 从 ~3.79MB 降至 ~456KB（-88%），PlantUML 支持自托管离线渲染，`markview` 命令直接接受目录输入。
