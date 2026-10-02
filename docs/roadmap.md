@@ -59,13 +59,15 @@
 
 - [x] `internal/server` HTTP API 用例补齐：新增 api_test.go（groups / file content / graph / outline / reorder / patterns 全生命周期 / move / upload / status / shutdown）+ State 纯函数用例——server 包 62.1% → **74.7%**，全仓 50.5% → **56.6%**；下一版目标：server ≥ 80%（缺口集中在 fsnotify watchLoop 与 SSE 长连接）
 
-## 3. P2 · 中期（3–6 个月）
+## 3. P2 · 中期（3–6 个月，按建议顺序）
 
-- [ ] 阅读/review 定点打磨：搜索键盘导航、大会话性能（虚拟列表、索引防抖）——按策略此轨道不再扩面
-- [ ] frontmatter 容错：`...` 结束符、BOM
-- [ ] LAN 部署配套：远程访问 token 鉴权 + 部署文档（`--dangerously-allow-remote-access` 目前无防护）
-- [ ] 发布生态：`pubgo/homebrew-tap` + goreleaser `brews` 恢复 Homebrew 安装（或先提供 install script）
-- [ ] 可配置 Markdown 扩展开关；图谱维度增强（标签 / 引用类型 / 跨分组）
+1. [ ] **LAN 访问鉴权（token）**——手机遥控使 `0.0.0.0` 绑定成为常态场景，裸奔风险随之放大。方案：启动时生成 token 并编入遥控二维码（URL 参数），非 loopback 请求校验；`--dangerously-allow-remote-access` 保留为显式跳过
+2. [ ] **发布生态**——`pubgo/homebrew-tap` + goreleaser `brews` 配置恢复 Homebrew 安装，或先提供 `curl | sh` install script（release 产物已就绪，只差分发渠道，一次配置长期生效）
+3. [ ] **搜索键盘导航**——`↑/↓` 选择、`Enter` 跳转、`Esc` 关闭（阅读轨定点打磨，不扩面）
+4. [ ] **frontmatter 容错**——`...` 结束符、BOM
+5. [ ] 大会话性能：虚拟列表、索引防抖（有实测卡顿再做）
+6. [ ] 可配置 Markdown 扩展开关；图谱维度增强（标签 / 引用类型 / 跨分组）
+7. [ ] Go 覆盖率第二阶段：server 74.7% → 80%（fsnotify watchLoop + SSE 长连接需要进程级测试）
 
 ## 4. P3 · 远期 / 探索（需单独设计，不承诺排期）
 
