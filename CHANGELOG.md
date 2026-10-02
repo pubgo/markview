@@ -1,5 +1,16 @@
 # Changelog
 
+## v0.22.0 - 2026-10-02
+
+Go 测试覆盖摸底 + slides 超高内容自动适配。
+
+### New Features 🎉
+- feat: auto-fit tall slides by scaling instead of clipping (#46)：内容超出页高时整页等比缩小（下限 0.5x），ResizeObserver + 轮询兜底覆盖 mermaid/图片异步渲染
+
+### Other Changes
+- test: cover the server HTTP API surface (#45)：新增 api_test.go 覆盖 groups / content / graph / outline / reorder / patterns / move / upload / status / shutdown 与 State 纯函数——`internal/server` 覆盖率 62.1% → **74.7%**，全仓 50.5% → 56.6%
+- chore: remove stray files created by a coverage-stat one-liner
+
 ## v0.21.0 - 2026-09-30
 
 演示遥控完整落地：手机扫码即成遥控提词器（看备注、计时、翻页、控制投屏页备注显隐）。
