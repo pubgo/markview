@@ -452,23 +452,42 @@ function normalizeMermaidLabelNewlines(code: string): string {
   });
 }
 
+const BEAUTIFUL_MERMAID_DIAGRAM_PREFIXES = [
+  "graph",
+  "flowchart",
+  "statediagram",
+  "sequencediagram",
+  "classdiagram",
+  "erdiagram",
+  "xychart-beta",
+];
+
+/**
+ * Sequence-diagram directives beautiful-mermaid cannot render (it draws them
+ * as literal text and drops arrows/numbering); diagrams using them fall back
+ * to native mermaid, which supports them fully.
+ */
+const NATIVE_ONLY_SEQUENCE_DIRECTIVE =
+  /^(rect|autonumber|alt|else|opt|loop|par|and|critical|break|box|activate|deactivate)\b/;
+
 function supportsBeautifulMermaid(code: string): boolean {
   const lines = code.split(/\r?\n/);
+  let inSequence = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("%%")) continue;
     const normalized = trimmed.toLowerCase();
-    return (
-      normalized.startsWith("graph") ||
-      normalized.startsWith("flowchart") ||
-      normalized.startsWith("statediagram") ||
-      normalized.startsWith("sequencediagram") ||
-      normalized.startsWith("classdiagram") ||
-      normalized.startsWith("erdiagram") ||
-      normalized.startsWith("xychart-beta")
-    );
+    if (inSequence) {
+      if (NATIVE_ONLY_SEQUENCE_DIRECTIVE.test(normalized)) return false;
+      continue;
+    }
+    if (normalized.startsWith("sequencediagram")) {
+      inSequence = true;
+      continue;
+    }
+    return BEAUTIFUL_MERMAID_DIAGRAM_PREFIXES.some((prefix) => normalized.startsWith(prefix));
   }
-  return false;
+  return inSequence;
 }
 
 type RenderMermaidSVGFn = (text: string, options?: Record<string, unknown>) => string;

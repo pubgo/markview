@@ -53,6 +53,45 @@ describe("MermaidBlock", () => {
     }
   });
 
+  it("still uses beautiful-mermaid for simple sequence diagrams", async () => {
+    renderMermaidSVGMock.mockReturnValue('<svg width="360" height="180">diagram</svg>');
+
+    render(<MermaidBlock code={"sequenceDiagram\n    A->>B: hello\n    B-->>A: hi"} />);
+
+    await waitFor(() => {
+      expect(renderMermaidSVGMock).toHaveBeenCalled();
+    });
+    expect(vi.mocked(mermaid.render)).not.toHaveBeenCalled();
+  });
+
+  it("falls back to native mermaid for sequence diagrams using directives beautiful-mermaid cannot render", async () => {
+    renderMermaidSVGMock.mockReturnValue('<svg width="360" height="180">diagram</svg>');
+    vi.mocked(mermaid.render).mockResolvedValue({
+      svg: '<svg width="360" height="180">native</svg>',
+      bindFunctions: undefined,
+      diagramType: "sequence",
+    });
+
+    const code = [
+      "sequenceDiagram",
+      "    autonumber",
+      "    participant C as Client",
+      "    participant A as Agent",
+      "    rect rgb(240, 248, 255)",
+      "    Note over C,A: handshake",
+      "    C->>A: initialize",
+      "    A-->>C: ok",
+      "    end",
+    ].join("\n");
+
+    render(<MermaidBlock code={code} />);
+
+    await waitFor(() => {
+      expect(vi.mocked(mermaid.render)).toHaveBeenCalled();
+    });
+    expect(renderMermaidSVGMock).not.toHaveBeenCalled();
+  });
+
   it("passes a single system font and strips google font imports from beautiful-mermaid svg", async () => {
     renderMermaidSVGMock.mockImplementation((_code: string, opts?: Record<string, unknown>) => {
       expect(opts?.font).toBe("system-ui");
