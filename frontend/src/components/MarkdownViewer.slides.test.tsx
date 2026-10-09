@@ -33,6 +33,38 @@ vi.mock("./BacklinksPanel", () => ({
   BacklinksPanel: () => null,
 }));
 
+/**
+ * Stubs clientHeight/scrollHeight on HTMLElement.prototype so the slide
+ * auto-fit hook sees fake layout metrics for the page frame and the inner
+ * fit wrapper. Returns a restore function.
+ */
+function mockSlideMetrics(page: Record<string, number>, fit: Record<string, number>) {
+  const props = ["clientHeight", "scrollHeight"];
+  const originals = props.map((prop) => ({
+    prop,
+    descriptor: Object.getOwnPropertyDescriptor(HTMLElement.prototype, prop),
+  }));
+  const read = (el: HTMLElement, prop: string) => {
+    if (el.classList.contains("markdown-slide-page")) return page[prop] ?? 0;
+    if (el.classList.contains("markdown-slide-fit")) return fit[prop] ?? 0;
+    return 0;
+  };
+  for (const prop of props) {
+    Object.defineProperty(HTMLElement.prototype, prop, {
+      configurable: true,
+      get(this: HTMLElement) {
+        return read(this, prop);
+      },
+    });
+  }
+  return () => {
+    for (const { prop, descriptor } of originals) {
+      if (descriptor) Object.defineProperty(HTMLElement.prototype, prop, descriptor);
+      else delete (HTMLElement.prototype as unknown as Record<string, unknown>)[prop];
+    }
+  };
+}
+
 describe("MarkdownViewer slides mode", () => {
   let requestFullscreenMock: ReturnType<typeof vi.fn>;
   let exitFullscreenMock: ReturnType<typeof vi.fn>;
@@ -512,6 +544,116 @@ describe("MarkdownViewer slides mode", () => {
     expect(screen.getByText("写")).toBeInTheDocument();
     expect(screen.getByText("展")).toBeInTheDocument();
     expect(screen.getByText("存")).toBeInTheDocument();
+  });
+
+  it("scales the inner fit wrapper on overflowing slides and leaves the page frame untouched", async () => {
+    const user = userEvent.setup();
+    const restore = mockSlideMetrics({ clientHeight: 646 }, { scrollHeight: 1003 });
+
+    try {
+      render(
+        <MarkdownViewer
+          fileId="file-1"
+          fileName="talk.md"
+          revision={0}
+          onFileOpened={() => {}}
+          onHeadingsChange={() => {}}
+          isTocOpen={false}
+          onTocToggle={() => {}}
+          onRemoveFile={() => {}}
+          isWide={false}
+        />,
+      );
+
+      await screen.findByText("第一页内容");
+      await user.click(screen.getByRole("button", { name: "Slides" }));
+
+      const fit = await screen.findByTestId("markdown-slide-fit");
+      await waitFor(() => {
+        const scale = Number(fit.style.transform.replace("scale(", "").replace(")", ""));
+        expect(scale).toBeCloseTo(646 / 1003, 5);
+        expect(fit.style.transformOrigin).toBe("top left");
+        expect(Number.parseFloat(fit.style.width)).toBeCloseTo(100 / (646 / 1003), 3);
+        expect(fit.style.height).toBe("646px");
+      });
+
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page.style.transform).toBe("");
+      expect(page.className).toContain("markdown-slide-page--fitted");
+    } finally {
+      restore();
+    }
+  });
+
+  it("leaves fit styles unset when the slide content fits", async () => {
+    const user = userEvent.setup();
+    const restore = mockSlideMetrics({ clientHeight: 646 }, { scrollHeight: 646 });
+
+    try {
+      render(
+        <MarkdownViewer
+          fileId="file-1"
+          fileName="talk.md"
+          revision={0}
+          onFileOpened={() => {}}
+          onHeadingsChange={() => {}}
+          isTocOpen={false}
+          onTocToggle={() => {}}
+          onRemoveFile={() => {}}
+          isWide={false}
+        />,
+      );
+
+      await screen.findByText("第一页内容");
+      await user.click(screen.getByRole("button", { name: "Slides" }));
+
+      const fit = await screen.findByTestId("markdown-slide-fit");
+      await waitFor(() => {
+        expect(fit.style.transform).toBe("");
+        expect(fit.style.width).toBe("");
+        expect(fit.style.height).toBe("");
+      });
+
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page.className).not.toContain("markdown-slide-page--fitted");
+    } finally {
+      restore();
+    }
+  });
+
+  it("keeps the page scrollable when content still overflows at the minimum scale", async () => {
+    const user = userEvent.setup();
+    const restore = mockSlideMetrics({ clientHeight: 646 }, { scrollHeight: 6000 });
+
+    try {
+      render(
+        <MarkdownViewer
+          fileId="file-1"
+          fileName="talk.md"
+          revision={0}
+          onFileOpened={() => {}}
+          onHeadingsChange={() => {}}
+          isTocOpen={false}
+          onTocToggle={() => {}}
+          onRemoveFile={() => {}}
+          isWide={false}
+        />,
+      );
+
+      await screen.findByText("第一页内容");
+      await user.click(screen.getByRole("button", { name: "Slides" }));
+
+      const fit = await screen.findByTestId("markdown-slide-fit");
+      await waitFor(() => {
+        expect(fit.style.transform).toBe("scale(0.5)");
+        expect(fit.style.height).toBe("3000px");
+      });
+
+      const page = screen.getByTestId("markdown-slide-page");
+      expect(page.className).not.toContain("markdown-slide-page--fitted");
+    } finally {
+      restore();
+    }
   });
 
   it("opens a teleprompter popup with P and syncs goto from the channel", async () => {
