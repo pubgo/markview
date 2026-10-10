@@ -27,6 +27,7 @@ import (
 	"github.com/pubgo/markview/internal/ignore"
 	"github.com/pubgo/markview/internal/logfile"
 	"github.com/pubgo/markview/internal/server"
+	"github.com/pubgo/markview/internal/update"
 	"github.com/pubgo/markview/version"
 	"github.com/spf13/cobra"
 )
@@ -55,6 +56,7 @@ var (
 	jsonOutput                   bool
 	dangerouslyAllowRemoteAccess bool
 	noIgnore                     bool
+	noUpdateCheck                bool
 )
 
 var rootCmd = &cobra.Command{
@@ -182,6 +184,7 @@ func init() {
 	rootCmd.Flags().BoolVar(&clearBackup, "clear", false, "Clear saved session for the specified port")
 	rootCmd.Flags().BoolVar(&jsonOutput, "json", false, "Output structured data as JSON to stdout")
 	rootCmd.Flags().BoolVar(&dangerouslyAllowRemoteAccess, "dangerously-allow-remote-access", false, "Allow remote access without authentication. Recommended only for trusted networks.")
+	rootCmd.Flags().BoolVar(&noUpdateCheck, "no-update-check", false, "Disable the background check for a newer markview release")
 }
 
 func run(cmd *cobra.Command, args []string) error {
@@ -1142,6 +1145,8 @@ func startServer(ctx context.Context, addr string, filesByGroup map[string][]str
 		}
 	}()
 
+	go backgroundUpdateCheck(ctx)
+
 	openBrowser(addr)
 
 	select {
@@ -1159,6 +1164,33 @@ func startServer(ctx context.Context, addr string, filesByGroup map[string][]str
 	}
 
 	return nil
+}
+
+// backgroundUpdateCheck logs once when a newer markview release is
+// available. It is best-effort and silent: failures (offline, rate limited,
+// --no-update-check) never surface beyond debug logs, and it never downloads
+// or replaces anything — `markview update` does that explicitly.
+func backgroundUpdateCheck(ctx context.Context) {
+	if noUpdateCheck {
+		return
+	}
+	select {
+	case <-ctx.Done():
+		return
+	case <-time.After(30 * time.Second):
+	}
+
+	checkCtx, cancel := context.WithTimeout(ctx, 15*time.Second)
+	defer cancel()
+	rel, err := update.NewClient(updateSource).Latest(checkCtx)
+	if err != nil {
+		slog.Debug("update check skipped", "error", err)
+		return
+	}
+	if !update.IsNewer(rel.TagName) {
+		return
+	}
+	slog.Info(fmt.Sprintf("markview %s is available (current version %s) — run `markview update` to install", rel.TagName, version.Version))
 }
 
 func spawnNewProcess(addr string, restoreFile string) (*os.Process, error) {
