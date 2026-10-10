@@ -14,35 +14,61 @@ const PDF_MARGIN_MM = 15;
 const PDF_PAGE_WIDTH_MM = 210;
 
 /**
- * Empirical Chromium canvas budgets (1960x31180 verified working): a huge
- * single edge is fine, but total area and memory are not — cap the capture
- * at ~64M pixels (8192²) so long documents keep 2x instead of failing, and
- * slides pages can still take the full 4x.
+ * Empirical canvas budgets (verified in Chromium: a 3920x62360 canvas
+ * renders and round-trips at full resolution): the engine's own limits are
+ * a 65535px edge and a ~268M px area, so capture ratio follows the display
+ * and only slides back for extremely tall pages.
  */
-const CAPTURE_MAX_AREA_PX = 64 * 1024 * 1024;
-const CAPTURE_MAX_EDGE_PX = 65535;
+const CANVAS_AREA_LIMIT_PX = 268435456; // Chromium max canvas area (16384²)
+const CANVAS_EDGE_LIMIT_PX = 65535;
 const CAPTURE_MIN_PIXEL_RATIO = 2;
 const CAPTURE_MAX_PIXEL_RATIO = 4;
+/** Tiles stay well under the lib's 16384 auto-scale edge when re-encoded. */
+const TILE_MAX_EDGE_PX = 16384;
+
+export interface CapturePlan {
+  /** Device-pixel ratio used for the full-page capture. */
+  ratio: number;
+  /** Vertical slices covering [0, heightPx]; each is encoded separately. */
+  slices: Array<{ topPx: number; heightPx: number }>;
+}
 
 /**
- * Capture scale for the PDF snapshot: scale with the display (2x per device
- * pixel so hi-dpi fullscreen viewing stays sharp) capped at CAPTURE_MAX,
- * then capped by the canvas area/edge budgets. The budgets are empirical
- * Chromium limits (1960x31180 verified round-tripping at full resolution);
- * they replace html-to-image's auto-scale, which silently downsizes any
- * canvas edge past 16384 — the reason tall exports were stuck near 1x.
+ * Plan a PDF capture: scale with the display (2x per device pixel, capped at
+ * 4x), sliding the ratio down only when the full-page canvas would exceed
+ * the engine's edge/area limits, then split the capture into vertical tiles
+ * that stay well inside the lib's conservative 16384px auto-scale edge.
+ * Tiling is what lets long documents keep the same sharpness as short ones
+ * — a single small canvas would force them down to 1x.
  */
-export function resolveCapturePixelRatio(
+export function planCapture(
   widthPx: number,
   heightPx: number,
   devicePixelRatio = typeof window !== "undefined" ? window.devicePixelRatio : 1,
-): number {
+): CapturePlan {
   const safeWidth = Math.max(1, widthPx);
   const safeHeight = Math.max(1, heightPx);
-  const areaCeiling = Math.floor(Math.sqrt(CAPTURE_MAX_AREA_PX / (safeWidth * safeHeight)));
-  const edgeCeiling = Math.floor(CAPTURE_MAX_EDGE_PX / Math.max(safeWidth, safeHeight));
-  const preferredRatio = Math.max(CAPTURE_MIN_PIXEL_RATIO, Math.ceil((devicePixelRatio || 1) * 2));
-  return Math.max(1, Math.min(CAPTURE_MAX_PIXEL_RATIO, preferredRatio, areaCeiling, edgeCeiling));
+  const preferred = Math.max(CAPTURE_MIN_PIXEL_RATIO, Math.ceil((devicePixelRatio || 1) * 2));
+  const maxEdgeRatio = Math.floor(CANVAS_EDGE_LIMIT_PX / safeHeight);
+  const maxAreaRatio = Math.floor(Math.sqrt(CANVAS_AREA_LIMIT_PX / (safeWidth * safeHeight)));
+  const ratio = Math.max(
+    1,
+    Math.min(CAPTURE_MAX_PIXEL_RATIO, preferred, maxEdgeRatio, maxAreaRatio),
+  );
+
+  const sliceHeight = Math.min(safeHeight, Math.floor(TILE_MAX_EDGE_PX / ratio));
+  const count = Math.max(1, Math.ceil(safeHeight / sliceHeight));
+  const base = Math.floor(safeHeight / count);
+  const extra = safeHeight % count;
+
+  const slices: Array<{ topPx: number; heightPx: number }> = [];
+  let top = 0;
+  for (let i = 0; i < count; i++) {
+    const h = base + (i < extra ? 1 : 0);
+    slices.push({ topPx: top, heightPx: h });
+    top += h;
+  }
+  return { ratio, slices };
 }
 
 interface CapturedLinkRect {
@@ -77,12 +103,18 @@ export function countPendingDiagramRenders(root: ParentNode): number {
   return root.querySelectorAll(DIAGRAM_PENDING_SELECTOR).length;
 }
 
+export interface PdfSnapshotTile {
+  dataUrl: string;
+  /** Top offset of the slice within the article, in CSS pixels. */
+  cssTopPx: number;
+  /** Slice height in CSS pixels; the last slice may be shorter. */
+  cssHeightPx: number;
+}
+
 export interface PdfArticleSnapshot {
   fileName: string;
   sourceFilePath?: string;
-  imageDataUrl: string;
-  imageWidthPx: number;
-  imageHeightPx: number;
+  tiles: PdfSnapshotTile[];
   articleWidthPx: number;
   articleHeightPx: number;
   backgroundColor: string;
@@ -494,39 +526,51 @@ async function captureArticleSnapshot(
   const sourceFileId = options.sourceFileId ?? article.dataset.fileId;
   const sourceGroup = options.sourceGroup ?? parseGroupFromPath(window.location.pathname);
   const sourceFilePath = options.sourceFilePath;
-
   const backgroundColor = resolvePdfCaptureBackgroundColor();
-  const { toJpeg } = await import("html-to-image");
-  const imageDataUrl = await toJpeg(article, {
-    quality: 0.95,
-    pixelRatio: resolveCapturePixelRatio(articleRect.width, articleRect.height),
-    // resolveCapturePixelRatio already keeps the canvas inside verified
-    // budgets; the lib's own auto-scale would silently shrink tall captures
-    // past its hardcoded 16384px edge limit.
+
+  const plan = planCapture(articleRect.width, articleRect.height);
+  const { toCanvas, getFontEmbedCSS } = await import("html-to-image");
+  // Font embedding re-serializes every stylesheet; do it once, not per tile.
+  const fontEmbedCSS = await getFontEmbedCSS(article).catch(() => undefined);
+  const full = await toCanvas(article, {
+    pixelRatio: plan.ratio,
+    // planCapture keeps the full canvas inside verified engine limits; the
+    // lib's own auto-scale would silently shrink tall captures past its
+    // hardcoded 16384px edge limit.
     skipAutoScale: true,
     backgroundColor,
+    fontEmbedCSS,
     style: {
       width: `${fixedWidthPx}px`,
       minWidth: `${fixedWidthPx}px`,
       maxWidth: `${fixedWidthPx}px`,
       margin: "0",
-      overflow: "visible",
     },
   });
 
-  const img = new Image();
-  await new Promise<void>((resolve, reject) => {
-    img.onload = () => resolve();
-    img.onerror = () => reject(new Error("Failed to load captured image"));
-    img.src = imageDataUrl;
-  });
+  // Slice the full-resolution canvas into vertical tiles (plain canvas
+  // math — no foreignObject clipping, which renders blank past ~16384
+  // device pixels of subtree height).
+  const tiles: PdfSnapshotTile[] = [];
+  for (const slice of plan.slices) {
+    const devTop = Math.round(slice.topPx * plan.ratio);
+    const devHeight = Math.max(1, Math.round((slice.topPx + slice.heightPx) * plan.ratio) - devTop);
+    const tile = document.createElement("canvas");
+    tile.width = full.width;
+    tile.height = devHeight;
+    const ctx = tile.getContext("2d");
+    if (!ctx) {
+      throw new Error("cannot acquire 2d context for PDF tile");
+    }
+    ctx.drawImage(full, 0, devTop, full.width, devHeight, 0, 0, full.width, devHeight);
+    const dataUrl = tile.toDataURL("image/jpeg", 0.95);
+    tiles.push({ dataUrl, cssTopPx: slice.topPx, cssHeightPx: slice.heightPx });
+  }
 
   return {
     fileName,
     sourceFilePath,
-    imageDataUrl,
-    imageWidthPx: img.width,
-    imageHeightPx: img.height,
+    tiles,
     articleWidthPx: articleRect.width,
     articleHeightPx: articleRect.height,
     backgroundColor,
@@ -549,7 +593,7 @@ function getPageMetrics(snapshot: PdfArticleSnapshot): {
   scaleY: number;
 } {
   const contentWidthMm = PDF_PAGE_WIDTH_MM - PDF_MARGIN_MM * 2;
-  const contentHeightMm = (snapshot.imageHeightPx * contentWidthMm) / snapshot.imageWidthPx;
+  const contentHeightMm = (snapshot.articleHeightPx * contentWidthMm) / snapshot.articleWidthPx;
   const pageHeightMm = contentHeightMm + PDF_MARGIN_MM * 2;
 
   const safeArticleWidthPx = snapshot.articleWidthPx || 1;
@@ -569,18 +613,25 @@ function drawSnapshotOnCurrentPage(
   snapshot: PdfArticleSnapshot,
   pageBySourcePath: Map<string, number>,
 ): { scaleX: number; scaleY: number } {
-  const { contentWidthMm, contentHeightMm, pageHeightMm, scaleX, scaleY } =
-    getPageMetrics(snapshot);
+  const { contentWidthMm, pageHeightMm, scaleX, scaleY } = getPageMetrics(snapshot);
 
   fillPdfPageBackground(pdf, snapshot.backgroundColor, pageHeightMm);
-  pdf.addImage(
-    snapshot.imageDataUrl,
-    "JPEG",
-    PDF_MARGIN_MM,
-    PDF_MARGIN_MM,
-    contentWidthMm,
-    contentHeightMm,
-  );
+  // Tiles are pre-clipped vertical slices of the article; stacking them at
+  // their offsets rebuilds the full page at the tile resolution. The alias
+  // must be unique per tile: jsPDF dedupes images by data length, so same
+  // sized slices would otherwise silently reuse each other's bitmap.
+  let tileIndex = 0;
+  for (const tile of snapshot.tiles) {
+    pdf.addImage(
+      tile.dataUrl,
+      "JPEG",
+      PDF_MARGIN_MM,
+      PDF_MARGIN_MM + tile.cssTopPx * scaleY,
+      contentWidthMm,
+      tile.cssHeightPx * scaleY,
+      `slide-tile-${tileIndex++}`,
+    );
+  }
 
   for (const link of snapshot.links) {
     const x = PDF_MARGIN_MM + link.xPx * scaleX;

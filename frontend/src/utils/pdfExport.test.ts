@@ -1,7 +1,7 @@
 import { describe, expect, it, afterEach } from "vitest";
 import {
   countPendingDiagramRenders,
-  resolveCapturePixelRatio,
+  planCapture,
   resolvePdfCaptureBackgroundColor,
   toPdfFilename,
   toSlidesDeckPdfFilename,
@@ -62,32 +62,64 @@ describe("resolvePdfCaptureBackgroundColor", () => {
   });
 });
 
-describe("resolveCapturePixelRatio", () => {
-  it("follows the display on hi-dpi screens for short pages", () => {
-    expect(resolveCapturePixelRatio(1120, 864, 2)).toBe(4);
+describe("planCapture", () => {
+  const tileLimits = (width: number, sliceHeight: number, ratio: number) => ({
+    edgePx: sliceHeight * ratio,
+    areaPx: width * sliceHeight * ratio * ratio,
+  });
+
+  it("captures short pages in a single slice at display ratio", () => {
+    const plan = planCapture(1120, 648, 2);
+    expect(plan.ratio).toBe(4);
+    expect(plan.slices).toHaveLength(1);
+    expect(plan.slices[0]).toEqual({ topPx: 0, heightPx: 648 });
   });
 
   it("keeps the 2x floor on low-dpi screens", () => {
-    expect(resolveCapturePixelRatio(1120, 864, 1)).toBe(2);
+    expect(planCapture(1120, 648, 1).ratio).toBe(2);
   });
 
-  it("caps at 4x regardless of device pixel ratio", () => {
-    expect(resolveCapturePixelRatio(1120, 864, 3)).toBe(4);
+  it("tiles tall documents at display ratio instead of dropping to 1x", () => {
+    const plan = planCapture(980, 19107, 1);
+    expect(plan.ratio).toBe(2);
+    expect(plan.slices.length).toBeGreaterThan(1);
+    // Slices must cover the article exactly, in order.
+    let top = 0;
+    for (const slice of plan.slices) {
+      expect(slice.topPx).toBe(top);
+      top += slice.heightPx;
+      const { edgePx, areaPx } = tileLimits(980, slice.heightPx, plan.ratio);
+      expect(edgePx).toBeLessThanOrEqual(16384);
+      expect(areaPx).toBeLessThanOrEqual(64 * 1024 * 1024);
+    }
+    expect(top).toBe(19107);
   });
 
-  it("respects the area budget for tall articles while keeping 2x", () => {
-    // 980x15590 at 2x = 61M px, inside the ~64M px budget → stays sharp
-    expect(resolveCapturePixelRatio(980, 15590, 2)).toBe(2);
-    // 1120x8000 at 2x = 17.9M px → 2x fits comfortably
-    expect(resolveCapturePixelRatio(1120, 8000, 2)).toBe(2);
+  it("caps the ratio at 4x regardless of device pixel ratio", () => {
+    const plan = planCapture(1120, 648, 3);
+    expect(plan.ratio).toBe(4);
   });
 
-  it("drops to 1x when even 2x would blow the area budget", () => {
-    expect(resolveCapturePixelRatio(1120, 20000, 2)).toBe(1);
+  it("keeps every tile inside canvas budgets even on very tall pages", () => {
+    for (const dpr of [1, 2, 3]) {
+      const plan = planCapture(980, 19107, dpr);
+      for (const slice of plan.slices) {
+        const { edgePx, areaPx } = tileLimits(980, slice.heightPx, plan.ratio);
+        expect(edgePx).toBeLessThanOrEqual(16384);
+        expect(areaPx).toBeLessThanOrEqual(64 * 1024 * 1024);
+      }
+      const covered = plan.slices.reduce((sum, s) => sum + s.heightPx, 0);
+      expect(covered).toBe(19107);
+    }
   });
 
-  it("never returns less than 1x", () => {
-    expect(resolveCapturePixelRatio(1120, 0, 2)).toBeGreaterThan(0);
+  it("handles degenerate sizes without NaN", () => {
+    const plan = planCapture(0, 0, 2);
+    expect(plan.slices.length).toBeGreaterThan(0);
+    for (const slice of plan.slices) {
+      expect(Number.isFinite(slice.heightPx)).toBe(true);
+      expect(slice.heightPx).toBeGreaterThan(0);
+    }
   });
 });
 
