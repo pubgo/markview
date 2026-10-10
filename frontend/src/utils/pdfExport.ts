@@ -13,6 +13,28 @@ function loadJsPdf(): Promise<(typeof import("jspdf"))["default"]> {
 const PDF_MARGIN_MM = 15;
 const PDF_PAGE_WIDTH_MM = 210;
 
+/** Chrome caps a canvas at 16384px per side; a larger capture fails outright. */
+const CAPTURE_CANVAS_MAX_EDGE_PX = 16384;
+const CAPTURE_MIN_PIXEL_RATIO = 2;
+const CAPTURE_MAX_PIXEL_RATIO = 4;
+
+/**
+ * Capture scale for the PDF snapshot: scale with the display (2x per device
+ * pixel so hi-dpi fullscreen viewing stays sharp) capped at CAPTURE_MAX,
+ * then capped again by the canvas ceiling — long articles would otherwise
+ * blow past it and fail the whole export.
+ */
+export function resolveCapturePixelRatio(
+  widthPx: number,
+  heightPx: number,
+  devicePixelRatio = typeof window !== "undefined" ? window.devicePixelRatio : 1,
+): number {
+  const longEdgePx = Math.max(1, widthPx, heightPx);
+  const ceilingRatio = Math.floor(CAPTURE_CANVAS_MAX_EDGE_PX / longEdgePx);
+  const preferredRatio = Math.max(CAPTURE_MIN_PIXEL_RATIO, Math.ceil((devicePixelRatio || 1) * 2));
+  return Math.max(1, Math.min(CAPTURE_MAX_PIXEL_RATIO, preferredRatio, ceilingRatio));
+}
+
 interface CapturedLinkRect {
   url?: string;
   targetSourcePath?: string;
@@ -466,8 +488,8 @@ async function captureArticleSnapshot(
   const backgroundColor = resolvePdfCaptureBackgroundColor();
   const { toJpeg } = await import("html-to-image");
   const imageDataUrl = await toJpeg(article, {
-    quality: 0.92,
-    pixelRatio: 2,
+    quality: 0.95,
+    pixelRatio: resolveCapturePixelRatio(articleRect.width, articleRect.height),
     backgroundColor,
     style: {
       width: `${fixedWidthPx}px`,
