@@ -13,26 +13,36 @@ function loadJsPdf(): Promise<(typeof import("jspdf"))["default"]> {
 const PDF_MARGIN_MM = 15;
 const PDF_PAGE_WIDTH_MM = 210;
 
-/** Chrome caps a canvas at 16384px per side; a larger capture fails outright. */
-const CAPTURE_CANVAS_MAX_EDGE_PX = 16384;
+/**
+ * Empirical Chromium canvas budgets (1960x31180 verified working): a huge
+ * single edge is fine, but total area and memory are not — cap the capture
+ * at ~64M pixels (8192²) so long documents keep 2x instead of failing, and
+ * slides pages can still take the full 4x.
+ */
+const CAPTURE_MAX_AREA_PX = 64 * 1024 * 1024;
+const CAPTURE_MAX_EDGE_PX = 65535;
 const CAPTURE_MIN_PIXEL_RATIO = 2;
 const CAPTURE_MAX_PIXEL_RATIO = 4;
 
 /**
  * Capture scale for the PDF snapshot: scale with the display (2x per device
  * pixel so hi-dpi fullscreen viewing stays sharp) capped at CAPTURE_MAX,
- * then capped again by the canvas ceiling — long articles would otherwise
- * blow past it and fail the whole export.
+ * then capped by the canvas area/edge budgets. The budgets are empirical
+ * Chromium limits (1960x31180 verified round-tripping at full resolution);
+ * they replace html-to-image's auto-scale, which silently downsizes any
+ * canvas edge past 16384 — the reason tall exports were stuck near 1x.
  */
 export function resolveCapturePixelRatio(
   widthPx: number,
   heightPx: number,
   devicePixelRatio = typeof window !== "undefined" ? window.devicePixelRatio : 1,
 ): number {
-  const longEdgePx = Math.max(1, widthPx, heightPx);
-  const ceilingRatio = Math.floor(CAPTURE_CANVAS_MAX_EDGE_PX / longEdgePx);
+  const safeWidth = Math.max(1, widthPx);
+  const safeHeight = Math.max(1, heightPx);
+  const areaCeiling = Math.floor(Math.sqrt(CAPTURE_MAX_AREA_PX / (safeWidth * safeHeight)));
+  const edgeCeiling = Math.floor(CAPTURE_MAX_EDGE_PX / Math.max(safeWidth, safeHeight));
   const preferredRatio = Math.max(CAPTURE_MIN_PIXEL_RATIO, Math.ceil((devicePixelRatio || 1) * 2));
-  return Math.max(1, Math.min(CAPTURE_MAX_PIXEL_RATIO, preferredRatio, ceilingRatio));
+  return Math.max(1, Math.min(CAPTURE_MAX_PIXEL_RATIO, preferredRatio, areaCeiling, edgeCeiling));
 }
 
 interface CapturedLinkRect {
@@ -490,6 +500,10 @@ async function captureArticleSnapshot(
   const imageDataUrl = await toJpeg(article, {
     quality: 0.95,
     pixelRatio: resolveCapturePixelRatio(articleRect.width, articleRect.height),
+    // resolveCapturePixelRatio already keeps the canvas inside verified
+    // budgets; the lib's own auto-scale would silently shrink tall captures
+    // past its hardcoded 16384px edge limit.
+    skipAutoScale: true,
     backgroundColor,
     style: {
       width: `${fixedWidthPx}px`,

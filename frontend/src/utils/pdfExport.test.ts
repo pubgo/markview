@@ -75,12 +75,14 @@ describe("resolveCapturePixelRatio", () => {
     expect(resolveCapturePixelRatio(1120, 864, 3)).toBe(4);
   });
 
-  it("respects the canvas ceiling for tall articles", () => {
-    // 16384 / 8000 → 2x is the largest scale that still fits the canvas
+  it("respects the area budget for tall articles while keeping 2x", () => {
+    // 980x15590 at 2x = 61M px, inside the ~64M px budget → stays sharp
+    expect(resolveCapturePixelRatio(980, 15590, 2)).toBe(2);
+    // 1120x8000 at 2x = 17.9M px → 2x fits comfortably
     expect(resolveCapturePixelRatio(1120, 8000, 2)).toBe(2);
   });
 
-  it("drops to 1x rather than blowing past the canvas ceiling", () => {
+  it("drops to 1x when even 2x would blow the area budget", () => {
     expect(resolveCapturePixelRatio(1120, 20000, 2)).toBe(1);
   });
 
