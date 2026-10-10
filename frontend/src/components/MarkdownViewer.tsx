@@ -54,7 +54,7 @@ import { findBestSearchTarget } from "../utils/searchJump";
 import { parseFrontmatter } from "../utils/frontmatter";
 import { stripMdxSyntax } from "../utils/mdx";
 import { isStaticMode } from "../utils/staticData";
-import { computeFitScale } from "../utils/slideFit";
+import { computeFitScale, SLIDE_FIT_TOLERANCE_PX } from "../utils/slideFit";
 import { PresenterQrButton } from "./PresenterQrButton";
 import { transformMarkdownForMo } from "../utils/markdownEnhance";
 import type { TocHeading } from "./TocPanel";
@@ -452,23 +452,42 @@ function normalizeMermaidLabelNewlines(code: string): string {
   });
 }
 
+const BEAUTIFUL_MERMAID_DIAGRAM_PREFIXES = [
+  "graph",
+  "flowchart",
+  "statediagram",
+  "sequencediagram",
+  "classdiagram",
+  "erdiagram",
+  "xychart-beta",
+];
+
+/**
+ * Sequence-diagram directives beautiful-mermaid cannot render (it draws them
+ * as literal text and drops arrows/numbering); diagrams using them fall back
+ * to native mermaid, which supports them fully.
+ */
+const NATIVE_ONLY_SEQUENCE_DIRECTIVE =
+  /^(rect|autonumber|alt|else|opt|loop|par|and|critical|break|box|activate|deactivate)\b/;
+
 function supportsBeautifulMermaid(code: string): boolean {
   const lines = code.split(/\r?\n/);
+  let inSequence = false;
   for (const line of lines) {
     const trimmed = line.trim();
     if (!trimmed || trimmed.startsWith("%%")) continue;
     const normalized = trimmed.toLowerCase();
-    return (
-      normalized.startsWith("graph") ||
-      normalized.startsWith("flowchart") ||
-      normalized.startsWith("statediagram") ||
-      normalized.startsWith("sequencediagram") ||
-      normalized.startsWith("classdiagram") ||
-      normalized.startsWith("erdiagram") ||
-      normalized.startsWith("xychart-beta")
-    );
+    if (inSequence) {
+      if (NATIVE_ONLY_SEQUENCE_DIRECTIVE.test(normalized)) return false;
+      continue;
+    }
+    if (normalized.startsWith("sequencediagram")) {
+      inSequence = true;
+      continue;
+    }
+    return BEAUTIFUL_MERMAID_DIAGRAM_PREFIXES.some((prefix) => normalized.startsWith(prefix));
   }
-  return false;
+  return inSequence;
 }
 
 type RenderMermaidSVGFn = (text: string, options?: Record<string, unknown>) => string;
@@ -2010,9 +2029,13 @@ function CollapsibleHeading({
 
 /**
  * Slides auto-fit: when the rendered slide is taller than the page (tall
- * diagrams, long lists), scale the page down instead of clipping. The
- * ResizeObserver also watches direct children so async content (mermaid
- * SVG, images) re-triggers measurement as it loads.
+ * diagrams, long lists), scale the content down inside the fixed page frame
+ * instead of clipping the bottom or shrinking the frame. The scale goes on
+ * the inner `.markdown-slide-fit` wrapper — never on the page itself, since
+ * a transform cannot move an element's own clip window (scaling the page
+ * only shrank the visible card while the content stayed clipped). The
+ * ResizeObserver also watches the wrapper's children so async content
+ * (mermaid SVG, images) re-triggers measurement as it loads.
  */
 function useSlideAutoFit(enabled: boolean, slideIndex: number) {
   useEffect(() => {
@@ -2020,25 +2043,46 @@ function useSlideAutoFit(enabled: boolean, slideIndex: number) {
     let ro: ResizeObserver | null = null;
 
     const apply = () => {
-      const el = document.querySelector<HTMLElement>(".markdown-slide-page");
-      if (!el) return;
-      const scale = computeFitScale(el.clientHeight, el.scrollHeight);
+      const page = document.querySelector<HTMLElement>(".markdown-slide-page");
+      const fit = page?.querySelector<HTMLElement>(".markdown-slide-fit");
+      if (!page || !fit) return;
+      const padding = getComputedStyle(page);
+      // scrollHeight counts trailing margins and the page's own padding as
+      // overflow; measure the content box and the wrapper's natural height
+      // instead so phantom overflow cannot shrink the scale.
+      const available =
+        page.clientHeight -
+        (Number.parseFloat(padding.paddingTop) || 0) -
+        (Number.parseFloat(padding.paddingBottom) || 0);
+      const natural = fit.scrollHeight;
+      const scale = computeFitScale(available, natural);
+      const fitsScaled = natural * scale <= available + SLIDE_FIT_TOLERANCE_PX;
+      page.classList.toggle("markdown-slide-page--fitted", scale < 1 && fitsScaled);
       if (scale < 1) {
-        el.style.transform = `scale(${scale})`;
-        el.style.transformOrigin = "top center";
-      } else if (el.style.transform) {
-        el.style.transform = "";
-        el.style.transformOrigin = "";
+        // Compensate the width so text reflows at full frame width and the
+        // scaled result fills it exactly; the explicit height keeps the
+        // page's layout box equal to the scaled paint (no scrollbars).
+        fit.style.width = `${100 / scale}%`;
+        fit.style.height = `${Math.round(natural * scale)}px`;
+        fit.style.transform = `scale(${scale})`;
+        fit.style.transformOrigin = "top left";
+      } else {
+        fit.style.width = "";
+        fit.style.height = "";
+        fit.style.transform = "";
+        fit.style.transformOrigin = "";
       }
     };
 
     apply();
     if (typeof ResizeObserver !== "undefined") {
       ro = new ResizeObserver(apply);
-      const el = document.querySelector(".markdown-slide-page");
-      if (el) {
-        ro.observe(el);
-        for (const child of Array.from(el.children)) ro.observe(child);
+      const page = document.querySelector(".markdown-slide-page");
+      const fit = page?.querySelector(".markdown-slide-fit");
+      if (page && fit) {
+        ro.observe(page);
+        ro.observe(fit);
+        for (const child of Array.from(fit.children)) ro.observe(child);
       }
     }
     // Poll as a fallback for async content (mermaid SVG, images) that swaps
@@ -2627,7 +2671,7 @@ export function MarkdownViewer({
             title="点击空白区域可进入下一页"
           >
             {multiColumn ? (
-              <>
+              <div className="markdown-slide-fit" data-testid="markdown-slide-fit">
                 {columnTitle ? (
                   <div
                     className="markdown-slide-columns__title"
@@ -2659,15 +2703,17 @@ export function MarkdownViewer({
                     </div>
                   ))}
                 </div>
-              </>
+              </div>
             ) : (
-              <Markdown
-                remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkGemoji]}
-                rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
-                components={components}
-              >
-                {slideBody}
-              </Markdown>
+              <div className="markdown-slide-fit" data-testid="markdown-slide-fit">
+                <Markdown
+                  remarkPlugins={[remarkGfm, remarkMath, remarkBreaks, remarkGemoji]}
+                  rehypePlugins={[rehypeRaw, rehypeGithubAlerts, rehypeSlug, rehypeKatex]}
+                  components={components}
+                >
+                  {slideBody}
+                </Markdown>
+              </div>
             )}
           </section>
           {showNotes && (

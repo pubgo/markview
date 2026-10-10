@@ -214,12 +214,27 @@ body,
   min-height: min(72vh, 740px);
   min-height: min(72dvh, 740px);
   aspect-ratio: 16 / 9;
-  overflow: auto;
+  overflow-x: hidden;
+  overflow-y: auto;
   border: 1px solid var(--color-gh-border);
   border-radius: 12px;
   background: var(--color-gh-bg);
   box-shadow: 0 12px 32px rgba(15, 23, 42, 0.08);
   padding: clamp(28px, 4vw, 56px) clamp(32px, 5vw, 64px);
+}
+
+/* Auto-fit content wrapper: the scale goes here so the page frame keeps its
+   size while overflowing content shrinks inside it. flow-root contains
+   children margins so the natural-height measurement cannot leak. */
+.markdown-slide-fit {
+  display: flow-root;
+  width: 100%;
+}
+
+/* Fully fitted slides hide their overflow; slides clamped at the minimum
+   scale keep scrolling so nothing becomes unreachable. */
+.markdown-slide-page--fitted {
+  overflow: hidden;
 }
 
 @keyframes markdown-slide-enter {

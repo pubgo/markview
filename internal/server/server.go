@@ -991,6 +991,8 @@ func NewHandler(state *State) http.Handler {
 	mux.HandleFunc("POST /_/api/shutdown", handleShutdown(state))
 	mux.HandleFunc("GET /_/api/status", handleStatus(state))
 	mux.HandleFunc("GET /_/api/version", handleVersion())
+	mux.HandleFunc("GET /_/api/update/check", handleUpdateCheck())
+	mux.HandleFunc("POST /_/api/update/apply", handleUpdateApply(state))
 	mux.HandleFunc("GET /_/api/graph", handleGraph(state))
 	mux.HandleFunc("GET /_/api/outline", handleOutline(state))
 	mux.HandleFunc("GET /_/events", handleSSE(state))

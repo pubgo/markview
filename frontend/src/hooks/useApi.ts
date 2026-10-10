@@ -163,6 +163,28 @@ export async function restartServer(): Promise<void> {
   if (!res.ok) throw new Error("Failed to restart server");
 }
 
+export interface UpdateCheck {
+  current: string;
+  latest: string;
+  available: boolean;
+}
+
+export async function checkForUpdate(): Promise<UpdateCheck> {
+  const res = await fetch("/_/api/update/check");
+  if (!res.ok) throw new Error("Failed to check for updates");
+  return res.json();
+}
+
+export async function applyUpdate(): Promise<void> {
+  const res = await fetch("/_/api/update/apply", { method: "POST" });
+  if (res.status === 403) throw new Error("升级只允许在本机浏览器操作");
+  if (res.status === 409) throw new Error("当前已是最新版本");
+  if (!res.ok) {
+    const text = await res.text();
+    throw new Error(text.trim() || "Failed to apply update");
+  }
+}
+
 export async function fetchVersion(): Promise<VersionInfo> {
   if (isStaticMode()) {
     const ver = getStaticVersion();
