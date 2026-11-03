@@ -31,11 +31,21 @@ interface SliderRowProps {
   step: number;
   defaultValue: number;
   onChange: (v: number) => void;
+  disabled?: boolean;
 }
 
-function SliderRow({ label, value, min, max, step, defaultValue, onChange }: SliderRowProps) {
+function SliderRow({
+  label,
+  value,
+  min,
+  max,
+  step,
+  defaultValue,
+  onChange,
+  disabled = false,
+}: SliderRowProps) {
   return (
-    <label className="flex items-center gap-3">
+    <label className={`flex items-center gap-3 ${disabled ? "opacity-50" : ""}`}>
       <span className="w-28 shrink-0 text-sm text-gh-text-secondary">{label}</span>
       <input
         type="range"
@@ -44,10 +54,11 @@ function SliderRow({ label, value, min, max, step, defaultValue, onChange }: Sli
         max={max}
         step={step}
         value={value}
+        disabled={disabled}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <span className="w-10 text-right text-sm tabular-nums text-gh-text">{value}</span>
-      {value !== defaultValue && (
+      {value !== defaultValue && !disabled && (
         <button
           type="button"
           className="text-xs text-gh-text-secondary hover:text-gh-text cursor-pointer"
@@ -154,6 +165,24 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           <hr className="border-gh-border" />
 
+          {/* Renderer selector */}
+          <label className="flex items-center gap-3">
+            <span className="w-28 shrink-0 text-sm text-gh-text-secondary">渲染引擎</span>
+            <select
+              className="flex-1 bg-gh-bg border border-gh-border rounded-md px-2 py-1 text-sm text-gh-text focus:border-gh-accent outline-none"
+              value={settings.renderer}
+              onChange={(e) =>
+                handleUpdate({
+                  renderer: e.target.value as MermaidSettings["renderer"],
+                  preset: "custom-manual",
+                })
+              }
+            >
+              <option value="native">原生 Mermaid（默认）</option>
+              <option value="beautiful">beautiful-mermaid</option>
+            </select>
+          </label>
+
           {/* Theme selector */}
           <label className="flex items-center gap-3">
             <span className="w-28 shrink-0 text-sm text-gh-text-secondary">配色方案</span>
@@ -178,6 +207,11 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
           <hr className="border-gh-border" />
 
           {/* Layout sliders */}
+          {settings.renderer === "native" && (
+            <p className="text-xs text-gh-text-secondary">
+              节点间距等布局参数仅 beautiful-mermaid 生效；原生引擎使用固定 flowchart 间距。
+            </p>
+          )}
           <SliderRow
             label="节点间距"
             value={settings.nodeSpacing}
@@ -185,6 +219,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             max={80}
             step={4}
             defaultValue={MERMAID_SETTINGS_DEFAULTS.nodeSpacing}
+            disabled={settings.renderer === "native"}
             onChange={(v) => handleUpdate({ nodeSpacing: v, preset: "custom-manual" })}
           />
           <SliderRow
@@ -194,6 +229,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             max={120}
             step={4}
             defaultValue={MERMAID_SETTINGS_DEFAULTS.layerSpacing}
+            disabled={settings.renderer === "native"}
             onChange={(v) => handleUpdate({ layerSpacing: v, preset: "custom-manual" })}
           />
           <SliderRow
@@ -203,6 +239,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             max={80}
             step={4}
             defaultValue={MERMAID_SETTINGS_DEFAULTS.padding}
+            disabled={settings.renderer === "native"}
             onChange={(v) => handleUpdate({ padding: v, preset: "custom-manual" })}
           />
           <SliderRow
@@ -212,6 +249,7 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             max={7}
             step={1}
             defaultValue={MERMAID_SETTINGS_DEFAULTS.thoroughness}
+            disabled={settings.renderer === "native"}
             onChange={(v) => handleUpdate({ thoroughness: v, preset: "custom-manual" })}
           />
 
