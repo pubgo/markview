@@ -23,7 +23,10 @@ import {
   getMermaidSettings,
   useMermaidSettingsRevision,
 } from "../hooks/useMermaidSettings";
-import { resolveBeautifulMermaidPalette } from "../utils/mermaidTheme";
+import {
+  resolveBeautifulMermaidPalette,
+  resolveNativeMermaidThemeVariables,
+} from "../utils/mermaidTheme";
 import { usePlantUmlSettings, getPlantUmlServerUrl } from "../hooks/usePlantUmlSettings";
 import {
   useSlideTransition,
@@ -624,6 +627,28 @@ function normalizeMermaidSvg(
   }
 }
 
+async function initializeNativeMermaid(): Promise<void> {
+  const mermaid = await loadMermaid();
+  mermaid.initialize({
+    startOnLoad: false,
+    securityLevel: "strict",
+    suppressErrorRendering: true,
+    theme: "base",
+    themeVariables: resolveNativeMermaidThemeVariables(getMermaidSettings()),
+    flowchart: {
+      htmlLabels: true,
+      useMaxWidth: false,
+      nodeSpacing: 50,
+      rankSpacing: 50,
+      padding: 15,
+      curve: "basis",
+    },
+    sequence: {
+      useMaxWidth: false,
+    },
+  });
+}
+
 async function renderMermaid(code: string, width?: number): Promise<string> {
   let resolve: (svg: string) => void;
   let reject: (err: unknown) => void;
@@ -813,7 +838,9 @@ export function MermaidBlock({
       setRenderError(null);
       try {
         let renderedSvg = "";
-        const canUseBeautiful = supportsBeautifulMermaid(normalizedCode);
+        const settings = getMermaidSettings();
+        const canUseBeautiful =
+          settings.renderer === "beautiful" && supportsBeautifulMermaid(normalizedCode);
 
         if (canUseBeautiful) {
           try {
@@ -821,31 +848,11 @@ export function MermaidBlock({
             if (!renderBeautiful) throw new Error("beautiful-mermaid unavailable");
             renderedSvg = renderBeautifulMermaid(normalizedCode, renderBeautiful);
           } catch {
-            (await loadMermaid()).initialize({
-              startOnLoad: false,
-              theme: getMermaidTheme(),
-              flowchart: {
-                htmlLabels: true,
-                useMaxWidth: false,
-              },
-              sequence: {
-                useMaxWidth: false,
-              },
-            });
+            await initializeNativeMermaid();
             renderedSvg = await renderMermaid(normalizedCode, width);
           }
         } else {
-          (await loadMermaid()).initialize({
-            startOnLoad: false,
-            theme: getMermaidTheme(),
-            flowchart: {
-              htmlLabels: true,
-              useMaxWidth: false,
-            },
-            sequence: {
-              useMaxWidth: false,
-            },
-          });
+          await initializeNativeMermaid();
           renderedSvg = await renderMermaid(normalizedCode, width);
         }
 
