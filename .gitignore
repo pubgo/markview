@@ -4,3 +4,5 @@ coverage.out
 markview
 .pnpm-store/
 /.idea
+
+.worktrees/
