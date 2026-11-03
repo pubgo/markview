@@ -55,6 +55,7 @@ function SliderRow({
         step={step}
         value={value}
         disabled={disabled}
+        aria-label={label}
         onChange={(e) => onChange(Number(e.target.value))}
       />
       <span className="w-10 text-right text-sm tabular-nums text-gh-text">{value}</span>
