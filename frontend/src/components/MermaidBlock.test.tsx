@@ -16,12 +16,18 @@ vi.mock("beautiful-mermaid", () => ({
   renderMermaidSVG: renderMermaidSVGMock,
 }));
 
+const renderPeleMock = vi.fn();
+
+vi.mock("pele", () => ({
+  render: (...args: unknown[]) => renderPeleMock(...args),
+}));
+
 import mermaid from "mermaid";
 
 const writeTextMock = vi.fn().mockResolvedValue(undefined);
 const writeMock = vi.fn().mockResolvedValue(undefined);
 
-function setMermaidRenderer(renderer: "native" | "beautiful") {
+function setMermaidRenderer(renderer: "native" | "beautiful" | "pele") {
   localStorage.setItem("markview-mermaid-settings", JSON.stringify({ renderer }));
   invalidateMermaidSettingsCache();
 }
@@ -32,6 +38,9 @@ beforeEach(() => {
   vi.clearAllMocks();
   renderMermaidSVGMock.mockImplementation(() => {
     throw new Error("beautiful-mermaid disabled in baseline tests");
+  });
+  renderPeleMock.mockImplementation(() => {
+    throw new Error("pele disabled in baseline tests");
   });
   writeTextMock.mockClear();
   writeMock.mockClear();
@@ -74,6 +83,47 @@ describe("MermaidBlock", () => {
         }),
       }),
     );
+  });
+
+  it("uses pele renderer when selected", async () => {
+    setMermaidRenderer("pele");
+    renderPeleMock.mockReturnValue({
+      svg: '<svg class="pele" width="360" height="180">pele</svg>',
+      width: 360,
+      height: 180,
+      links: [],
+      type: "flowchart",
+      mermaidType: "flowchart",
+    });
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" />);
+
+    await waitFor(() => {
+      expect(container.querySelector("svg.pele")).toBeTruthy();
+    });
+    expect(renderPeleMock).toHaveBeenCalled();
+    expect(renderMermaidSVGMock).not.toHaveBeenCalled();
+    expect(vi.mocked(mermaid.render)).not.toHaveBeenCalled();
+  });
+
+  it("falls back to native mermaid when pele fails", async () => {
+    setMermaidRenderer("pele");
+    renderPeleMock.mockImplementation(() => {
+      throw new Error("pele render failed");
+    });
+    vi.mocked(mermaid.render).mockResolvedValue({
+      svg: "<svg>fallback</svg>",
+      bindFunctions: undefined,
+      diagramType: "flowchart",
+    });
+
+    render(<MermaidBlock code="graph TD; A-->B" />);
+
+    await waitFor(() => {
+      expect(screen.getByTitle("Copy code")).toBeInTheDocument();
+    });
+    expect(renderPeleMock).toHaveBeenCalled();
+    expect(vi.mocked(mermaid.render)).toHaveBeenCalled();
   });
 
   it("uses beautiful-mermaid renderer when available for supported diagrams", async () => {

@@ -40,6 +40,15 @@ describe("useMermaidSettings defaults", () => {
     expect(getMermaidSettings().renderer).toBe("beautiful");
   });
 
+  it("preserves an explicit pele renderer from storage", () => {
+    localStorage.setItem(
+      "markview-mermaid-settings",
+      JSON.stringify({ renderer: "pele", theme: "auto" }),
+    );
+    invalidateMermaidSettingsCache();
+    expect(getMermaidSettings().renderer).toBe("pele");
+  });
+
   it("preset settings omit renderer so applying a preset cannot wipe it", () => {
     for (const preset of MERMAID_PRESETS) {
       expect("renderer" in preset.settings).toBe(false);

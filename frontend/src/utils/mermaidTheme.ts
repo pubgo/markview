@@ -209,3 +209,53 @@ export function resolveNativeMermaidThemeVariables(
   out.clusterBorder = palette.border;
   return out;
 }
+
+/** CSS custom properties for Obsidian Pele diagrams (inherit into injected SVG). */
+export function resolvePeleCssVariables(
+  settings: MermaidSettings = getMermaidSettings(),
+): Record<string, string> {
+  const isDark = isDarkTheme();
+  let bg: string | undefined;
+  let surface: string | undefined;
+  let surfaceAlt: string | undefined;
+  let fg: string | undefined;
+  let muted: string | undefined;
+  let line: string | undefined;
+  let border: string | undefined;
+  let accent: string | undefined;
+
+  if (settings.theme === "auto") {
+    bg = resolveCssColor("--color-gh-bg");
+    surface = resolveCssColor("--color-gh-bg-secondary");
+    surfaceAlt = resolveCssColor("--color-gh-bg-hover");
+    fg = resolveCssColor("--color-gh-text");
+    muted = resolveCssColor("--color-gh-text-secondary");
+    line = muted;
+    border = resolveCssColor("--color-gh-border");
+    accent = resolveCssColor("--color-gh-accent") ?? (isDark ? "#4493f8" : "#0969da");
+  } else {
+    const palette = resolveBeautifulMermaidPalette(settings);
+    bg = palette.bg;
+    surface = palette.surface;
+    surfaceAlt = palette.surface;
+    fg = palette.fg;
+    muted = palette.muted;
+    line = palette.line;
+    border = palette.border;
+    accent = palette.accent;
+  }
+
+  const vars: Record<string, string> = {
+    "--pele-font": "system-ui",
+    "--pele-radius": "4px",
+  };
+  if (bg) vars["--pele-bg"] = bg;
+  if (fg) vars["--pele-fg"] = fg;
+  if (muted) vars["--pele-muted"] = muted;
+  if (line) vars["--pele-line"] = line;
+  if (surface) vars["--pele-surface"] = surface;
+  if (surfaceAlt) vars["--pele-surface-alt"] = surfaceAlt;
+  if (border) vars["--pele-border"] = border;
+  if (accent) vars["--pele-accent"] = accent;
+  return vars;
+}

@@ -6,6 +6,7 @@ import {
   useRef,
   useState,
   type ComponentProps,
+  type CSSProperties,
 } from "react";
 import Markdown from "react-markdown";
 import remarkBreaks from "remark-breaks";
@@ -26,6 +27,7 @@ import {
 import {
   resolveBeautifulMermaidPalette,
   resolveNativeMermaidThemeVariables,
+  resolvePeleCssVariables,
 } from "../utils/mermaidTheme";
 import { usePlantUmlSettings, getPlantUmlServerUrl } from "../hooks/usePlantUmlSettings";
 import {
@@ -494,8 +496,13 @@ function supportsBeautifulMermaid(code: string): boolean {
 }
 
 type RenderMermaidSVGFn = (text: string, options?: Record<string, unknown>) => string;
+type PeleRenderFn = (
+  source: string,
+  options?: { maxWidth?: number; padding?: number; fontFamily?: string; responsive?: boolean },
+) => { svg: string };
 
 let beautifulMermaidRenderPromise: Promise<RenderMermaidSVGFn | null> | null = null;
+let peleRenderPromise: Promise<PeleRenderFn | null> | null = null;
 
 async function loadBeautifulMermaidRender(): Promise<RenderMermaidSVGFn | null> {
   if (!beautifulMermaidRenderPromise) {
@@ -504,6 +511,26 @@ async function loadBeautifulMermaidRender(): Promise<RenderMermaidSVGFn | null> 
       .catch(() => null);
   }
   return beautifulMermaidRenderPromise;
+}
+
+async function loadPeleRender(): Promise<PeleRenderFn | null> {
+  if (!peleRenderPromise) {
+    peleRenderPromise = import("pele")
+      .then((mod) => (typeof mod.render === "function" ? mod.render : null))
+      .catch(() => null);
+  }
+  return peleRenderPromise;
+}
+
+function renderPeleMermaid(code: string, renderFn: PeleRenderFn, maxWidth?: number): string {
+  const settings = getMermaidSettings();
+  const { svg } = renderFn(code, {
+    maxWidth: maxWidth && maxWidth > 0 ? maxWidth : undefined,
+    padding: settings.padding,
+    fontFamily: "system-ui",
+    responsive: true,
+  });
+  return svg;
 }
 
 function sanitizeBeautifulMermaidSvg(svg: string): string {
@@ -841,8 +868,18 @@ export function MermaidBlock({
         const settings = getMermaidSettings();
         const canUseBeautiful =
           settings.renderer === "beautiful" && supportsBeautifulMermaid(normalizedCode);
+        const canUsePele = settings.renderer === "pele";
 
-        if (canUseBeautiful) {
+        if (canUsePele) {
+          try {
+            const renderPele = await loadPeleRender();
+            if (!renderPele) throw new Error("pele unavailable");
+            renderedSvg = renderPeleMermaid(normalizedCode, renderPele, width);
+          } catch {
+            await initializeNativeMermaid();
+            renderedSvg = await renderMermaid(normalizedCode, width);
+          }
+        } else if (canUseBeautiful) {
           try {
             const renderBeautiful = await loadBeautifulMermaidRender();
             if (!renderBeautiful) throw new Error("beautiful-mermaid unavailable");
@@ -909,17 +946,23 @@ export function MermaidBlock({
   ]);
 
   if (svg) {
-    const canvasStyle = isFullscreen
-      ? {
-          transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
-          transformOrigin: "center center",
-        }
-      : {
-          width: layout.fitToWidth ? "100%" : "fit-content",
-          maxWidth: layout.preserveScale ? "none" : "100%",
-          marginInline: "auto",
-          transformOrigin: "center center",
-        };
+    const peleThemeVars = /\bpele\b/.test(svg)
+      ? resolvePeleCssVariables(getMermaidSettings())
+      : null;
+    const canvasStyle = {
+      ...(isFullscreen
+        ? {
+            transform: `translate(${pan.x}px, ${pan.y}px) scale(${zoom})`,
+            transformOrigin: "center center",
+          }
+        : {
+            width: layout.fitToWidth ? "100%" : "fit-content",
+            maxWidth: layout.preserveScale ? "none" : "100%",
+            marginInline: "auto",
+            transformOrigin: "center center",
+          }),
+      ...(peleThemeVars ?? {}),
+    } as CSSProperties;
 
     const blockClassName = [
       "relative group mermaid-block",

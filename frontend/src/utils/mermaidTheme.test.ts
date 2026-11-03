@@ -1,6 +1,9 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MERMAID_SETTINGS_DEFAULTS } from "../hooks/useMermaidSettings";
-import { resolveNativeMermaidThemeVariables } from "./mermaidTheme";
+import {
+  resolveNativeMermaidThemeVariables,
+  resolvePeleCssVariables,
+} from "./mermaidTheme";
 
 describe("resolveNativeMermaidThemeVariables", () => {
   beforeEach(() => {
@@ -52,5 +55,44 @@ describe("resolveNativeMermaidThemeVariables", () => {
     expect(vars.background).toBe("#0d1117");
     expect(vars.primaryTextColor).toBe("#e6edf3");
     expect(vars.lineColor).toBe("#8b949e");
+  });
+});
+
+describe("resolvePeleCssVariables", () => {
+  beforeEach(() => {
+    document.documentElement.setAttribute("data-theme", "dark");
+    vi.spyOn(window, "getComputedStyle").mockImplementation(
+      () =>
+        ({
+          getPropertyValue: (name: string) => {
+            const map: Record<string, string> = {
+              "--color-gh-bg": "#0d1117",
+              "--color-gh-bg-secondary": "#161b22",
+              "--color-gh-bg-hover": "#21262d",
+              "--color-gh-text": "#e6edf3",
+              "--color-gh-text-secondary": "#8b949e",
+              "--color-gh-border": "#30363d",
+            };
+            return map[name] ?? "";
+          },
+        }) as unknown as CSSStyleDeclaration,
+    );
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    document.documentElement.removeAttribute("data-theme");
+  });
+
+  it("maps auto theme tokens into --pele-* variables", () => {
+    const vars = resolvePeleCssVariables({
+      ...MERMAID_SETTINGS_DEFAULTS,
+      theme: "auto",
+    });
+    expect(vars["--pele-bg"]).toBe("#0d1117");
+    expect(vars["--pele-fg"]).toBe("#e6edf3");
+    expect(vars["--pele-surface"]).toBe("#161b22");
+    expect(vars["--pele-border"]).toBe("#30363d");
+    expect(vars["--pele-font"]).toBe("system-ui");
   });
 });

@@ -3,7 +3,7 @@ import { useCallback, useSyncExternalStore } from "react";
 const STORAGE_KEY = "markview-mermaid-settings";
 
 export interface MermaidSettings {
-  renderer: "native" | "beautiful";
+  renderer: "native" | "beautiful" | "pele";
   nodeSpacing: number;
   layerSpacing: number;
   thoroughness: number;
