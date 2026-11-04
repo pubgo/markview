@@ -179,8 +179,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 })
               }
             >
-              <option value="native">原生 Mermaid（默认）</option>
-              <option value="pele">Pele（Obsidian）</option>
+              <option value="pele">Pele（Obsidian，默认）</option>
+              <option value="native">原生 Mermaid</option>
               <option value="beautiful">beautiful-mermaid</option>
             </select>
           </label>

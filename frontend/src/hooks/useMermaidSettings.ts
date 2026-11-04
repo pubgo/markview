@@ -20,7 +20,7 @@ export interface MermaidSettings {
 }
 
 export const MERMAID_SETTINGS_DEFAULTS: MermaidSettings = {
-  renderer: "native",
+  renderer: "pele",
   nodeSpacing: 32,
   layerSpacing: 56,
   thoroughness: 5,
