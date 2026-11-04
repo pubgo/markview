@@ -1,7 +1,4 @@
-import {
-  getMermaidSettings,
-  type MermaidSettings,
-} from "../hooks/useMermaidSettings";
+import { getMermaidSettings, type MermaidSettings } from "../hooks/useMermaidSettings";
 
 export const BEAUTIFUL_MERMAID_PALETTES: Record<string, Record<string, string>> = {
   "github-light": {
@@ -100,9 +97,7 @@ function isDarkTheme(): boolean {
   return document.documentElement.getAttribute("data-theme") === "dark";
 }
 
-export function resolveBeautifulMermaidPalette(
-  settings: MermaidSettings,
-): Record<string, string> {
+export function resolveBeautifulMermaidPalette(settings: MermaidSettings): Record<string, string> {
   const isDark = isDarkTheme();
 
   switch (settings.theme) {

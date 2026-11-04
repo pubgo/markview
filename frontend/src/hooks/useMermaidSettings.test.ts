@@ -12,21 +12,21 @@ describe("useMermaidSettings defaults", () => {
     invalidateMermaidSettingsCache();
   });
 
-  it("defaults renderer to native and theme to auto", () => {
-    expect(MERMAID_SETTINGS_DEFAULTS.renderer).toBe("native");
+  it("defaults renderer to pele and theme to auto", () => {
+    expect(MERMAID_SETTINGS_DEFAULTS.renderer).toBe("pele");
     expect(MERMAID_SETTINGS_DEFAULTS.theme).toBe("auto");
-    expect(getMermaidSettings().renderer).toBe("native");
+    expect(getMermaidSettings().renderer).toBe("pele");
     expect(getMermaidSettings().theme).toBe("auto");
   });
 
-  it("fills missing renderer as native when merging stored settings", () => {
+  it("fills missing renderer as pele when merging stored settings", () => {
     localStorage.setItem(
       "markview-mermaid-settings",
       JSON.stringify({ theme: "nord", nodeSpacing: 40 }),
     );
     invalidateMermaidSettingsCache();
     const settings = getMermaidSettings();
-    expect(settings.renderer).toBe("native");
+    expect(settings.renderer).toBe("pele");
     expect(settings.theme).toBe("nord");
     expect(settings.nodeSpacing).toBe(40);
   });
@@ -40,13 +40,13 @@ describe("useMermaidSettings defaults", () => {
     expect(getMermaidSettings().renderer).toBe("beautiful");
   });
 
-  it("preserves an explicit pele renderer from storage", () => {
+  it("preserves an explicit native renderer from storage", () => {
     localStorage.setItem(
       "markview-mermaid-settings",
-      JSON.stringify({ renderer: "pele", theme: "auto" }),
+      JSON.stringify({ renderer: "native", theme: "auto" }),
     );
     invalidateMermaidSettingsCache();
-    expect(getMermaidSettings().renderer).toBe("pele");
+    expect(getMermaidSettings().renderer).toBe("native");
   });
 
   it("preset settings omit renderer so applying a preset cannot wipe it", () => {

@@ -16,8 +16,9 @@ func TestUpdateCheckEndpoint(t *testing.T) {
 	origCheck := updateCheckFn
 	t.Cleanup(func() { updateCheckFn = origCheck })
 
+	// Latest must be newer than version.Version — Available uses IsNewer(latest).
 	updateCheckFn = func(_ context.Context) (string, string, error) {
-		return "0.22.0", "v0.23.0", nil
+		return "0.24.0", "v9.9.9", nil
 	}
 	resetUpdateCache()
 
@@ -33,7 +34,7 @@ func TestUpdateCheckEndpoint(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatal(err)
 	}
-	if resp.Current != "0.22.0" || resp.Latest != "v0.23.0" || !resp.Available {
+	if resp.Current != "0.24.0" || resp.Latest != "v9.9.9" || !resp.Available {
 		t.Errorf("unexpected payload: %+v", resp)
 	}
 

@@ -52,7 +52,28 @@ beforeEach(() => {
 });
 
 describe("MermaidBlock", () => {
-  it("defaults to native mermaid with base themeVariables", async () => {
+  it("defaults to pele renderer", async () => {
+    renderPeleMock.mockReturnValue({
+      svg: '<svg class="pele" width="360" height="180">pele</svg>',
+      width: 360,
+      height: 180,
+      links: [],
+      type: "flowchart",
+      mermaidType: "flowchart",
+    });
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" />);
+
+    await waitFor(() => {
+      expect(container.querySelector("svg.pele")).toBeTruthy();
+    });
+    expect(renderPeleMock).toHaveBeenCalled();
+    expect(vi.mocked(mermaid.render)).not.toHaveBeenCalled();
+    expect(renderMermaidSVGMock).not.toHaveBeenCalled();
+  });
+
+  it("uses native mermaid with base themeVariables when selected", async () => {
+    setMermaidRenderer("native");
     vi.mocked(mermaid.render).mockResolvedValue({
       svg: '<svg width="360" height="180">native</svg>',
       bindFunctions: undefined,
