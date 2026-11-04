@@ -14,26 +14,35 @@ import (
 	"path/filepath"
 	"runtime"
 	"testing"
+
+	"github.com/pubgo/markview/version"
 )
 
 func TestIsNewer(t *testing.T) {
+	// Fixtures are relative to version.Version so a release bump does not
+	// invalidate the table.
+	cur := version.Version
 	tests := []struct {
 		tag  string
 		want bool
 	}{
-		{"v0.22.1", true},
-		{"v0.23.0", true},
+		{"v9.9.9", true},
 		{"v1.0.0", true},
-		{"v0.22.0", false},
-		{"v0.21.9", false},
-		{"v0.100.0", true},     // numeric, not lexicographic
-		{"v0.22.0-rc1", false}, // pre-release tags never count as newer
+		{"v" + cur, false},
+		{"v0.0.1", false},
+		{"v" + cur + "-rc1", false}, // pre-release tags never count as newer
 		{"not-a-version", false},
 		{"", false},
 	}
+	if compareSemver("v0.100.0", cur) > 0 {
+		tests = append(tests, struct {
+			tag  string
+			want bool
+		}{"v0.100.0", true}) // numeric, not lexicographic
+	}
 	for _, tt := range tests {
 		if got := IsNewer(tt.tag); got != tt.want {
-			t.Errorf("IsNewer(%q) = %v, want %v", tt.tag, got, tt.want)
+			t.Errorf("IsNewer(%q) = %v, want %v (current=%s)", tt.tag, got, tt.want, cur)
 		}
 	}
 }
