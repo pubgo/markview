@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.24.0 - 2026-11-04
+
+Mermaid 渲染升级：默认原生引擎、可选 Pele / beautiful-mermaid，并升级到 Mermaid 12。
+
+### New Features 🎉
+- feat: Mermaid 默认改用原生引擎，布局更接近常见 Markdown 预览；设置里可切换 **Pele（Obsidian）** / **beautiful-mermaid**
+- feat: 集成 [Pele](https://github.com/obsidianmd/pele) 可选渲染引擎，复杂 flowchart 布局更清晰，配色跟随应用主题 token
+- feat: 升级 mermaid **11 → 12.3**（原生路径）
+
+### Other Changes
+- docs: Mermaid 原生默认设计与实现计划（`docs/superpowers/specs|plans`）
+- chore: ignore local `.worktrees/` directory
+
 ## v0.22.0 - 2026-10-02
 
 Go 测试覆盖摸底 + slides 超高内容自动适配。
