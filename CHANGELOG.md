@@ -1,5 +1,9 @@
 # Changelog
 
+## Unreleased
+
+- feat: 移除 beautiful-mermaid；原生 Mermaid 使用 neo + ELK 并贴近 GitHub 配色；引擎仅 Pele（默认）/ 原生
+
 ## v0.24.0 - 2026-11-04
 
 Mermaid 渲染升级：默认原生引擎、可选 Pele / beautiful-mermaid，并升级到 Mermaid 12。

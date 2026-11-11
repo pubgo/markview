@@ -143,11 +143,6 @@ export function resolveMermaidPalette(settings: MermaidSettings): Record<string,
   }
 }
 
-/** @deprecated Use resolveMermaidPalette */
-export const resolveBeautifulMermaidPalette = resolveMermaidPalette;
-/** @deprecated Use MERMAID_PALETTES */
-export const BEAUTIFUL_MERMAID_PALETTES = MERMAID_PALETTES;
-
 export function resolveCssColor(
   varName: string,
   el: Element = document.documentElement,
