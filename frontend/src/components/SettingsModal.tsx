@@ -179,9 +179,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
                 })
               }
             >
-              <option value="native">原生 Mermaid（默认）</option>
-              <option value="pele">Pele（Obsidian）</option>
-              <option value="beautiful">beautiful-mermaid</option>
+              <option value="pele">Pele（Obsidian，默认）</option>
+              <option value="native">原生 Mermaid</option>
             </select>
           </label>
 
@@ -208,34 +207,9 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
 
           <hr className="border-gh-border" />
 
-          {/* Layout sliders */}
-          {settings.renderer !== "beautiful" && (
-            <p className="text-xs text-gh-text-secondary">
-              {settings.renderer === "pele"
-                ? "节点/层间距与交叉优化仅 beautiful-mermaid 生效；Pele 使用自有布局，画布边距可用。"
-                : "节点间距等布局参数仅 beautiful-mermaid 生效；原生引擎使用固定 flowchart 间距。"}
-            </p>
-          )}
-          <SliderRow
-            label="节点间距"
-            value={settings.nodeSpacing}
-            min={8}
-            max={80}
-            step={4}
-            defaultValue={MERMAID_SETTINGS_DEFAULTS.nodeSpacing}
-            disabled={settings.renderer !== "beautiful"}
-            onChange={(v) => handleUpdate({ nodeSpacing: v, preset: "custom-manual" })}
-          />
-          <SliderRow
-            label="层间距"
-            value={settings.layerSpacing}
-            min={16}
-            max={120}
-            step={4}
-            defaultValue={MERMAID_SETTINGS_DEFAULTS.layerSpacing}
-            disabled={settings.renderer !== "beautiful"}
-            onChange={(v) => handleUpdate({ layerSpacing: v, preset: "custom-manual" })}
-          />
+          <p className="text-xs text-gh-text-secondary">
+            Pele 可调画布边距；原生使用 Mermaid neo + ELK 默认布局。
+          </p>
           <SliderRow
             label="画布边距"
             value={settings.padding}
@@ -243,18 +217,8 @@ export function SettingsModal({ isOpen, onClose }: SettingsModalProps) {
             max={80}
             step={4}
             defaultValue={MERMAID_SETTINGS_DEFAULTS.padding}
-            disabled={settings.renderer === "native"}
+            disabled={settings.renderer !== "pele"}
             onChange={(v) => handleUpdate({ padding: v, preset: "custom-manual" })}
-          />
-          <SliderRow
-            label="交叉优化"
-            value={settings.thoroughness}
-            min={1}
-            max={7}
-            step={1}
-            defaultValue={MERMAID_SETTINGS_DEFAULTS.thoroughness}
-            disabled={settings.renderer !== "beautiful"}
-            onChange={(v) => handleUpdate({ thoroughness: v, preset: "custom-manual" })}
           />
 
           <hr className="border-gh-border" />
