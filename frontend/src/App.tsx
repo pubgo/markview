@@ -45,9 +45,6 @@ const GraphView = lazy(() =>
 const OutlineGraphView = lazy(() =>
   import("./components/OutlineGraphView").then((m) => ({ default: m.OutlineGraphView })),
 );
-const OutlineGravityView = lazy(() =>
-  import("./components/OutlineGravityView").then((m) => ({ default: m.OutlineGravityView })),
-);
 const OutlineTreeView = lazy(() =>
   import("./components/OutlineTreeView").then((m) => ({ default: m.OutlineTreeView })),
 );
@@ -108,9 +105,7 @@ export function App() {
     }
   });
   const [showGraph, setShowGraph] = useState(false);
-  const [graphViewMode, setGraphViewMode] = useState<"link" | "outline" | "gravity" | "tree">(
-    "link",
-  );
+  const [graphViewMode, setGraphViewMode] = useState<"link" | "outline" | "tree">("link");
   const [isExportingAllPdf, setIsExportingAllPdf] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const knownFileIds = useRef<Set<string>>(new Set());
@@ -643,35 +638,6 @@ export function App() {
           <button
             type="button"
             className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
-              showGraph && graphViewMode === "gravity"
-                ? "bg-gh-bg-hover border-gh-border"
-                : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
-            } text-gh-header-text`}
-            onClick={() => {
-              setGraphViewMode("gravity");
-              setShowGraph(true);
-            }}
-            aria-label="Gravity graph"
-            aria-pressed={showGraph && graphViewMode === "gravity"}
-            title="重力视图"
-          >
-            <svg
-              className="size-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M12 2v4m0 12v4M2 12h4m12 0h4m-3.5-8.5l2.5 2.5m-9 9l2.5 2.5m0-9l-2.5 2.5m9-9l-2.5 2.5"
-              />
-            </svg>
-          </button>
-          <button
-            type="button"
-            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
               showGraph && graphViewMode === "tree"
                 ? "bg-gh-bg-hover border-gh-border"
                 : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
@@ -757,8 +723,6 @@ export function App() {
               >
                 {graphViewMode === "outline" ? (
                   <OutlineGraphView onClose={() => setShowGraph(false)} />
-                ) : graphViewMode === "gravity" ? (
-                  <OutlineGravityView onClose={() => setShowGraph(false)} />
                 ) : graphViewMode === "tree" ? (
                   <OutlineTreeView onClose={() => setShowGraph(false)} />
                 ) : (
