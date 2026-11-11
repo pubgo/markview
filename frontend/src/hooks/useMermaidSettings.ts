@@ -3,7 +3,7 @@ import { useCallback, useSyncExternalStore } from "react";
 const STORAGE_KEY = "markview-mermaid-settings";
 
 export interface MermaidSettings {
-  renderer: "native" | "beautiful" | "pele";
+  renderer: "pele" | "native";
   nodeSpacing: number;
   layerSpacing: number;
   thoroughness: number;
@@ -20,7 +20,7 @@ export interface MermaidSettings {
 }
 
 export const MERMAID_SETTINGS_DEFAULTS: MermaidSettings = {
-  renderer: "native",
+  renderer: "pele",
   nodeSpacing: 32,
   layerSpacing: 56,
   thoroughness: 5,
@@ -28,6 +28,11 @@ export const MERMAID_SETTINGS_DEFAULTS: MermaidSettings = {
   theme: "auto",
   preset: "balanced",
 };
+
+function normalizeRenderer(value: unknown): MermaidSettings["renderer"] {
+  if (value === "native") return "native";
+  return "pele"; // missing, "pele", "beautiful", or anything else
+}
 
 export interface MermaidPreset {
   key: string;
@@ -82,7 +87,9 @@ function readFromStorage(): MermaidSettings {
     const raw = localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw);
-      cachedSettings = { ...MERMAID_SETTINGS_DEFAULTS, ...parsed };
+      const merged = { ...MERMAID_SETTINGS_DEFAULTS, ...parsed };
+      merged.renderer = normalizeRenderer(parsed.renderer);
+      cachedSettings = merged;
       return cachedSettings!;
     }
   } catch {
