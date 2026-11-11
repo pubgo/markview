@@ -3,24 +3,44 @@ import {
   type MermaidSettings,
 } from "../hooks/useMermaidSettings";
 
-export const BEAUTIFUL_MERMAID_PALETTES: Record<string, Record<string, string>> = {
+const GITHUB_LIGHT = {
+  bg: "#ffffff",
+  surface: "#f6f8fa",
+  fg: "#24292f",
+  line: "#57606a",
+  border: "#0969da",
+  muted: "#656d76",
+  accent: "#0969da",
+};
+
+const GITHUB_DARK = {
+  bg: "#0d1117",
+  surface: "#161b22",
+  fg: "#e6edf3",
+  line: "#8b949e",
+  border: "#58a6ff",
+  muted: "#8b949e",
+  accent: "#4493f8",
+};
+
+export const MERMAID_PALETTES: Record<string, Record<string, string>> = {
   "github-light": {
-    bg: "#ffffff",
-    fg: "#1f2328",
-    line: "#57606a",
-    accent: "#0969da",
-    muted: "#656d76",
-    surface: "#f6f8fa",
-    border: "#d0d7de",
+    bg: GITHUB_LIGHT.bg,
+    fg: GITHUB_LIGHT.fg,
+    line: GITHUB_LIGHT.line,
+    accent: GITHUB_LIGHT.accent,
+    muted: GITHUB_LIGHT.muted,
+    surface: GITHUB_LIGHT.surface,
+    border: GITHUB_LIGHT.border,
   },
   "github-dark": {
-    bg: "#0d1117",
-    fg: "#e6edf3",
-    line: "#8b949e",
-    accent: "#4493f8",
-    muted: "#8b949e",
-    surface: "#161b22",
-    border: "#30363d",
+    bg: GITHUB_DARK.bg,
+    fg: GITHUB_DARK.fg,
+    line: GITHUB_DARK.line,
+    accent: GITHUB_DARK.accent,
+    muted: GITHUB_DARK.muted,
+    surface: GITHUB_DARK.surface,
+    border: GITHUB_DARK.border,
   },
   "high-contrast-light": {
     bg: "#ffffff",
@@ -100,38 +120,33 @@ function isDarkTheme(): boolean {
   return document.documentElement.getAttribute("data-theme") === "dark";
 }
 
-export function resolveBeautifulMermaidPalette(
-  settings: MermaidSettings,
-): Record<string, string> {
+export function resolveMermaidPalette(settings: MermaidSettings): Record<string, string> {
   const isDark = isDarkTheme();
 
   switch (settings.theme) {
     case "github-light":
-      return BEAUTIFUL_MERMAID_PALETTES["github-light"];
+      return MERMAID_PALETTES["github-light"];
     case "github-dark":
-      return BEAUTIFUL_MERMAID_PALETTES["github-dark"];
+      return MERMAID_PALETTES["github-dark"];
     case "tokyo-night":
-      return isDark
-        ? BEAUTIFUL_MERMAID_PALETTES["tokyo-night-dark"]
-        : BEAUTIFUL_MERMAID_PALETTES["tokyo-night-light"];
+      return isDark ? MERMAID_PALETTES["tokyo-night-dark"] : MERMAID_PALETTES["tokyo-night-light"];
     case "nord":
-      return isDark
-        ? BEAUTIFUL_MERMAID_PALETTES["nord-dark"]
-        : BEAUTIFUL_MERMAID_PALETTES["nord-light"];
+      return isDark ? MERMAID_PALETTES["nord-dark"] : MERMAID_PALETTES["nord-light"];
     case "high-contrast":
       return isDark
-        ? BEAUTIFUL_MERMAID_PALETTES["high-contrast-dark"]
-        : BEAUTIFUL_MERMAID_PALETTES["high-contrast-light"];
+        ? MERMAID_PALETTES["high-contrast-dark"]
+        : MERMAID_PALETTES["high-contrast-light"];
     case "auto":
-      return isDark
-        ? BEAUTIFUL_MERMAID_PALETTES["github-dark"]
-        : BEAUTIFUL_MERMAID_PALETTES["github-light"];
+      return isDark ? MERMAID_PALETTES["github-dark"] : MERMAID_PALETTES["github-light"];
     default: // "custom"
-      return isDark
-        ? BEAUTIFUL_MERMAID_PALETTES["custom-dark"]
-        : BEAUTIFUL_MERMAID_PALETTES["custom-light"];
+      return isDark ? MERMAID_PALETTES["custom-dark"] : MERMAID_PALETTES["custom-light"];
   }
 }
+
+/** @deprecated Use resolveMermaidPalette */
+export const resolveBeautifulMermaidPalette = resolveMermaidPalette;
+/** @deprecated Use MERMAID_PALETTES */
+export const BEAUTIFUL_MERMAID_PALETTES = MERMAID_PALETTES;
 
 export function resolveCssColor(
   varName: string,
@@ -143,6 +158,26 @@ export function resolveCssColor(
   return undefined;
 }
 
+function applyGithubNativeVars(
+  out: Record<string, string | boolean>,
+  palette: typeof GITHUB_LIGHT,
+): void {
+  out.background = palette.bg;
+  out.edgeLabelBackground = palette.bg;
+  out.mainBkg = palette.surface;
+  out.primaryColor = palette.surface;
+  out.secondaryColor = palette.surface;
+  out.tertiaryColor = palette.surface;
+  out.clusterBkg = palette.surface;
+  out.primaryTextColor = palette.fg;
+  out.textColor = palette.fg;
+  out.titleColor = palette.fg;
+  out.lineColor = palette.line;
+  out.tertiaryTextColor = palette.muted;
+  out.primaryBorderColor = palette.border;
+  out.clusterBorder = palette.border;
+}
+
 export function resolveNativeMermaidThemeVariables(
   settings: MermaidSettings = getMermaidSettings(),
 ): Record<string, string | boolean> {
@@ -152,47 +187,47 @@ export function resolveNativeMermaidThemeVariables(
     fontFamily: "system-ui",
   };
 
-  if (settings.theme === "auto") {
-    const bg = resolveCssColor("--color-gh-bg");
-    const surface = resolveCssColor("--color-gh-bg-secondary");
-    const hover = resolveCssColor("--color-gh-bg-hover");
-    const fg = resolveCssColor("--color-gh-text");
-    const muted = resolveCssColor("--color-gh-text-secondary");
-    const border = resolveCssColor("--color-gh-border");
-    if (bg) {
-      out.background = bg;
-      out.edgeLabelBackground = bg;
-    }
-    if (surface) {
-      out.mainBkg = surface;
-      out.primaryColor = surface;
-    }
-    if (hover) {
-      out.secondaryColor = hover;
-      out.tertiaryColor = hover;
-      out.clusterBkg = hover;
-    } else if (surface) {
-      out.secondaryColor = surface;
-      out.tertiaryColor = surface;
-      out.clusterBkg = surface;
-    }
-    if (fg) {
-      out.primaryTextColor = fg;
-      out.textColor = fg;
-      out.titleColor = fg;
-    }
-    if (muted) {
-      out.lineColor = muted;
-      out.tertiaryTextColor = muted;
-    }
-    if (border) {
-      out.primaryBorderColor = border;
-      out.clusterBorder = border;
-    }
+  if (settings.theme === "github-light") {
+    applyGithubNativeVars(out, GITHUB_LIGHT);
+    out.darkMode = false;
+    return out;
+  }
+  if (settings.theme === "github-dark") {
+    applyGithubNativeVars(out, GITHUB_DARK);
+    out.darkMode = true;
     return out;
   }
 
-  const palette = resolveBeautifulMermaidPalette(settings);
+  if (settings.theme === "auto") {
+    const fallback = isDark ? GITHUB_DARK : GITHUB_LIGHT;
+    const bg = resolveCssColor("--color-gh-bg") ?? fallback.bg;
+    const surface = resolveCssColor("--color-gh-bg-secondary") ?? fallback.surface;
+    const hover = resolveCssColor("--color-gh-bg-hover") ?? surface;
+    const fg = resolveCssColor("--color-gh-text") ?? fallback.fg;
+    const muted = resolveCssColor("--color-gh-text-secondary") ?? fallback.muted;
+    const border = resolveCssColor("--color-gh-border") ?? fallback.border;
+    const accent =
+      resolveCssColor("--color-gh-accent") ?? (isDark ? GITHUB_DARK.border : GITHUB_LIGHT.border);
+
+    out.background = bg;
+    out.edgeLabelBackground = bg;
+    out.mainBkg = surface;
+    out.primaryColor = surface;
+    out.secondaryColor = hover;
+    out.tertiaryColor = hover;
+    out.clusterBkg = hover;
+    out.primaryTextColor = fg;
+    out.textColor = fg;
+    out.titleColor = fg;
+    out.lineColor = muted;
+    out.tertiaryTextColor = muted;
+    // Prefer accent for node borders (GitHub preview look); keep cluster on token border.
+    out.primaryBorderColor = accent;
+    out.clusterBorder = border;
+    return out;
+  }
+
+  const palette = resolveMermaidPalette(settings);
   out.background = palette.bg;
   out.edgeLabelBackground = palette.bg;
   out.mainBkg = palette.surface;
@@ -234,7 +269,7 @@ export function resolvePeleCssVariables(
     border = resolveCssColor("--color-gh-border");
     accent = resolveCssColor("--color-gh-accent") ?? (isDark ? "#4493f8" : "#0969da");
   } else {
-    const palette = resolveBeautifulMermaidPalette(settings);
+    const palette = resolveMermaidPalette(settings);
     bg = palette.bg;
     surface = palette.surface;
     surfaceAlt = palette.surface;
