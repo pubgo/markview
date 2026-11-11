@@ -3,17 +3,11 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { MermaidBlock } from "./MarkdownViewer";
 import { invalidateMermaidSettingsCache } from "../hooks/useMermaidSettings";
 
-const renderMermaidSVGMock = vi.fn();
-
 vi.mock("mermaid", () => ({
   default: {
     initialize: vi.fn(),
     render: vi.fn(),
   },
-}));
-
-vi.mock("beautiful-mermaid", () => ({
-  renderMermaidSVG: renderMermaidSVGMock,
 }));
 
 const renderPeleMock = vi.fn();
@@ -27,7 +21,7 @@ import mermaid from "mermaid";
 const writeTextMock = vi.fn().mockResolvedValue(undefined);
 const writeMock = vi.fn().mockResolvedValue(undefined);
 
-function setMermaidRenderer(renderer: "native" | "beautiful" | "pele") {
+function setMermaidRenderer(renderer: "native" | "pele") {
   localStorage.setItem("markview-mermaid-settings", JSON.stringify({ renderer }));
   invalidateMermaidSettingsCache();
 }
@@ -36,9 +30,6 @@ beforeEach(() => {
   localStorage.clear();
   invalidateMermaidSettingsCache();
   vi.clearAllMocks();
-  renderMermaidSVGMock.mockImplementation(() => {
-    throw new Error("beautiful-mermaid disabled in baseline tests");
-  });
   renderPeleMock.mockImplementation(() => {
     throw new Error("pele disabled in baseline tests");
   });
@@ -52,7 +43,27 @@ beforeEach(() => {
 });
 
 describe("MermaidBlock", () => {
-  it("defaults to native mermaid with base themeVariables", async () => {
+  it("defaults to pele renderer", async () => {
+    renderPeleMock.mockReturnValue({
+      svg: '<svg class="pele" width="360" height="180">pele</svg>',
+      width: 360,
+      height: 180,
+      links: [],
+      type: "flowchart",
+      mermaidType: "flowchart",
+    });
+
+    const { container } = render(<MermaidBlock code="graph TD; A-->B" />);
+
+    await waitFor(() => {
+      expect(container.querySelector("svg.pele")).toBeTruthy();
+    });
+    expect(renderPeleMock).toHaveBeenCalled();
+    expect(vi.mocked(mermaid.render)).not.toHaveBeenCalled();
+  });
+
+  it("uses native mermaid with neo look and elk layout when selected", async () => {
+    setMermaidRenderer("native");
     vi.mocked(mermaid.render).mockResolvedValue({
       svg: '<svg width="360" height="180">native</svg>',
       bindFunctions: undefined,
@@ -64,10 +75,11 @@ describe("MermaidBlock", () => {
     await waitFor(() => {
       expect(vi.mocked(mermaid.render)).toHaveBeenCalled();
     });
-    expect(renderMermaidSVGMock).not.toHaveBeenCalled();
     expect(vi.mocked(mermaid.initialize)).toHaveBeenCalledWith(
       expect.objectContaining({
         theme: "base",
+        look: "neo",
+        layout: "elk",
         securityLevel: "strict",
         suppressErrorRendering: true,
         themeVariables: expect.objectContaining({
@@ -76,10 +88,6 @@ describe("MermaidBlock", () => {
         flowchart: expect.objectContaining({
           htmlLabels: true,
           useMaxWidth: false,
-          nodeSpacing: 50,
-          rankSpacing: 50,
-          padding: 15,
-          curve: "basis",
         }),
       }),
     );
@@ -102,7 +110,6 @@ describe("MermaidBlock", () => {
       expect(container.querySelector("svg.pele")).toBeTruthy();
     });
     expect(renderPeleMock).toHaveBeenCalled();
-    expect(renderMermaidSVGMock).not.toHaveBeenCalled();
     expect(vi.mocked(mermaid.render)).not.toHaveBeenCalled();
   });
 
@@ -126,114 +133,8 @@ describe("MermaidBlock", () => {
     expect(vi.mocked(mermaid.render)).toHaveBeenCalled();
   });
 
-  it("uses beautiful-mermaid renderer when available for supported diagrams", async () => {
-    setMermaidRenderer("beautiful");
-    renderMermaidSVGMock.mockReturnValue('<svg width="360" height="180">diagram</svg>');
-
-    render(<MermaidBlock code="graph TD; A-->B" />);
-
-    await waitFor(() => {
-      const beautifulCalls = renderMermaidSVGMock.mock.calls.length;
-      const mermaidCalls = vi.mocked(mermaid.render).mock.calls.length;
-      expect(beautifulCalls + mermaidCalls).toBeGreaterThan(0);
-    });
-
-    const beautifulCalls = renderMermaidSVGMock.mock.calls.length;
-    const mermaidCalls = vi.mocked(mermaid.render).mock.calls.length;
-    if (beautifulCalls > 0) {
-      expect(mermaidCalls).toBe(0);
-    }
-  });
-
-  it("still uses beautiful-mermaid for simple sequence diagrams", async () => {
-    setMermaidRenderer("beautiful");
-    renderMermaidSVGMock.mockReturnValue('<svg width="360" height="180">diagram</svg>');
-
-    render(<MermaidBlock code={"sequenceDiagram\n    A->>B: hello\n    B-->>A: hi"} />);
-
-    await waitFor(() => {
-      expect(renderMermaidSVGMock).toHaveBeenCalled();
-    });
-    expect(vi.mocked(mermaid.render)).not.toHaveBeenCalled();
-  });
-
-  it("falls back to native mermaid for sequence diagrams using directives beautiful-mermaid cannot render", async () => {
-    setMermaidRenderer("beautiful");
-    renderMermaidSVGMock.mockReturnValue('<svg width="360" height="180">diagram</svg>');
-    vi.mocked(mermaid.render).mockResolvedValue({
-      svg: '<svg width="360" height="180">native</svg>',
-      bindFunctions: undefined,
-      diagramType: "sequence",
-    });
-
-    const code = [
-      "sequenceDiagram",
-      "    autonumber",
-      "    participant C as Client",
-      "    participant A as Agent",
-      "    rect rgb(240, 248, 255)",
-      "    Note over C,A: handshake",
-      "    C->>A: initialize",
-      "    A-->>C: ok",
-      "    end",
-    ].join("\n");
-
-    render(<MermaidBlock code={code} />);
-
-    await waitFor(() => {
-      expect(vi.mocked(mermaid.render)).toHaveBeenCalled();
-    });
-    expect(renderMermaidSVGMock).not.toHaveBeenCalled();
-  });
-
-  it("passes a single system font and strips google font imports from beautiful-mermaid svg", async () => {
-    setMermaidRenderer("beautiful");
-    renderMermaidSVGMock.mockImplementation((_code: string, opts?: Record<string, unknown>) => {
-      expect(opts?.font).toBe("system-ui");
-      return [
-        '<svg width="200" height="100" style="--bg:#fff;--fg:#111">',
-        "<style>",
-        "@import url('https://fonts.googleapis.com/css2?family=system-ui:wght@400');",
-        "text { font-family: system-ui; }",
-        "</style>",
-        "<text>label</text>",
-        "</svg>",
-      ].join("");
-    });
-
-    const { container } = render(<MermaidBlock code="graph TD; A-->B" />);
-
-    await waitFor(() => {
-      expect(container.querySelector("svg")).toBeTruthy();
-    });
-
-    expect(renderMermaidSVGMock).toHaveBeenCalled();
-    expect(container.innerHTML).not.toContain("@import");
-    expect(container.innerHTML).toContain("label");
-  });
-
-  it("falls back to mermaid renderer when beautiful-mermaid fails", async () => {
-    setMermaidRenderer("beautiful");
-    renderMermaidSVGMock.mockImplementation(() => {
-      throw new Error("beautiful render failed");
-    });
-    vi.mocked(mermaid.render).mockResolvedValue({
-      svg: "<svg>fallback</svg>",
-      bindFunctions: undefined,
-      diagramType: "flowchart",
-    });
-
-    render(<MermaidBlock code="graph TD; A-->B" />);
-
-    await waitFor(() => {
-      expect(screen.getByTitle("Copy code")).toBeInTheDocument();
-    });
-
-    expect(renderMermaidSVGMock).toHaveBeenCalled();
-    expect(vi.mocked(mermaid.render)).toHaveBeenCalled();
-  });
-
   it("shows copy button when mermaid renders successfully", async () => {
+    setMermaidRenderer("native");
     vi.mocked(mermaid.render).mockResolvedValue({
       svg: "<svg>diagram</svg>",
       bindFunctions: undefined,
