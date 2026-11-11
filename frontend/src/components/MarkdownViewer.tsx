@@ -574,6 +574,16 @@ function normalizeMermaidSvg(
     }
     svgEl.setAttribute("style", prevStyle ? `${prevStyle};${normalizedStyle}` : normalizedStyle);
 
+    // Pele emits cluster rects with fill-opacity="0.5". Our --pele-surface-alt
+    // tokens are solid (native clusterBkg parity); keep attributes opaque so
+    // html-to-image / PNG copy don't wash clusters out against the page.
+    const className = svgEl.getAttribute("class") ?? "";
+    if (/\bpele\b/.test(className)) {
+      for (const rect of svgEl.querySelectorAll(".pele-cluster > rect")) {
+        rect.setAttribute("fill-opacity", "1");
+      }
+    }
+
     return new XMLSerializer().serializeToString(svgEl);
   } catch {
     return svg;
@@ -1550,6 +1560,26 @@ function DiagramImageCopyButton({ svg }: { svg: string }) {
   );
 }
 
+function bakePeleThemeIntoSvg(svgEl: Element): void {
+  const className = svgEl.getAttribute("class") ?? "";
+  if (!/\bpele\b/.test(className)) return;
+  // Standalone SVG (clipboard PNG) cannot inherit --pele-* from the page;
+  // without baked values Pele falls back to its light defaults.
+  const vars = resolvePeleCssVariables(getMermaidSettings());
+  for (const [name, value] of Object.entries(vars)) {
+    if (svgEl instanceof SVGElement || svgEl instanceof HTMLElement) {
+      svgEl.style.setProperty(name, value);
+    } else {
+      const prev = svgEl.getAttribute("style") ?? "";
+      svgEl.setAttribute("style", `${prev};${name}:${value}`);
+    }
+  }
+  // Match on-screen CSS: solid cluster fills (Pele defaults to 0.5).
+  for (const rect of svgEl.querySelectorAll(".pele-cluster > rect")) {
+    rect.setAttribute("fill-opacity", "1");
+  }
+}
+
 function svgToPngBlob(svgString: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const parser = new DOMParser();
@@ -1560,6 +1590,7 @@ function svgToPngBlob(svgString: string): Promise<Blob> {
     if (!svgEl.getAttribute("xmlns")) {
       svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     }
+    bakePeleThemeIntoSvg(svgEl);
 
     // Extract dimensions from the SVG element
     const widthAttr = svgEl.getAttribute("width");
