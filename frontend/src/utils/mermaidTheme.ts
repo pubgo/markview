@@ -207,7 +207,7 @@ export function resolveNativeMermaidThemeVariables(
     const muted = resolveCssColor("--color-gh-text-secondary") ?? fallback.muted;
     const border = resolveCssColor("--color-gh-border") ?? fallback.border;
     const accent =
-      resolveCssColor("--color-gh-accent") ?? (isDark ? GITHUB_DARK.border : GITHUB_LIGHT.border);
+      resolveCssColor("--color-gh-accent") ?? (isDark ? GITHUB_DARK.accent : GITHUB_LIGHT.accent);
 
     out.background = bg;
     out.edgeLabelBackground = bg;

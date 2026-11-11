@@ -39,7 +39,9 @@ describe("resolveNativeMermaidThemeVariables", () => {
     expect(vars.darkMode).toBe(true);
     expect(vars.background).toBe("#0d1117");
     expect(vars.mainBkg).toBe("#161b22");
-    expect(vars.primaryBorderColor).toBe("#30363d");
+    // auto uses accent for node borders (GitHub preview); cluster keeps token border
+    expect(vars.primaryBorderColor).toBe("#4493f8");
+    expect(vars.clusterBorder).toBe("#30363d");
     expect(vars.primaryTextColor).toBe("#e6edf3");
     expect(vars.lineColor).toBe("#8b949e");
     expect(vars.edgeLabelBackground).toBe("#0d1117");
