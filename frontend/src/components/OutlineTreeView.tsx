@@ -1,264 +1,16 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { Graph, idOf, positionOf, treeToGraphData } from "@antv/g6";
-import type { Outline } from "../hooks/useApi";
 import { fetchOutline } from "../hooks/useApi";
 import { buildFileUrl } from "../utils/groups";
-
-const COLORS = [
-  "#5B8FF9",
-  "#F6BD16",
-  "#5AD8A6",
-  "#945FB9",
-  "#E86452",
-  "#6DC8EC",
-  "#FF99C3",
-  "#1E9493",
-  "#FF9845",
-  "#5D7092",
-];
-
-interface TreeDataNode {
-  id: string;
-  data: {
-    value: string;
-    depth?: number;
-    fileId?: string;
-    group?: string;
-    targetFileId?: string;
-    targetGroup?: string;
-    isFile?: boolean;
-    isH1?: boolean;
-    isH2?: boolean;
-    isLink?: boolean;
-    hasLinks?: boolean;
-    hasChildren?: boolean;
-    fileColorIndex?: number;
-  };
-  children?: TreeDataNode[];
-}
-
-type OutlineFile = Outline["files"][number];
-
-const MAX_LINK_DEPTH = 4;
-
-function buildFileOutline(
-  file: OutlineFile,
-  outline: Outline,
-  fileIds: Set<string>,
-  fileById: Map<string, OutlineFile>,
-  fileColorIndex: number,
-  visited: Set<string>,
-  depth: number,
-  pathPrefix: string,
-  collapsedIds: Set<string>,
-): TreeDataNode[] {
-  if (depth >= MAX_LINK_DEPTH || visited.has(file.id)) return [];
-  visited.add(file.id);
-
-  const idPrefix = pathPrefix ? `${pathPrefix}_` : "";
-
-  const h1Nodes: TreeDataNode[] = [];
-  for (let i = 0; i < file.headings.length; i++) {
-    const h = file.headings[i];
-    if (h.level === 1) {
-      const h2Nodes: TreeDataNode[] = [];
-      for (let j = i + 1; j < file.headings.length; j++) {
-        const h2 = file.headings[j];
-        if (h2.level === 1) break;
-        if (h2.level === 2) {
-          const linked = (h2.linkedFileIds ?? []).filter((id) => fileIds.has(id));
-          const h2Id = `${idPrefix}n_${file.id}_${j}`.replace(/-/g, "_");
-
-          const linkChildren: TreeDataNode[] = [];
-          for (const tid of linked) {
-            const target = fileById.get(tid);
-            const targetFile = outline.files.find((f) => f.id === tid);
-            const linkId = `${idPrefix}link_${file.id}_${j}_${tid}`.replace(/-/g, "_");
-            const targetColorIdx = targetFile
-              ? outline.files.indexOf(targetFile) % COLORS.length
-              : 0;
-            const hasTargetContent = !!targetFile?.headings.length;
-            const targetOutline =
-              hasTargetContent && !collapsedIds.has(linkId)
-                ? buildFileOutline(
-                    targetFile,
-                    outline,
-                    fileIds,
-                    fileById,
-                    targetColorIdx,
-                    new Set(visited),
-                    depth + 1,
-                    linkId,
-                    collapsedIds,
-                  )
-                : [];
-
-            linkChildren.push({
-              id: linkId,
-              data: {
-                value: `→ ${target?.name ?? tid}`,
-                targetFileId: tid,
-                targetGroup: target?.group ?? "default",
-                isLink: true,
-                hasChildren: hasTargetContent,
-                fileColorIndex: targetColorIdx,
-              },
-              children: targetOutline.length > 0 ? targetOutline : undefined,
-            });
-          }
-
-          const hasLinks = linkChildren.length > 0;
-          const h2Collapsed = collapsedIds.has(h2Id);
-          h2Nodes.push({
-            id: h2Id,
-            data: {
-              value: h2.text,
-              fileId: file.id,
-              group: file.group,
-              isH2: true,
-              hasLinks,
-              hasChildren: hasLinks,
-              fileColorIndex,
-            },
-            children: hasLinks && !h2Collapsed ? linkChildren : undefined,
-          });
-        }
-      }
-
-      const h1Id = `${idPrefix}h1_${file.id}_${i}`.replace(/-/g, "_");
-      const h1Collapsed = collapsedIds.has(h1Id);
-      h1Nodes.push({
-        id: h1Id,
-        data: {
-          value: h.text,
-          fileId: file.id,
-          group: file.group,
-          isH1: true,
-          hasChildren: h2Nodes.length > 0,
-          fileColorIndex,
-        },
-        children: h2Nodes.length > 0 && !h1Collapsed ? h2Nodes : undefined,
-      });
-    }
-  }
-
-  visited.delete(file.id);
-  return h1Nodes;
-}
-
-function findRootFiles(outline: Outline): OutlineFile[] {
-  const fileIds = new Set(outline.files.map((f) => f.id));
-  const linkedTo = new Set<string>();
-  for (const file of outline.files) {
-    for (const h of file.headings) {
-      for (const tid of h.linkedFileIds ?? []) {
-        if (fileIds.has(tid)) linkedTo.add(tid);
-      }
-    }
-  }
-  return outline.files.filter((f) => !linkedTo.has(f.id));
-}
+import {
+  collectDefaultCollapsedIds,
+  outlineToTreeData,
+  OUTLINE_TREE_COLORS,
+  OUTLINE_TREE_ROOT_ID,
+  type OutlineTreeNode,
+} from "./outlineTreeModel";
 
 const MANY_FILES_THRESHOLD = 6;
-
-/** 默认折叠：H2 和链接节点；文档名、H1 展开以展示层级。文件多时默认折叠文件节点以减小宽度。 */
-function collectDefaultCollapsedIds(outline: Outline): Set<string> {
-  const ids = new Set<string>();
-  const fileIds = new Set(outline.files.map((f) => f.id));
-  const safe = (s: string) => s.replace(/-/g, "_");
-  const collapseFiles = outline.files.length > MANY_FILES_THRESHOLD;
-
-  function collectFromFile(file: OutlineFile, pathPrefix: string, visited: Set<string>) {
-    if (visited.has(file.id)) return;
-    visited.add(file.id);
-    const prefix = pathPrefix ? `${pathPrefix}_` : "";
-    for (let i = 0; i < file.headings.length; i++) {
-      const h = file.headings[i];
-      if (h.level !== 1) continue;
-      for (let j = i + 1; j < file.headings.length; j++) {
-        const h2 = file.headings[j];
-        if (h2.level === 1) break;
-        if (h2.level === 2) {
-          ids.add(`${prefix}n_${safe(file.id)}_${j}`);
-          const linked = (h2.linkedFileIds ?? []).filter((id) => fileIds.has(id));
-          for (const tid of linked) {
-            const targetFile = outline.files.find((f) => f.id === tid);
-            if (targetFile?.headings.length) {
-              ids.add(`${prefix}link_${safe(file.id)}_${j}_${safe(tid)}`);
-              collectFromFile(
-                targetFile,
-                `${prefix}link_${safe(file.id)}_${j}_${safe(tid)}`,
-                visited,
-              );
-            }
-          }
-        }
-      }
-    }
-    visited.delete(file.id);
-  }
-
-  const rootFiles = findRootFiles(outline);
-  const files = rootFiles.length > 0 ? rootFiles : outline.files;
-  for (const file of files) {
-    if (collapseFiles) ids.add(`fl_${safe(file.id)}`);
-    collectFromFile(file, "", new Set());
-  }
-  return ids;
-}
-
-function outlineToTreeData(outline: Outline, collapsedIds: Set<string>): TreeDataNode {
-  const fileIds = new Set(outline.files.map((f) => f.id));
-  const fileById = new Map(outline.files.map((f) => [f.id, f]));
-  const rootFiles = findRootFiles(outline);
-  const fileNodes: TreeDataNode[] = (rootFiles.length > 0 ? rootFiles : outline.files).map(
-    (file, idx) => {
-      const fileIdx = outline.files.findIndex((f) => f.id === file.id);
-      const fileColorIndex = (fileIdx >= 0 ? fileIdx : idx) % COLORS.length;
-      const h1Nodes = buildFileOutline(
-        file,
-        outline,
-        fileIds,
-        fileById,
-        fileColorIndex,
-        new Set(),
-        0,
-        "",
-        collapsedIds,
-      );
-
-      const fileId = `fl_${file.id.replace(/-/g, "_")}`;
-      const fileCollapsed = collapsedIds.has(fileId);
-      return {
-        id: fileId,
-        data: {
-          value: file.name,
-          fileId: file.id,
-          group: file.group,
-          isFile: true,
-          hasChildren: h1Nodes.length > 0,
-          fileColorIndex,
-        },
-        children: h1Nodes.length > 0 && !fileCollapsed ? h1Nodes : undefined,
-      };
-    },
-  );
-
-  const rootCollapsed = collapsedIds.has("root");
-  const root: TreeDataNode = {
-    id: "root",
-    data: { value: "文档" },
-    children: rootCollapsed ? undefined : fileNodes,
-  };
-
-  function assignDepth(node: TreeDataNode, depth: number) {
-    node.data.depth = depth;
-    node.children?.forEach((c) => assignDepth(c, depth + 1));
-  }
-  assignDepth(root, 0);
-
-  return root;
-}
 
 /** 根据节点文本计算宽度 */
 function getNodeWidth(text: string, isRoot: boolean): number {
@@ -356,7 +108,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
   }, []);
 
   const handleNodeClick = useCallback(
-    (_nodeId: string, d: TreeDataNode["data"]) => {
+    (_nodeId: string, d: OutlineTreeNode["data"]) => {
       if (d.isLink && d.targetFileId && d.targetGroup) {
         if (onSelectFile) {
           onSelectFile(d.targetFileId, d.targetGroup);
@@ -382,14 +134,14 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
     const treeData = outlineToTreeData(outline, collapsedIds);
     const graphData = treeToGraphData(treeData, {
       getNodeData: (datum, depth) => {
-        const node = datum as TreeDataNode;
+        const node = datum as OutlineTreeNode;
         const value = node.data?.value ?? node.id;
         const base = node.children
           ? { id: node.id, data: node.data, depth, children: node.children.map((c) => c.id) }
           : { id: node.id, data: node.data, depth };
         return { ...base, value };
       },
-      getChildren: (datum) => (datum as TreeDataNode).children ?? [],
+      getChildren: (datum) => (datum as OutlineTreeNode).children ?? [],
     });
 
     const isDark = document.documentElement.getAttribute("data-theme") === "dark";
@@ -397,7 +149,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
     const fillColor = isDark ? "#21262d" : "#ffffff";
     const rootFill = isDark ? "#30363d" : "#EFF0F0";
 
-    const rootId = "root";
+    const rootId = OUTLINE_TREE_ROOT_ID;
     let g: InstanceType<typeof Graph> | null = null;
 
     const graph = new Graph({
@@ -423,9 +175,9 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
           const parent = g?.getParentData?.(nodeId, "tree");
           const direction = getNodeSide(d, parent);
           const colorIdx = (d.data?.fileColorIndex as number) ?? 0;
-          const color = COLORS[colorIdx % COLORS.length] ?? "#5D7092";
+          const color = OUTLINE_TREE_COLORS[colorIdx % OUTLINE_TREE_COLORS.length] ?? "#5D7092";
 
-          const data = d.data as TreeDataNode["data"];
+          const data = d.data as OutlineTreeNode["data"];
           const collapsed = collapsedIds.has(nodeId);
           const hasChildren = (d as { children?: unknown[] }).children?.length;
           const canCollapse =
@@ -478,7 +230,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
         style: (d: { source: string; target: string }) => {
           const targetData = g?.getNodeData(d.target);
           const colorIdx = (targetData?.data?.fileColorIndex as number) ?? 0;
-          const color = COLORS[colorIdx % COLORS.length] ?? "#99ADD1";
+          const color = OUTLINE_TREE_COLORS[colorIdx % OUTLINE_TREE_COLORS.length] ?? "#99ADD1";
           return { lineWidth: 2, stroke: color };
         },
       },
@@ -502,7 +254,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
       const nodeId = e.target?.id;
       if (!nodeId) return;
       const nodeData = graph.getNodeData(nodeId);
-      const data = nodeData?.data as TreeDataNode["data"] | undefined;
+      const data = nodeData?.data as OutlineTreeNode["data"] | undefined;
       const canCollapse =
         (data?.isFile && data?.hasChildren) ||
         (data?.isH1 && data?.hasChildren) ||
