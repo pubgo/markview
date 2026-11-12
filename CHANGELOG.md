@@ -2,9 +2,20 @@
 
 ## Unreleased
 
-- feat: 移除图谱「缩进树」；保留链接图 / 结构图
-- feat: 移除 beautiful-mermaid；原生 Mermaid 使用 neo + ELK 并贴近 GitHub 配色；引擎仅 Pele（默认）/ 原生
-- feat: 移除图谱「重力视图」；保留链接图 / 结构图
+## v0.25.0 - 2026-11-12
+
+Mermaid 引擎收敛为 Pele（默认）/ 原生，图谱只保留链接图与结构图；长文 PDF 导出改为分条截取分页。
+
+### New Features 🎉
+- feat: 移除 beautiful-mermaid；原生 Mermaid 使用 neo + ELK，配色贴近 GitHub 预览；引擎仅 **Pele（默认）** / 原生
+- feat: 移除图谱「重力视图」与「缩进树」；保留链接图 / 结构图
+- feat: 长 Markdown PDF 导出改为条带截取分页，避免超高内容丢失
+
+### Fix bug 🐛
+- fix: Pele Mermaid 子图/集群背景保持实色，避免导出发灰
+
+### Other Changes
+- docs: 对齐 PDF / CI 静态导出说明与 strip capture；补充相关 design/plan
 
 ## v0.24.0 - 2026-11-04
 
