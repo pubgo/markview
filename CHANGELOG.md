@@ -2,8 +2,9 @@
 
 ## Unreleased
 
+- feat: 移除图谱「缩进树」；保留链接图 / 结构图
 - feat: 移除 beautiful-mermaid；原生 Mermaid 使用 neo + ELK 并贴近 GitHub 配色；引擎仅 Pele（默认）/ 原生
-- feat: 移除图谱「重力视图」；保留链接图 / 结构图 / 缩进树
+- feat: 移除图谱「重力视图」；保留链接图 / 结构图
 
 ## v0.24.0 - 2026-11-04
 

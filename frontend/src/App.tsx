@@ -45,9 +45,6 @@ const GraphView = lazy(() =>
 const OutlineGraphView = lazy(() =>
   import("./components/OutlineGraphView").then((m) => ({ default: m.OutlineGraphView })),
 );
-const OutlineTreeView = lazy(() =>
-  import("./components/OutlineTreeView").then((m) => ({ default: m.OutlineTreeView })),
-);
 
 const WIDTH_STORAGE_KEY = "markview-layout-width";
 const VIEWMODE_STORAGE_KEY = "markview-sidebar-viewmode";
@@ -105,7 +102,7 @@ export function App() {
     }
   });
   const [showGraph, setShowGraph] = useState(false);
-  const [graphViewMode, setGraphViewMode] = useState<"link" | "outline" | "tree">("link");
+  const [graphViewMode, setGraphViewMode] = useState<"link" | "outline">("link");
   const [isExportingAllPdf, setIsExportingAllPdf] = useState(false);
   const [status, setStatus] = useState<Status | null>(null);
   const knownFileIds = useRef<Set<string>>(new Set());
@@ -635,35 +632,6 @@ export function App() {
               />
             </svg>
           </button>
-          <button
-            type="button"
-            className={`flex items-center justify-center rounded-md p-1.5 cursor-pointer transition-colors duration-150 border ${
-              showGraph && graphViewMode === "tree"
-                ? "bg-gh-bg-hover border-gh-border"
-                : "bg-transparent border-gh-border hover:bg-gh-bg-hover"
-            } text-gh-header-text`}
-            onClick={() => {
-              setGraphViewMode("tree");
-              setShowGraph(true);
-            }}
-            aria-label="Indented tree"
-            aria-pressed={showGraph && graphViewMode === "tree"}
-            title="缩进树"
-          >
-            <svg
-              className="size-5"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth={1.5}
-              viewBox="0 0 24 24"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                d="M3.75 6.75h16.5M3.75 12h16.5m-7.5-5.25H12"
-              />
-            </svg>
-          </button>
           <WidthToggle isWide={isWide} onToggle={() => setIsWide((v) => !v)} />
           <button
             type="button"
@@ -723,8 +691,6 @@ export function App() {
               >
                 {graphViewMode === "outline" ? (
                   <OutlineGraphView onClose={() => setShowGraph(false)} />
-                ) : graphViewMode === "tree" ? (
-                  <OutlineTreeView onClose={() => setShowGraph(false)} />
                 ) : (
                   <GraphView onClose={() => setShowGraph(false)} />
                 )}
