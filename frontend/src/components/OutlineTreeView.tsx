@@ -209,7 +209,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
           const isRoot = nodeId === rootId;
           const parent = g?.getParentData?.(nodeId, "tree");
           const direction = getNodeSide(d, parent);
-          const data = d.data as OutlineTreeNode["data"];
+          const data = d.data as unknown as OutlineTreeNode["data"] | undefined;
           const collapsed = collapsedIds.has(nodeId);
           const hasChildren = (d as { children?: unknown[] }).children?.length;
           const canCollapse =
@@ -275,7 +275,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
       const nodeId = e.target?.id;
       if (!nodeId) return;
       const nodeData = graph.getNodeData(nodeId);
-      const data = nodeData?.data as OutlineTreeNode["data"] | undefined;
+      const data = nodeData?.data as unknown as OutlineTreeNode["data"] | undefined;
       const canCollapse =
         (data?.isFile && data?.hasChildren) ||
         (data?.isH1 && data?.hasChildren) ||

@@ -15,7 +15,7 @@ export const OUTLINE_TREE_COLORS = [
   "#5D7092",
 ];
 
-export interface OutlineTreeNodeData {
+export interface OutlineTreeNodeData extends Record<string, unknown> {
   value: string;
   depth?: number;
   fileId?: string;
