@@ -1,18 +1,32 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Graph, idOf, positionOf, treeToGraphData } from "@antv/g6";
+import type { Outline } from "../hooks/useApi";
 import { fetchOutline } from "../hooks/useApi";
 import { buildFileUrl } from "../utils/groups";
+import { OutlineTreeList } from "./OutlineTreeList";
 import {
   collectDefaultCollapsedIds,
   outlineToTreeData,
-  OUTLINE_TREE_COLORS,
   OUTLINE_TREE_ROOT_ID,
   type OutlineTreeNode,
 } from "./outlineTreeModel";
 
 const MANY_FILES_THRESHOLD = 6;
+const LAYOUT_DIRECTION_KEY = "markview-outline-layout-direction";
+const PRESENTATION_KEY = "markview-outline-tree-mode";
 
-/** 根据节点文本计算宽度 */
+type Presentation = "list" | "mindmap";
+
+function readPresentation(): Presentation {
+  try {
+    const v = localStorage.getItem(PRESENTATION_KEY);
+    if (v === "list" || v === "mindmap") return v;
+  } catch {
+    /* ignore */
+  }
+  return "list";
+}
+
 function getNodeWidth(text: string, isRoot: boolean): number {
   const padding = isRoot ? 40 : 24;
   const len = typeof text === "string" ? text.length : 0;
@@ -29,7 +43,6 @@ function getNodeSize(
   return [width, height];
 }
 
-/** 判断节点在根左侧还是右侧 */
 function getNodeSide(
   nodeData: { id: string; style?: { x?: number; y?: number } },
   parentData: { id: string; style?: { x?: number; y?: number } } | undefined,
@@ -46,13 +59,12 @@ interface OutlineTreeViewProps {
   embedded?: boolean;
 }
 
-const LAYOUT_DIRECTION_KEY = "markview-outline-layout-direction";
-
 export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: OutlineTreeViewProps) {
   const [outline, setOutline] = useState<Outline | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [collapsedIds, setCollapsedIds] = useState<Set<string>>(() => new Set());
+  const [presentation, setPresentation] = useState<Presentation>(() => readPresentation());
   const [layoutDirection, setLayoutDirection] = useState<"H" | "V">(() => {
     try {
       const v = localStorage.getItem(LAYOUT_DIRECTION_KEY);
@@ -60,10 +72,19 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
     } catch {
       /* ignore */
     }
-    return "H";
+    return "V";
   });
   const containerRef = useRef<HTMLDivElement>(null);
   const graphRef = useRef<InstanceType<typeof Graph> | null>(null);
+
+  const setPresentationMode = useCallback((mode: Presentation) => {
+    setPresentation(mode);
+    try {
+      localStorage.setItem(PRESENTATION_KEY, mode);
+    } catch {
+      /* ignore */
+    }
+  }, []);
 
   const toggleLayoutDirection = useCallback(() => {
     setLayoutDirection((prev) => {
@@ -128,7 +149,20 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
     [onSelectFile],
   );
 
+  const handleListOpen = useCallback(
+    (data: OutlineTreeNode["data"]) => {
+      handleNodeClick("", data);
+    },
+    [handleNodeClick],
+  );
+
+  const treeRoot = useMemo(
+    () => (outline ? outlineToTreeData(outline, collapsedIds) : null),
+    [outline, collapsedIds],
+  );
+
   useEffect(() => {
+    if (presentation !== "mindmap") return;
     if (!outline || outline.files.length === 0 || !containerRef.current) return;
 
     const treeData = outlineToTreeData(outline, collapsedIds);
@@ -146,8 +180,9 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
 
     const isDark = document.documentElement.getAttribute("data-theme") === "dark";
     const textColor = isDark ? "#e6edf3" : "#1f2328";
-    const fillColor = isDark ? "#21262d" : "#ffffff";
-    const rootFill = isDark ? "#30363d" : "#EFF0F0";
+    const fillColor = isDark ? "#161b22" : "#ffffff";
+    const rootFill = isDark ? "#21262d" : "#f6f8fa";
+    const strokeColor = isDark ? "#8b949e" : "#656d76";
 
     const rootId = OUTLINE_TREE_ROOT_ID;
     let g: InstanceType<typeof Graph> | null = null;
@@ -174,9 +209,6 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
           const isRoot = nodeId === rootId;
           const parent = g?.getParentData?.(nodeId, "tree");
           const direction = getNodeSide(d, parent);
-          const colorIdx = (d.data?.fileColorIndex as number) ?? 0;
-          const color = OUTLINE_TREE_COLORS[colorIdx % OUTLINE_TREE_COLORS.length] ?? "#5D7092";
-
           const data = d.data as OutlineTreeNode["data"];
           const collapsed = collapsedIds.has(nodeId);
           const hasChildren = (d as { children?: unknown[] }).children?.length;
@@ -199,23 +231,17 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
           return {
             size,
             fill: isRoot ? rootFill : fillColor,
-            stroke: isRoot ? (canCollapse ? color : "transparent") : color,
-            lineWidth: canCollapse ? 2 : 1,
-            lineDash: collapsed ? [4, 4] : undefined,
+            stroke: isRoot && !canCollapse ? "transparent" : strokeColor,
+            lineWidth: 1,
             radius: 6,
             labelText,
-            labelFill: isRoot ? (isDark ? "#e6edf3" : "#262626") : textColor,
-            labelFontSize: isRoot ? 18 : 14,
+            labelFill: textColor,
+            labelFontSize: 14,
             labelFontWeight: isRoot ? 600 : 400,
             labelPlacement: "center",
             labelMaxWidth: 220,
             labelTextOverflow: "ellipsis",
-            labelBackground: true,
-            labelBackgroundFill: canCollapse
-              ? isDark
-                ? "rgba(255,255,255,0.06)"
-                : "rgba(0,0,0,0.03)"
-              : "transparent",
+            labelBackground: false,
             labelPadding: direction === "left" ? [2, 0, 10, 40] : [2, 40, 10, 0],
             visibility: "visible" as const,
             cursor: canCollapse ? "pointer" : undefined,
@@ -227,12 +253,7 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
       },
       edge: {
         type: "cubic-horizontal",
-        style: (d: { source: string; target: string }) => {
-          const targetData = g?.getNodeData(d.target);
-          const colorIdx = (targetData?.data?.fileColorIndex as number) ?? 0;
-          const color = OUTLINE_TREE_COLORS[colorIdx % OUTLINE_TREE_COLORS.length] ?? "#99ADD1";
-          return { lineWidth: 2, stroke: color };
-        },
+        style: () => ({ lineWidth: 1.5, stroke: strokeColor }),
       },
       behaviors: [
         { type: "scroll-canvas", key: "scroll-canvas" },
@@ -272,7 +293,6 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
     };
 
     graph.on("node:click", handleClick as (evt: unknown) => void);
-
     graphRef.current = graph;
 
     const resizeObserver = new ResizeObserver(() => {
@@ -291,81 +311,48 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
       graph.destroy();
       graphRef.current = null;
     };
-  }, [outline, collapsedIds, layoutDirection, handleNodeClick, toggleCollapse]);
+  }, [presentation, outline, collapsedIds, layoutDirection, handleNodeClick, toggleCollapse]);
 
-  if (loading) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 shrink-0 pb-2">
-          {!embedded && (
-            <button
-              type="button"
-              className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
-              onClick={onClose}
-            >
-              返回文档
-            </button>
-          )}
-        </div>
-        <div className="flex flex-1 items-center justify-center text-sm text-gh-text-secondary">
-          加载中…
-        </div>
+  const header = (
+    <div className="flex shrink-0 flex-wrap items-center gap-2 pb-2">
+      {!embedded && (
+        <button
+          type="button"
+          className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
+          onClick={onClose}
+        >
+          返回文档
+        </button>
+      )}
+      <div className="inline-flex rounded-md border border-gh-border overflow-hidden" role="tablist">
+        <button
+          type="button"
+          role="tab"
+          aria-selected={presentation === "list"}
+          className={`px-3 py-1.5 text-sm cursor-pointer ${
+            presentation === "list"
+              ? "bg-gh-bg-hover text-gh-text"
+              : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
+          }`}
+          onClick={() => setPresentationMode("list")}
+        >
+          大纲
+        </button>
+        <button
+          type="button"
+          role="tab"
+          aria-selected={presentation === "mindmap"}
+          className={`px-3 py-1.5 text-sm cursor-pointer border-l border-gh-border ${
+            presentation === "mindmap"
+              ? "bg-gh-bg-hover text-gh-text"
+              : "bg-transparent text-gh-text-secondary hover:bg-gh-bg-hover"
+          }`}
+          onClick={() => setPresentationMode("mindmap")}
+        >
+          导图
+        </button>
       </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 shrink-0 pb-2">
-          {!embedded && (
-            <button
-              type="button"
-              className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
-              onClick={onClose}
-            >
-              返回文档
-            </button>
-          )}
-        </div>
-        <div className="flex flex-1 items-center justify-center text-sm text-red-500">{error}</div>
-      </div>
-    );
-  }
-
-  if (!outline || outline.files.length === 0) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex items-center gap-2 shrink-0 pb-2">
-          {!embedded && (
-            <button
-              type="button"
-              className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
-              onClick={onClose}
-            >
-              返回文档
-            </button>
-          )}
-        </div>
-        <div className="flex flex-1 items-center justify-center text-sm text-gh-text-secondary">
-          暂无文档或标题
-        </div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="flex flex-col h-full">
-      <div className="flex shrink-0 flex-wrap items-center gap-2 pb-2">
-        {!embedded && (
-          <button
-            type="button"
-            className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
-            onClick={onClose}
-          >
-            返回文档
-          </button>
-        )}
+      {presentation === "mindmap" && (
         <button
           type="button"
           className="rounded-md border border-gh-border bg-transparent px-2 py-1.5 text-sm text-gh-text-secondary hover:bg-gh-bg-hover"
@@ -378,12 +365,66 @@ export function OutlineTreeView({ onClose, onSelectFile, embedded = false }: Out
         >
           {layoutDirection === "H" ? "横向" : "纵向"}
         </button>
-        <span className="text-sm text-gh-text-secondary">
-          思维导图：以文件为根；孤节点独立成图；链接可多级展开；按文档着色；可折叠节点点击切换
-          {embedded ? "；点击节点在右侧联动打开" : "，Ctrl/Cmd+点击打开"}
-        </span>
+      )}
+      <span className="text-sm text-gh-text-secondary">
+        {presentation === "list"
+          ? "大纲：折叠层级，点击打开文档"
+          : embedded
+            ? "导图：折叠节点；点击在右侧打开"
+            : "导图：折叠节点；Ctrl/Cmd+点击打开"}
+      </span>
+    </div>
+  );
+
+  if (loading) {
+    return (
+      <div className="flex flex-col h-full">
+        {header}
+        <div className="flex flex-1 items-center justify-center text-sm text-gh-text-secondary">
+          加载中…
+        </div>
       </div>
-      <div ref={containerRef} className="min-h-0 flex-1" style={{ minHeight: 300 }} />
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex flex-col h-full">
+        {header}
+        <div className="flex flex-1 items-center justify-center text-sm text-red-500">{error}</div>
+      </div>
+    );
+  }
+
+  if (!outline || outline.files.length === 0 || !treeRoot) {
+    return (
+      <div className="flex flex-col h-full">
+        {header}
+        <div className="flex flex-1 items-center justify-center text-sm text-gh-text-secondary">
+          暂无文档或标题
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="flex flex-col h-full">
+      {header}
+      {presentation === "list" ? (
+        <OutlineTreeList
+          root={treeRoot}
+          collapsedIds={collapsedIds}
+          onToggleCollapse={toggleCollapse}
+          onOpenNode={handleListOpen}
+        />
+      ) : (
+        <div
+          ref={containerRef}
+          className="min-h-0 flex-1"
+          style={{ minHeight: 300 }}
+          data-testid="outline-tree-mindmap"
+        />
+      )}
     </div>
   );
 }
