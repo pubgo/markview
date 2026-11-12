@@ -10,11 +10,11 @@
 
 应用内 PDF **不是**浏览器「打印 → 另存为 PDF」的排版分页，也不是可编辑的文字 PDF。
 
-主路径：把当前渲染结果用 `html-to-image` 截成 **JPEG**，再写入 jsPDF。单文档通常是**一张按内容拉高的长页**，避免 A4 分页从表格、代码块、图表中间切断。
+主路径：把当前渲染结果用 `html-to-image` 截成 **JPEG**，再写入 jsPDF。短文尽量保持**少切分的长页**；超长文档会按垂直条带抓取，并在 PDF 页高上限（约 14400pt）下**自动拆成多页**，避免预览器静默裁切成黑尾/空白。
 
 | | 截图 PDF（当前主路径） | 打印对话框（旧主路径 / 现兜底） |
 | --- | --- | --- |
-| 分页截断 | 少（单页长图） | 常见（按纸张切断） |
+| 分页截断 | 短文少切；超长按条带抓取并拆页 | 常见（按纸张切断） |
 | 可选中文字 | 否 | 是 |
 | 观感 | 与屏幕渲染一致 | 依赖打印样式，图表/主题易偏 |
 
@@ -48,15 +48,16 @@
 
 ### 1.5 边界
 
-- PDF 本质是**渲染结果截图**，不能选中/搜索正文文字；超长文档会变成很高的一页，文件也更大。
+- PDF 本质是**渲染结果截图**，不能选中/搜索正文文字；超长文档会拆成多页 JPEG，文件也更大。
+- 极高页面用较低像素比、更少条带以控制导出时间；清晰度可能略低于短文。
 - 复杂 CSS / 超大图可能影响清晰度。
 - PlantUML 默认经公共 Kroki 渲染；可在「设置 → PlantUML 服务」改为自托管 Kroki 兼容服务实现离线渲染。导出前需图表已成功渲染。
 - 应用内 deck PDF **不是 PPTX**；需要 PPTX 时仍用下方 Marp 路径。
-- 大 deck 导出可能较慢（逐页截图）。
+- 大 deck / 超长文档导出可能较慢（逐页或逐条带截图）。
 
 ## 2. `markview build`：生成静态站点
 
-不启动预览服务，把 Markdown 打成可双击/`npx serve` 打开的静态目录：
+不启动预览服务，把 Markdown 打成可双击/`npx serve` 打开的静态目录。这是 **CI / GitHub Pages** 的主路径：产物是自包含 SPA，与本地预览共用同一套前端（含 Mermaid / 应用内 PDF），不是另一套渲染器。
 
 ```console
 $ markview build docs/                    # 输出到 docs-static/
@@ -72,13 +73,16 @@ $ markview build docs/ --group design     # 只导出 docs/design/，导出分�
 - 嵌入的文件内容、图片等 raw 资源
 - 图谱 / 大纲等静态数据（`window.__MARKVIEW_STATIC_DATA__`）
 
+在静态站里仍可点 PDF 导出；逻辑与本地会话相同（条带抓取、超长拆页、主题背景）。CI 只负责生成站点目录，不会在 Actions 里无头导出 PDF。
+
 ### 2.1 与在线会话的差异
 
 | 能力 | 本地 `markview` 服务 | `markview build` 静态站 |
 | ---- | -------------------- | ----------------------- |
-| 多分组 / 动态加文件 | 支持 | 当前打成**单一 default 分组** |
+| 多分组 / 动态加文件 | 支持 | 当前打成**单一 default 分组**（`--group` 可指定名） |
 | 保存后实时刷新 (SSE) | 支持 | 无（纯静态） |
 | 侧边栏切换文档 | 支持 | 支持（只读会话内文件） |
+| 应用内 PDF | 支持 | 支持（同前端；需在浏览器打开站点后点导出） |
 | PlantUML | 需访问 Kroki | 同样需网络（浏览器端渲染） |
 | 会话备份 / watch | 支持 | 无 |
 
@@ -126,7 +130,7 @@ jobs:
     uses: pubgo/markview/.github/workflows/pages-reusable.yml@master
     with:
       build-path: "."
-      # markview-version: "latest"   # 或钉死 vX.Y.Z
+      # markview-ref: "master"   # 或钉死 tag / commit；从前端嵌入的源码构建
 ```
 
 行为摘要：
@@ -134,6 +138,7 @@ jobs:
 - markview 由 reusable workflow **从源码构建**：checkout markview 仓库后执行 `go generate ./internal/static/ && go install .`（前端资源在构建期生成并嵌入，无法通过 `go install github.com/pubgo/markview@version` 直接安装）
 - 默认 `--base-path /<你的仓库名>`；根站可用 `skip-base-path: true`
 - 调用方仍需把 Pages Source 设为 **GitHub Actions**
+- 工作流输出的是静态站 artifact，不是 PDF；PDF 仍在浏览站点时于客户端导出
 
 也可本地/其它 CI 自行源码构建：
 

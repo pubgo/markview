@@ -43,7 +43,7 @@ export function PdfExportButton({ articleRef, fileName, slidesDeck }: PdfExportB
           ? exporting
             ? "正在导出幻灯片 PDF…"
             : "导出幻灯片 PDF（每页一页）"
-          : "导出 PDF（单页，不截断）"
+          : "导出 PDF（完整内容，超长自动分页）"
       }
       aria-label={isDeck ? "Export slides PDF" : "Export PDF"}
     >

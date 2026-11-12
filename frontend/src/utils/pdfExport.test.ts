@@ -1,7 +1,12 @@
 import { describe, expect, it, afterEach } from "vitest";
 import {
+  canvasToJpegDataUrl,
   countPendingDiagramRenders,
+  normalizeCssHexColor,
+  PDF_MAX_PAGE_HEIGHT_MM,
+  PDF_SAFE_PAGE_HEIGHT_MM,
   planCapture,
+  planContentPages,
   resolvePdfCaptureBackgroundColor,
   toPdfFilename,
   toSlidesDeckPdfFilename,
@@ -39,6 +44,21 @@ describe("toSlidesDeckPdfFilename", () => {
   });
 });
 
+describe("normalizeCssHexColor", () => {
+  it("expands 3-digit hex from getComputedStyle", () => {
+    expect(normalizeCssHexColor("#fff")).toBe("#ffffff");
+    expect(normalizeCssHexColor("#0d1")).toBe("#00dd11");
+  });
+
+  it("normalizes 6-digit hex", () => {
+    expect(normalizeCssHexColor("#0D1117")).toBe("#0d1117");
+  });
+
+  it("rejects non-hex colors", () => {
+    expect(normalizeCssHexColor("rgb(255, 255, 255)")).toBeNull();
+  });
+});
+
 describe("resolvePdfCaptureBackgroundColor", () => {
   afterEach(() => {
     document.documentElement.removeAttribute("data-theme");
@@ -59,6 +79,46 @@ describe("resolvePdfCaptureBackgroundColor", () => {
     document.documentElement.setAttribute("data-theme", "dark");
     document.documentElement.style.setProperty("--color-gh-bg", "#111827");
     expect(resolvePdfCaptureBackgroundColor()).toBe("#111827");
+  });
+
+  it("expands shorthand --color-gh-bg from computed style", () => {
+    document.documentElement.style.setProperty("--color-gh-bg", "#fff");
+    expect(resolvePdfCaptureBackgroundColor()).toBe("#ffffff");
+  });
+});
+
+describe("canvasToJpegDataUrl", () => {
+  it("rejects blank canvases that encode as data:,", () => {
+    const canvas = document.createElement("canvas");
+    canvas.width = 10;
+    canvas.height = 10;
+    canvas.toDataURL = () => "data:,";
+    expect(() => canvasToJpegDataUrl(canvas)).toThrow(/blank image/i);
+  });
+});
+
+describe("planContentPages", () => {
+  it("keeps short articles on one page", () => {
+    const pages = planContentPages(2000, 900);
+    expect(pages).toHaveLength(1);
+    expect(pages[0].topPx).toBe(0);
+    expect(pages[0].heightPx).toBe(2000);
+    expect(pages[0].pageHeightMm).toBeLessThanOrEqual(PDF_SAFE_PAGE_HEIGHT_MM);
+  });
+
+  it("splits articles that would exceed the PDF page-size cap", () => {
+    // ~51k CSS px at ~930 width previously produced a ~10k mm page, clamped
+    // to 14400pt and truncated in Preview.
+    const pages = planContentPages(51555, 930);
+    expect(pages.length).toBeGreaterThan(1);
+    let covered = 0;
+    for (const page of pages) {
+      expect(page.pageHeightMm).toBeLessThanOrEqual(PDF_SAFE_PAGE_HEIGHT_MM + 1e-6);
+      expect(page.pageHeightMm).toBeLessThanOrEqual(PDF_MAX_PAGE_HEIGHT_MM);
+      expect(page.topPx).toBeCloseTo(covered, 5);
+      covered += page.heightPx;
+    }
+    expect(covered).toBeCloseTo(51555, 5);
   });
 });
 
@@ -89,7 +149,7 @@ describe("planCapture", () => {
       expect(slice.topPx).toBe(top);
       top += slice.heightPx;
       const { edgePx, areaPx } = tileLimits(980, slice.heightPx, plan.ratio);
-      expect(edgePx).toBeLessThanOrEqual(16384);
+      expect(edgePx).toBeLessThanOrEqual(8192);
       expect(areaPx).toBeLessThanOrEqual(64 * 1024 * 1024);
     }
     expect(top).toBe(19107);
@@ -105,12 +165,24 @@ describe("planCapture", () => {
       const plan = planCapture(980, 19107, dpr);
       for (const slice of plan.slices) {
         const { edgePx, areaPx } = tileLimits(980, slice.heightPx, plan.ratio);
-        expect(edgePx).toBeLessThanOrEqual(16384);
+        expect(edgePx).toBeLessThanOrEqual(8192);
         expect(areaPx).toBeLessThanOrEqual(64 * 1024 * 1024);
       }
       const covered = plan.slices.reduce((sum, s) => sum + s.heightPx, 0);
       expect(covered).toBe(19107);
     }
+  });
+
+  it("uses fewer 1x strips on very tall pages so export stays fast", () => {
+    const plan = planCapture(930, 78593, 2);
+    expect(plan.ratio).toBe(1);
+    expect(plan.slices.length).toBeGreaterThan(1);
+    expect(plan.slices.length).toBeLessThanOrEqual(6);
+    for (const slice of plan.slices) {
+      expect(slice.heightPx * plan.ratio).toBeLessThanOrEqual(16384);
+    }
+    const covered = plan.slices.reduce((sum, s) => sum + s.heightPx, 0);
+    expect(covered).toBe(78593);
   });
 
   it("handles degenerate sizes without NaN", () => {

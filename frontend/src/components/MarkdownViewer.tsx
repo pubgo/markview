@@ -25,7 +25,6 @@ import {
   useMermaidSettingsRevision,
 } from "../hooks/useMermaidSettings";
 import {
-  resolveBeautifulMermaidPalette,
   resolveNativeMermaidThemeVariables,
   resolvePeleCssVariables,
 } from "../utils/mermaidTheme";
@@ -457,61 +456,12 @@ function normalizeMermaidLabelNewlines(code: string): string {
   });
 }
 
-const BEAUTIFUL_MERMAID_DIAGRAM_PREFIXES = [
-  "graph",
-  "flowchart",
-  "statediagram",
-  "sequencediagram",
-  "classdiagram",
-  "erdiagram",
-  "xychart-beta",
-];
-
-/**
- * Sequence-diagram directives beautiful-mermaid cannot render (it draws them
- * as literal text and drops arrows/numbering); diagrams using them fall back
- * to native mermaid, which supports them fully.
- */
-const NATIVE_ONLY_SEQUENCE_DIRECTIVE =
-  /^(rect|autonumber|alt|else|opt|loop|par|and|critical|break|box|activate|deactivate)\b/;
-
-function supportsBeautifulMermaid(code: string): boolean {
-  const lines = code.split(/\r?\n/);
-  let inSequence = false;
-  for (const line of lines) {
-    const trimmed = line.trim();
-    if (!trimmed || trimmed.startsWith("%%")) continue;
-    const normalized = trimmed.toLowerCase();
-    if (inSequence) {
-      if (NATIVE_ONLY_SEQUENCE_DIRECTIVE.test(normalized)) return false;
-      continue;
-    }
-    if (normalized.startsWith("sequencediagram")) {
-      inSequence = true;
-      continue;
-    }
-    return BEAUTIFUL_MERMAID_DIAGRAM_PREFIXES.some((prefix) => normalized.startsWith(prefix));
-  }
-  return inSequence;
-}
-
-type RenderMermaidSVGFn = (text: string, options?: Record<string, unknown>) => string;
 type PeleRenderFn = (
   source: string,
   options?: { maxWidth?: number; padding?: number; fontFamily?: string; responsive?: boolean },
 ) => { svg: string };
 
-let beautifulMermaidRenderPromise: Promise<RenderMermaidSVGFn | null> | null = null;
 let peleRenderPromise: Promise<PeleRenderFn | null> | null = null;
-
-async function loadBeautifulMermaidRender(): Promise<RenderMermaidSVGFn | null> {
-  if (!beautifulMermaidRenderPromise) {
-    beautifulMermaidRenderPromise = import("beautiful-mermaid")
-      .then((mod) => mod.renderMermaidSVG ?? null)
-      .catch(() => null);
-  }
-  return beautifulMermaidRenderPromise;
-}
 
 async function loadPeleRender(): Promise<PeleRenderFn | null> {
   if (!peleRenderPromise) {
@@ -531,30 +481,6 @@ function renderPeleMermaid(code: string, renderFn: PeleRenderFn, maxWidth?: numb
     responsive: true,
   });
   return svg;
-}
-
-function sanitizeBeautifulMermaidSvg(svg: string): string {
-  // beautiful-mermaid always injects a Google Fonts @import for `font`.
-  // A CSS font-stack (commas) produces a broken URL and can FOUC/reflow labels.
-  return svg.replace(/@import\s+url\([^)]+\);\s*/g, "");
-}
-
-function renderBeautifulMermaid(code: string, renderFn: RenderMermaidSVGFn): string {
-  const settings = getMermaidSettings();
-  const palette = resolveBeautifulMermaidPalette(settings);
-
-  // Pass a single family name — stacks break the library's Google Fonts @import.
-  const svg = renderFn(code, {
-    ...palette,
-    transparent: false,
-    interactive: true,
-    nodeSpacing: settings.nodeSpacing,
-    layerSpacing: settings.layerSpacing,
-    thoroughness: settings.thoroughness,
-    padding: settings.padding,
-    font: "system-ui",
-  });
-  return sanitizeBeautifulMermaidSvg(svg);
 }
 
 function normalizeMermaidSvg(
@@ -648,6 +574,16 @@ function normalizeMermaidSvg(
     }
     svgEl.setAttribute("style", prevStyle ? `${prevStyle};${normalizedStyle}` : normalizedStyle);
 
+    // Pele emits cluster rects with fill-opacity="0.5". Our --pele-surface-alt
+    // tokens are solid (native clusterBkg parity); keep attributes opaque so
+    // html-to-image / PNG copy don't wash clusters out against the page.
+    const className = svgEl.getAttribute("class") ?? "";
+    if (/\bpele\b/.test(className)) {
+      for (const rect of svgEl.querySelectorAll(".pele-cluster > rect")) {
+        rect.setAttribute("fill-opacity", "1");
+      }
+    }
+
     return new XMLSerializer().serializeToString(svgEl);
   } catch {
     return svg;
@@ -660,15 +596,13 @@ async function initializeNativeMermaid(): Promise<void> {
     startOnLoad: false,
     securityLevel: "strict",
     suppressErrorRendering: true,
+    look: "neo",
+    layout: "elk",
     theme: "base",
     themeVariables: resolveNativeMermaidThemeVariables(getMermaidSettings()),
     flowchart: {
       htmlLabels: true,
       useMaxWidth: false,
-      nodeSpacing: 50,
-      rankSpacing: 50,
-      padding: 15,
-      curve: "basis",
     },
     sequence: {
       useMaxWidth: false,
@@ -866,8 +800,6 @@ export function MermaidBlock({
       try {
         let renderedSvg = "";
         const settings = getMermaidSettings();
-        const canUseBeautiful =
-          settings.renderer === "beautiful" && supportsBeautifulMermaid(normalizedCode);
         const canUsePele = settings.renderer === "pele";
 
         if (canUsePele) {
@@ -875,15 +807,6 @@ export function MermaidBlock({
             const renderPele = await loadPeleRender();
             if (!renderPele) throw new Error("pele unavailable");
             renderedSvg = renderPeleMermaid(normalizedCode, renderPele, width);
-          } catch {
-            await initializeNativeMermaid();
-            renderedSvg = await renderMermaid(normalizedCode, width);
-          }
-        } else if (canUseBeautiful) {
-          try {
-            const renderBeautiful = await loadBeautifulMermaidRender();
-            if (!renderBeautiful) throw new Error("beautiful-mermaid unavailable");
-            renderedSvg = renderBeautifulMermaid(normalizedCode, renderBeautiful);
           } catch {
             await initializeNativeMermaid();
             renderedSvg = await renderMermaid(normalizedCode, width);
@@ -1637,6 +1560,26 @@ function DiagramImageCopyButton({ svg }: { svg: string }) {
   );
 }
 
+function bakePeleThemeIntoSvg(svgEl: Element): void {
+  const className = svgEl.getAttribute("class") ?? "";
+  if (!/\bpele\b/.test(className)) return;
+  // Standalone SVG (clipboard PNG) cannot inherit --pele-* from the page;
+  // without baked values Pele falls back to its light defaults.
+  const vars = resolvePeleCssVariables(getMermaidSettings());
+  for (const [name, value] of Object.entries(vars)) {
+    if (svgEl instanceof SVGElement || svgEl instanceof HTMLElement) {
+      svgEl.style.setProperty(name, value);
+    } else {
+      const prev = svgEl.getAttribute("style") ?? "";
+      svgEl.setAttribute("style", `${prev};${name}:${value}`);
+    }
+  }
+  // Match on-screen CSS: solid cluster fills (Pele defaults to 0.5).
+  for (const rect of svgEl.querySelectorAll(".pele-cluster > rect")) {
+    rect.setAttribute("fill-opacity", "1");
+  }
+}
+
 function svgToPngBlob(svgString: string): Promise<Blob> {
   return new Promise((resolve, reject) => {
     const parser = new DOMParser();
@@ -1647,6 +1590,7 @@ function svgToPngBlob(svgString: string): Promise<Blob> {
     if (!svgEl.getAttribute("xmlns")) {
       svgEl.setAttribute("xmlns", "http://www.w3.org/2000/svg");
     }
+    bakePeleThemeIntoSvg(svgEl);
 
     // Extract dimensions from the SVG element
     const widthAttr = svgEl.getAttribute("width");

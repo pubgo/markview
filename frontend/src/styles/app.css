@@ -607,6 +607,13 @@ body,
   margin-inline: auto;
 }
 
+/* Pele paints subgraphs at fill-opacity 0.5 so nested clusters stack. Our
+   --pele-surface-alt tokens match native mermaid's solid clusterBkg, so keep
+   clusters opaque or they wash out against the page (esp. dark theme). */
+.markdown-body .mermaid-block .mermaid-render svg.pele .pele-cluster > rect {
+  fill-opacity: 1;
+}
+
 /* Isolate diagram labels from markdown / slides typography so htmlLabels
    (foreignObject) and SVG text keep the metrics Mermaid laid out. */
 .markdown-body .mermaid-block .mermaid-render,
