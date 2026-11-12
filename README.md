@@ -29,7 +29,7 @@
 - <img src="images/icons/toc.svg" width="16" height="16" alt="目录"> 文档目录面板
 - <img src="images/icons/view-flat.svg" width="16" height="16" alt="平铺"> 平铺 / <img src="images/icons/view-tree.svg" width="16" height="16" alt="树形"> 树形侧边栏（支持拖拽排序与文件搜索）
 - 全局全文搜索（`⌘/Ctrl+Shift+F`）
-- 文档链接图谱与大纲视图（链接图 / 结构图 / 缩进树）
+- 文档链接图谱与大纲视图（链接图 / 结构图 / 缩进树：大纲+导图）
 - YAML 前置元数据展示（可折叠元数据区域）
 - MDX 支持（渲染 Markdown，去除 `import`/`export`，转义 JSX 标签）
 - <img src="images/icons/width-expand.svg" width="16" height="16" alt="宽布局"> 宽版 / <img src="images/icons/width-compress.svg" width="16" height="16" alt="窄布局"> 窄版阅读宽度切换
