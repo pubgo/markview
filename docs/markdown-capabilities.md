@@ -90,10 +90,10 @@
 
 ## 5. 导出与复制
 
-- 单文档 PDF 导出（渲染结果截图为 JPEG 写入 PDF；少分页截断；失败时回退打印对话框）
+- 单文档 PDF 导出（渲染结果截图为 JPEG 写入 PDF；超长条带抓取并拆页；失败时回退打印对话框）
 - Slides 模式多页 deck PDF（逐页截幻灯片面；`*-deck.pdf`）
 - 分组合并 PDF 导出
-- `markview build` 静态站点（自包含 SPA；见 [export-and-static.md](export-and-static.md)）
+- `markview build` 静态站点 / CI·Pages（自包含 SPA，同源前端；见 [export-and-static.md](export-and-static.md)）
 - 复制内容（Markdown / 文本 / HTML）
 - Mermaid / PlantUML / SvgBob 图像复制（PNG）
 - 代码块复制

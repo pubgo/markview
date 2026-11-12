@@ -219,16 +219,16 @@ $ markview --unwatch '/Users/you/project/**/*.md'            # 按绝对路径�
 
 ### 导出 PDF
 
-- **单文档（阅读模式）**：右侧工具列 PDF 按钮，导出当前渲染结果（一页、不截断）。
+- **单文档（阅读模式）**：右侧工具列 PDF 按钮，导出当前渲染结果；短文尽量少切分，超长文档按条带抓取并在 PDF 页高上限下自动分页。
 - **Slides 演示模式**：同一按钮改为导出**多页幻灯片 PDF**（逐页截取当前幻灯片面，不含备注/进度条）；文件名形如 `talk-deck.pdf`。
 - **分组合并**：将当前分组内文档按顺序合并为一个 PDF。
 - 导出背景跟随当前明暗主题；图表需已渲染成功（PlantUML 需能访问 Kroki）。
 
 详细说明与边界见 [docs/export-and-static.md](docs/export-and-static.md)。
 
-### 静态站点（`markview build`）
+### 静态站点（`markview build`，CI / Pages）
 
-把目录或文件列表打成自包含静态站（无需再跑预览服务）：
+把目录或文件列表打成自包含静态站（无需再跑预览服务）。CI 用同一命令产出可托管目录；站点内的 Mermaid / PDF 与本地预览同源前端。
 
 ```console
 $ markview build docs/                 # 默认输出 docs-static/
@@ -236,7 +236,7 @@ $ markview build docs/ -o dist/        # 指定输出目录
 $ markview build README.md docs/a.md   # 仅打包列出的文件
 ```
 
-产物可用任意静态服务器打开，也可上传到 GitHub Pages。本仓库用 `pages.yml`（源码构建）自部署；**其它仓库**请调用可复用 workflow `pages-reusable.yml`（见 [export-and-static.md](docs/export-and-static.md) 与 [`docs/examples/pages-caller.yml`](docs/examples/pages-caller.yml)）。
+产物可用任意静态服务器打开，也可上传到 GitHub Pages。本仓库用 `pages.yml`（源码构建）自部署；**其它仓库**请调用可复用 workflow `pages-reusable.yml`（见 [export-and-static.md](docs/export-and-static.md) 与 [`docs/examples/pages-caller.yml`](docs/examples/pages-caller.yml)）。Actions 产出的是静态站，不是无头 PDF。
 
 与在线会话的差异、Pages 注意点见 [docs/export-and-static.md](docs/export-and-static.md)。
 
