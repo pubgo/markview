@@ -20,14 +20,8 @@ import { rehypeGithubAlerts } from "rehype-github-alerts";
 import "katex/dist/katex.min.css";
 import { highlightToHtml } from "../utils/highlight";
 import { fetchFileContent, openRelativeFile } from "../hooks/useApi";
-import {
-  getMermaidSettings,
-  useMermaidSettingsRevision,
-} from "../hooks/useMermaidSettings";
-import {
-  resolveNativeMermaidThemeVariables,
-  resolvePeleCssVariables,
-} from "../utils/mermaidTheme";
+import { getMermaidSettings, useMermaidSettingsRevision } from "../hooks/useMermaidSettings";
+import { resolveNativeMermaidThemeVariables, resolvePeleCssVariables } from "../utils/mermaidTheme";
 import { usePlantUmlSettings, getPlantUmlServerUrl } from "../hooks/usePlantUmlSettings";
 import {
   useSlideTransition,

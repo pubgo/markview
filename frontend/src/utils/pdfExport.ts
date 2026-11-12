@@ -681,9 +681,7 @@ async function captureArticleSnapshot(
   // Font embedding re-serializes every stylesheet into each strip SVG and
   // dominates runtime on long docs; keep it for short/medium pages only.
   const fontEmbedCSS =
-    plan.slices.length <= 3
-      ? await getFontEmbedCSS(article).catch(() => undefined)
-      : undefined;
+    plan.slices.length <= 3 ? await getFontEmbedCSS(article).catch(() => undefined) : undefined;
   const jpegQuality = plan.slices.length > 8 ? 0.85 : 0.95;
 
   const parent = article.parentElement;
@@ -1068,14 +1066,7 @@ export async function exportMergedPdfFromSnapshots(
       pageHeight: pages[0].pageHeightMm,
     } as never);
 
-    addHeadingsToOutlineAcrossPages(
-      pdf,
-      snapshot.headings,
-      pages,
-      startPage,
-      scaleY,
-      fileRootItem,
-    );
+    addHeadingsToOutlineAcrossPages(pdf, snapshot.headings, pages, startPage, scaleY, fileRootItem);
     nextPage = startPage + pageCount;
   }
 

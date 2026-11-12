@@ -1,9 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { MERMAID_SETTINGS_DEFAULTS } from "../hooks/useMermaidSettings";
-import {
-  resolveNativeMermaidThemeVariables,
-  resolvePeleCssVariables,
-} from "./mermaidTheme";
+import { resolveNativeMermaidThemeVariables, resolvePeleCssVariables } from "./mermaidTheme";
 
 describe("resolveNativeMermaidThemeVariables", () => {
   beforeEach(() => {

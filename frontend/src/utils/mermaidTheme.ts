@@ -1,7 +1,4 @@
-import {
-  getMermaidSettings,
-  type MermaidSettings,
-} from "../hooks/useMermaidSettings";
+import { getMermaidSettings, type MermaidSettings } from "../hooks/useMermaidSettings";
 
 const GITHUB_LIGHT = {
   bg: "#ffffff",
