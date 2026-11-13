@@ -20,18 +20,22 @@ import (
 	"github.com/pubgo/markview/version"
 )
 
-func bumpPatch(ver string) string {
+func bumpPatch(t *testing.T, ver string) string {
+	t.Helper()
 	parts := strings.Split(strings.TrimPrefix(ver, "v"), ".")
 	if len(parts) < 3 {
 		return "v9.9.9"
 	}
-	n, _ := strconv.Atoi(parts[2])
+	n, err := strconv.Atoi(parts[2])
+	if err != nil {
+		t.Fatalf("cannot parse patch from %q: %v", ver, err)
+	}
 	return fmt.Sprintf("v%s.%s.%d", parts[0], parts[1], n+1)
 }
 
 func TestIsNewer(t *testing.T) {
 	cur := version.Version
-	newerPatch := bumpPatch(cur)
+	newerPatch := bumpPatch(t, cur)
 	tests := []struct {
 		tag  string
 		want bool

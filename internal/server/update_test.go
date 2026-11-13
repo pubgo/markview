@@ -22,7 +22,13 @@ func TestUpdateCheckEndpoint(t *testing.T) {
 	t.Cleanup(func() { updateCheckFn = origCheck })
 
 	parts := strings.Split(version.Version, ".")
-	patch, _ := strconv.Atoi(parts[len(parts)-1])
+	if len(parts) < 3 {
+		t.Fatalf("unexpected version.Version %q", version.Version)
+	}
+	patch, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		t.Fatalf("cannot parse patch from %q: %v", version.Version, err)
+	}
 	newer := fmt.Sprintf("v%s.%s.%d", parts[0], parts[1], patch+1)
 
 	updateCheckFn = func(_ context.Context) (string, string, error) {
