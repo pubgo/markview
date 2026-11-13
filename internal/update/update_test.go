@@ -13,27 +13,41 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"strconv"
+	"strings"
 	"testing"
+
+	"github.com/pubgo/markview/version"
 )
 
+func bumpPatch(ver string) string {
+	parts := strings.Split(strings.TrimPrefix(ver, "v"), ".")
+	if len(parts) < 3 {
+		return "v9.9.9"
+	}
+	n, _ := strconv.Atoi(parts[2])
+	return fmt.Sprintf("v%s.%s.%d", parts[0], parts[1], n+1)
+}
+
 func TestIsNewer(t *testing.T) {
+	cur := version.Version
+	newerPatch := bumpPatch(cur)
 	tests := []struct {
 		tag  string
 		want bool
 	}{
-		{"v0.22.1", true},
-		{"v0.23.0", true},
-		{"v1.0.0", true},
-		{"v0.22.0", false},
-		{"v0.21.9", false},
-		{"v0.100.0", true},     // numeric, not lexicographic
-		{"v0.22.0-rc1", false}, // pre-release tags never count as newer
+		{newerPatch, true},
+		{"v1.0.0", true}, // major ahead of 0.x
+		{"v" + cur, false},
+		{"v0.0.1", false},
+		{"v0.100.0", true}, // numeric, not lexicographic vs typical 0.x
+		{cur + "-rc1", false}, // pre-release tags never count as newer
 		{"not-a-version", false},
 		{"", false},
 	}
 	for _, tt := range tests {
 		if got := IsNewer(tt.tag); got != tt.want {
-			t.Errorf("IsNewer(%q) = %v, want %v", tt.tag, got, tt.want)
+			t.Errorf("IsNewer(%q) = %v, want %v (current=%s)", tt.tag, got, tt.want, cur)
 		}
 	}
 }
