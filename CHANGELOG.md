@@ -2,6 +2,8 @@
 
 ## Unreleased
 
+- feat: Header「提炼」面板 — 当前分组 TODO / `#tag` / `[[wiki]]` 索引并跳转到原文
+
 ## v0.25.0 - 2026-11-12
 
 Mermaid 引擎收敛为 Pele（默认）/ 原生，图谱只保留链接图与结构图；长文 PDF 导出改为分条截取分页。
