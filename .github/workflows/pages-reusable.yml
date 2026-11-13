@@ -47,7 +47,10 @@ permissions:
   id-token: write
 
 concurrency:
-  group: pages-${{ github.repository }}
+  # Distinct from the intuitive caller default (`pages-<org/repo>`): a caller
+  # whose own concurrency group string equals this one fails at startup with
+  # "workflow file issue" (verified against pubgo/funk, 2026-11-13).
+  group: markview-pages-${{ github.repository }}
   cancel-in-progress: true
 
 jobs:
