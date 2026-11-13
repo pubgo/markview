@@ -89,6 +89,12 @@ jobs:
           go install .
           echo "$(go env GOPATH)/bin" >> "$GITHUB_PATH"
 
+      # The markview checkout lives inside the caller's workspace; if it
+      # stayed, `markview build .` would scan markview's own repository docs
+      # into the caller's site.
+      - name: Remove markview checkout from scan path
+        run: rm -rf .markview
+
       - name: Resolve base path
         id: base
         run: |
