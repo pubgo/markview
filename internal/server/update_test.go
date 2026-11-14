@@ -6,18 +6,33 @@ import (
 	"errors"
 	"net/http"
 	"net/http/httptest"
+	"fmt"
+	"strconv"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/k1LoW/donegroup"
+
+	"github.com/pubgo/markview/version"
 )
 
 func TestUpdateCheckEndpoint(t *testing.T) {
 	origCheck := updateCheckFn
 	t.Cleanup(func() { updateCheckFn = origCheck })
 
+	parts := strings.Split(version.Version, ".")
+	if len(parts) < 3 {
+		t.Fatalf("unexpected version.Version %q", version.Version)
+	}
+	patch, err := strconv.Atoi(parts[len(parts)-1])
+	if err != nil {
+		t.Fatalf("cannot parse patch from %q: %v", version.Version, err)
+	}
+	newer := fmt.Sprintf("v%s.%s.%d", parts[0], parts[1], patch+1)
+
 	updateCheckFn = func(_ context.Context) (string, string, error) {
-		return "0.22.0", "v0.23.0", nil
+		return version.Version, newer, nil
 	}
 	resetUpdateCache()
 
@@ -33,8 +48,8 @@ func TestUpdateCheckEndpoint(t *testing.T) {
 	if err := json.NewDecoder(rec.Body).Decode(&resp); err != nil {
 		t.Fatal(err)
 	}
-	if resp.Current != "0.22.0" || resp.Latest != "v0.23.0" || !resp.Available {
-		t.Errorf("unexpected payload: %+v", resp)
+	if resp.Current != version.Version || resp.Latest != newer || !resp.Available {
+		t.Errorf("unexpected payload: %+v (want current=%s latest=%s available=true)", resp, version.Version, newer)
 	}
 
 	// A failing check surfaces as a bad gateway, not a panic.

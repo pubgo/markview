@@ -1,4 +1,6 @@
 const SEARCH_TARGET_SELECTOR = [
+  "li.task-list-item",
+  "li",
   "h1",
   "h2",
   "h3",
@@ -6,7 +8,6 @@ const SEARCH_TARGET_SELECTOR = [
   "h5",
   "h6",
   "p",
-  "li",
   "blockquote",
   "pre",
   "code",
@@ -16,6 +17,13 @@ const SEARCH_TARGET_SELECTOR = [
 
 function normalizeText(value: string): string {
   return value.replace(/\s+/g, " ").trim().toLowerCase();
+}
+
+/** Strip GFM task markers so "- [ ] ship" matches rendered "ship". */
+export function normalizeJumpNeedle(value: string): string {
+  return normalizeText(
+    value.replace(/^[-*+]\s+\[[ xX]\]\s+/, "").replace(/^\d+\.\s+\[[ xX]\]\s+/, ""),
+  );
 }
 
 function findByNeedle(root: HTMLElement, needle: string): HTMLElement | null {
@@ -36,8 +44,8 @@ export function findBestSearchTarget(
   lineText: string,
   query: string,
 ): HTMLElement | null {
-  const normalizedLine = normalizeText(lineText);
-  const normalizedQuery = normalizeText(query);
+  const normalizedLine = normalizeJumpNeedle(lineText);
+  const normalizedQuery = normalizeJumpNeedle(query);
 
   const byLine = findByNeedle(root, normalizedLine);
   if (byLine) return byLine;

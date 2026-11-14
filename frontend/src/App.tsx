@@ -8,6 +8,10 @@ import { ViewModeToggle, type ViewMode } from "./components/ViewModeToggle";
 import { SearchToggle } from "./components/SearchToggle";
 import { GlobalSearchModal } from "./components/GlobalSearchModal";
 import type { GlobalSearchSelection } from "./components/GlobalSearchModal";
+import {
+  ContentExtractControl,
+  type ContentExtractSelection,
+} from "./components/ContentExtractPanel";
 import { RestartButton } from "./components/RestartButton";
 import { DropOverlay } from "./components/DropOverlay";
 import { SettingsModal } from "./components/SettingsModal";
@@ -84,6 +88,7 @@ export function App() {
   const [contentRevision, setContentRevision] = useState(0);
   const [searchQuery, setSearchQuery] = useState<string | null>(null);
   const [globalSearchOpen, setGlobalSearchOpen] = useState(false);
+  const [contentExtractOpen, setContentExtractOpen] = useState(false);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [viewModes, setViewModes] = useState<Record<string, ViewMode>>(() => {
     try {
@@ -340,21 +345,38 @@ export function App() {
 
   const handleSearchToggle = useCallback(() => {
     setShowGraph(false);
+    setContentExtractOpen(false);
     setGlobalSearchOpen(true);
   }, []);
 
-  const handleGlobalSearchSelect = useCallback((selection: GlobalSearchSelection) => {
+  const handleContentExtractToggle = useCallback(() => {
     setShowGraph(false);
-    setActiveGroup(selection.groupName);
-    setActiveFileId(selection.fileId);
-    setPendingSearchJump({
-      requestId: Date.now(),
-      fileId: selection.fileId,
-      lineNumber: selection.lineNumber,
-      lineText: selection.lineText,
-      query: selection.query,
-    });
+    setGlobalSearchOpen(false);
+    setContentExtractOpen((v) => !v);
   }, []);
+
+  const handleJumpSelect = useCallback(
+    (selection: GlobalSearchSelection | ContentExtractSelection) => {
+      setShowGraph(false);
+      setActiveGroup(selection.groupName);
+      setActiveFileId(selection.fileId);
+      setPendingSearchJump({
+        requestId: Date.now(),
+        fileId: selection.fileId,
+        lineNumber: selection.lineNumber,
+        lineText: selection.lineText,
+        query: selection.query,
+      });
+    },
+    [],
+  );
+
+  const handleGlobalSearchSelect = useCallback(
+    (selection: GlobalSearchSelection) => {
+      handleJumpSelect(selection);
+    },
+    [handleJumpSelect],
+  );
 
   const handleGroupChange = (name: string) => {
     setPendingSearchJump(null);
@@ -544,6 +566,13 @@ export function App() {
         />
         <ViewModeToggle viewMode={currentViewMode} onToggle={handleViewModeToggle} />
         <SearchToggle isOpen={globalSearchOpen} onToggle={handleSearchToggle} />
+        <ContentExtractControl
+          isOpen={contentExtractOpen}
+          group={groups.find((g) => g.name === activeGroup)}
+          onClose={() => setContentExtractOpen(false)}
+          onSelect={handleJumpSelect}
+          onToggle={handleContentExtractToggle}
+        />
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
