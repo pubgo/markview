@@ -16,14 +16,18 @@ export interface ExtractHit {
   fileName: string;
   groupName: string;
   lineNumber: number;
+  /** Plain text used for in-page jump (no markdown task markers). */
   lineText: string;
   query: string;
+  /** Original source line (debug / display). */
+  sourceLine: string;
 }
 
 const TODO_RE = /^(\s*[-*+]|\s*\d+\.)\s+\[([ xX])\]\s+(.*)$/;
-const TAG_RE = /(^|[^#\w/.-])#([A-Za-z][\w/-]*)/g;
+/** Explicit delimited tags: #hello# — avoids mistaking code/CSS/#hex for tags. */
+const TAG_RE = /#([A-Za-z][\w/-]*)#/g;
+/** Only Obsidian-style wiki links; never [text](url.md). */
 const WIKI_RE = /\[\[([^\]]+)\]\]/g;
-const HEADING_RE = /^#{1,6}\s/;
 
 function parseFrontmatterTags(yaml: string): string[] {
   const tags: string[] = [];
@@ -55,21 +59,21 @@ function parseFrontmatterTags(yaml: string): string[] {
   return tags;
 }
 
-function parseWikiInner(inner: string): { key: string; label: string } {
-  const pipe = inner.indexOf("|");
+function parseWikiInner(inner: string): { key: string; label: string; raw: string } {
+  const raw = inner.trim();
+  const pipe = raw.indexOf("|");
   if (pipe === -1) {
-    const key = inner.trim();
-    return { key, label: key };
+    return { key: raw, label: raw, raw };
   }
-  const left = inner.slice(0, pipe).trim();
-  const right = inner.slice(pipe + 1).trim();
-  const pathish = (s: string) => /[./#]|\.mdx?$/i.test(s) || (!/\s/.test(s) && s.length > 0);
-  if (pathish(left) && !pathish(right)) return { key: left, label: right || left };
-  if (pathish(right) && !pathish(left)) return { key: right, label: left || right };
-  return { key: left, label: right || left };
+  const left = raw.slice(0, pipe).trim();
+  const right = raw.slice(pipe + 1).trim();
+  const pathish = (s: string) => /[./#]|\.mdx?$/i.test(s);
+  if (pathish(left) && !pathish(right)) return { key: left, label: right || left, raw };
+  if (pathish(right) && !pathish(left)) return { key: right, label: left || right, raw };
+  return { key: left, label: right || left, raw };
 }
 
-/** Line numbers that fall inside YAML frontmatter (1-based), empty if none. */
+/** Line numbers that fall inside YAML frontmatter (1-based). */
 function frontmatterLineRange(content: string): { endLine: number; yaml: string } | null {
   if (!content.startsWith("---")) return null;
   const lines = content.split(/\r?\n/);
@@ -92,13 +96,14 @@ export function extractFromContent(file: ExtractSourceFile): ExtractHit[] {
       hits.push({
         kind: "tag",
         key: tag,
-        label: `#${tag}`,
+        label: `#${tag}#`,
         fileId: file.fileId,
         fileName: file.fileName,
         groupName: file.groupName,
         lineNumber: Math.min(fm.endLine + 1, lines.length) || 1,
-        lineText: `tags: ${tag}`,
+        lineText: tag,
         query: tag,
+        sourceLine: `tags: ${tag}`,
       });
     }
   }
@@ -142,45 +147,48 @@ export function extractFromContent(file: ExtractSourceFile): ExtractHit[] {
         fileName: file.fileName,
         groupName: file.groupName,
         lineNumber,
-        lineText: line.trim(),
-        query: text.slice(0, 48),
+        // Rendered task lists show checkbox + text, not "- [ ] …"
+        lineText: text,
+        query: text,
+        sourceLine: line.trim(),
       });
     }
 
-    if (!HEADING_RE.test(line)) {
-      TAG_RE.lastIndex = 0;
-      let m: RegExpExecArray | null;
-      while ((m = TAG_RE.exec(line)) !== null) {
-        const tag = m[2];
-        hits.push({
-          kind: "tag",
-          key: tag,
-          label: `#${tag}`,
-          fileId: file.fileId,
-          fileName: file.fileName,
-          groupName: file.groupName,
-          lineNumber,
-          lineText: line.trim(),
-          query: `#${tag}`,
-        });
-      }
+    TAG_RE.lastIndex = 0;
+    let m: RegExpExecArray | null;
+    while ((m = TAG_RE.exec(line)) !== null) {
+      const tag = m[1];
+      hits.push({
+        kind: "tag",
+        key: tag,
+        label: `#${tag}#`,
+        fileId: file.fileId,
+        fileName: file.fileName,
+        groupName: file.groupName,
+        lineNumber,
+        lineText: `#${tag}#`,
+        query: `#${tag}#`,
+        sourceLine: line.trim(),
+      });
     }
 
     WIKI_RE.lastIndex = 0;
     let w: RegExpExecArray | null;
     while ((w = WIKI_RE.exec(line)) !== null) {
-      const { key, label } = parseWikiInner(w[1]);
+      const { key, label, raw } = parseWikiInner(w[1]);
       if (!key) continue;
       hits.push({
         kind: "topic",
         key,
-        label: `[[${label}]]`,
+        label: `[[${raw}]]`,
         fileId: file.fileId,
         fileName: file.fileName,
         groupName: file.groupName,
         lineNumber,
-        lineText: line.trim(),
+        // After transformWikiLinks, page shows [label](target.md)
+        lineText: label,
         query: label,
+        sourceLine: line.trim(),
       });
     }
   }

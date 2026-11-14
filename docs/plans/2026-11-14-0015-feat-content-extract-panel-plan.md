@@ -35,7 +35,7 @@ Agent 与人写的 Markdown 里散落着 `- [ ]`、`#tag`、`[[topic]]`。今天
 - **仅当前分组** — 扫描范围与侧栏当前组一致。`(session-settled: user-directed — chosen over 整会话/可切换: 降低噪音)` · Governs R2
 - **v1 只要跳转，不要过滤文件** — 改掉先前的「过滤+跳转」。`(session-settled: user-directed — chosen over 过滤侧栏或轻量过滤开关: 跳转用得最多)` · Governs R6
 - **TODO 默认未完成，可切换显示已完成** — `(session-settled: user-directed — chosen over 仅未完成或混排无开关: 需要回顾已完成但默认聚焦未解决)` · Governs R3
-- **标签 = 正文 `#tag` + frontmatter `tags`** — `(session-settled: user-directed — chosen over 仅正文: 覆盖常见 frontmatter 写法)` · Governs R5
+- **标签 = 正文 `#tag#` + frontmatter `tags`** — 正文需两端 `#` 以免误伤代码；后改为 `#tag#`（user-directed）。· Governs R5
 - **打开默认落在 TODO Tab** — 最贴「未解决问题」的偶发用途。`(session-settled: user-approved — chosen over 默认标签/话题 Tab: 综合确认时提出，用户继续采纳)` · Governs R1
 
 ### Requirements
@@ -48,8 +48,8 @@ Agent 与人写的 Markdown 里散落着 `- [ ]`、`#tag`、`[[topic]]`。今天
 **收集规则**
 
 - **R3.** TODO Tab：收集 GFM 任务列表项；默认只列未完成 `- [ ]`；用户可切换显示已完成 `- [x]`；每条展示可读文本与来源文件提示。
-- **R4.** 话题 Tab：收集正文中的 `[[wiki]]`（含现有 pipe / 锚点写法所表达的目标话题键）；代码块内忽略。
-- **R5.** 标签 Tab：收集正文行内 `#tag`（代码块内忽略）以及 frontmatter 中的 `tags` 字段（数组或等价列表）。
+- **R4.** 话题 Tab：仅收集正文中的 `[[wiki]]` 双括号（含 pipe）；**不**收集 `[text](url)`；代码块内忽略。
+- **R5.** 标签 Tab：收集正文行内 `#tag#`（两端 `#` 定界，代码块内忽略）以及 frontmatter 中的 `tags` 字段（数组或等价列表）。
 - **R7.** 提炼只读：不在应用内勾选任务、不改标签或 wiki；改文件仍交给外部编辑器 / agent。
 
 **导航**

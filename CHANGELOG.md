@@ -2,7 +2,7 @@
 
 ## Unreleased
 
-- feat: Header「提炼」面板 — 当前分组 TODO / `#tag` / `[[wiki]]` 索引并跳转到原文
+- feat: Header「提炼」面板 — 当前分组 TODO / `#tag#` / `[[wiki]]` 索引并跳转到原文（正文标签需两端 `#`；普通 Markdown 链接不算话题）
 
 ## v0.25.0 - 2026-11-12
 

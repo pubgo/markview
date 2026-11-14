@@ -9,8 +9,7 @@ import { SearchToggle } from "./components/SearchToggle";
 import { GlobalSearchModal } from "./components/GlobalSearchModal";
 import type { GlobalSearchSelection } from "./components/GlobalSearchModal";
 import {
-  ContentExtractPanel,
-  ContentExtractToggle,
+  ContentExtractControl,
   type ContentExtractSelection,
 } from "./components/ContentExtractPanel";
 import { RestartButton } from "./components/RestartButton";
@@ -567,7 +566,13 @@ export function App() {
         />
         <ViewModeToggle viewMode={currentViewMode} onToggle={handleViewModeToggle} />
         <SearchToggle isOpen={globalSearchOpen} onToggle={handleSearchToggle} />
-        <ContentExtractToggle isOpen={contentExtractOpen} onToggle={handleContentExtractToggle} />
+        <ContentExtractControl
+          isOpen={contentExtractOpen}
+          group={groups.find((g) => g.name === activeGroup)}
+          onClose={() => setContentExtractOpen(false)}
+          onSelect={handleJumpSelect}
+          onToggle={handleContentExtractToggle}
+        />
         <div className="ml-auto flex items-center gap-2">
           <button
             type="button"
@@ -760,13 +765,6 @@ export function App() {
         groups={groups}
         onClose={() => setGlobalSearchOpen(false)}
         onSelect={handleGlobalSearchSelect}
-      />
-      <ContentExtractPanel
-        isOpen={contentExtractOpen}
-        group={groups.find((g) => g.name === activeGroup)}
-        onClose={() => setContentExtractOpen(false)}
-        onSelect={handleJumpSelect}
-        onToggle={handleContentExtractToggle}
       />
       <SettingsModal isOpen={settingsOpen} onClose={() => setSettingsOpen(false)} />
       {!isStaticMode() && isDragging && <DropOverlay />}
